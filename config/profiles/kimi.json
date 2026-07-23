@@ -1,0 +1,31 @@
+{
+  "id": "kimi",
+  "aliases": ["plan", "kimi-k3"],
+  "displayName": "Kimi K3",
+  "provider": "kimi",
+  "purpose": "通过 Kimi K3 运行 Claude Code；适合规划，也可直接执行",
+  "costNotice": "high",
+  "pricingRef": "kimi-k3",
+  "requiredEnvironment": [
+    "ANTHROPIC_MODEL",
+    "ANTHROPIC_DEFAULT_OPUS_MODEL",
+    "ANTHROPIC_DEFAULT_SONNET_MODEL",
+    "ANTHROPIC_DEFAULT_HAIKU_MODEL",
+    "ANTHROPIC_DEFAULT_FABLE_MODEL",
+    "CLAUDE_CODE_SUBAGENT_MODEL",
+    "ENABLE_TOOL_SEARCH",
+    "CLAUDE_CODE_AUTO_COMPACT_WINDOW",
+    "CLAUDE_CODE_EFFORT_LEVEL"
+  ],
+  "environment": {
+    "ANTHROPIC_MODEL": "kimi-k3[1m]",
+    "ANTHROPIC_DEFAULT_OPUS_MODEL": "kimi-k3[1m]",
+    "ANTHROPIC_DEFAULT_SONNET_MODEL": "kimi-k3[1m]",
+    "ANTHROPIC_DEFAULT_HAIKU_MODEL": "kimi-k3[1m]",
+    "ANTHROPIC_DEFAULT_FABLE_MODEL": "kimi-k3[1m]",
+    "CLAUDE_CODE_SUBAGENT_MODEL": "kimi-k3[1m]",
+    "ENABLE_TOOL_SEARCH": "false",
+    "CLAUDE_CODE_AUTO_COMPACT_WINDOW": "1048576",
+    "CLAUDE_CODE_EFFORT_LEVEL": "max"
+  }
+}

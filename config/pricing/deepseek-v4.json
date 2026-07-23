@@ -1,0 +1,22 @@
+{
+  "id": "deepseek-v4",
+  "displayName": "DeepSeek V4",
+  "model": "deepseek-v4",
+  "currency": "USD",
+  "unit": "per_million_tokens",
+  "prices": {
+    "deepseek-v4-pro": {
+      "inputCacheHit": 0.003625,
+      "inputCacheMiss": 0.435,
+      "output": 0.87
+    },
+    "deepseek-v4-flash": {
+      "inputCacheHit": 0.0028,
+      "inputCacheMiss": 0.14,
+      "output": 0.28
+    }
+  },
+  "contextWindowTokens": 1048576,
+  "verifiedOn": "2026-07-23",
+  "sourceUrl": "https://api-docs.deepseek.com/quick_start/pricing"
+}

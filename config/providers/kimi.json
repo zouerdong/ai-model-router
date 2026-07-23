@@ -1,0 +1,10 @@
+{
+  "id": "kimi",
+  "displayName": "Kimi",
+  "baseUrl": "https://api.moonshot.cn/anthropic",
+  "apiKeyUrl": "https://platform.kimi.com/console/api-keys",
+  "authVariable": "ANTHROPIC_AUTH_TOKEN",
+  "secretId": "kimi",
+  "verifiedOn": "2026-07-23",
+  "sourceUrl": "https://platform.kimi.com/docs/guide/claude-code-kimi"
+}

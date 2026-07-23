@@ -1,0 +1,15 @@
+{
+  "id": "kimi-k3",
+  "displayName": "Kimi K3",
+  "model": "kimi-k3",
+  "currency": "CNY",
+  "unit": "per_million_tokens",
+  "prices": {
+    "inputCacheHit": 2,
+    "inputCacheMiss": 20,
+    "output": 100
+  },
+  "contextWindowTokens": 1048576,
+  "verifiedOn": "2026-07-23",
+  "sourceUrl": "https://platform.kimi.com/docs/pricing/chat-k3"
+}

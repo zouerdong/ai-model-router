@@ -1,0 +1,10 @@
+{
+  "id": "deepseek",
+  "displayName": "DeepSeek",
+  "baseUrl": "https://api.deepseek.com/anthropic",
+  "apiKeyUrl": "https://platform.deepseek.com/api_keys",
+  "authVariable": "ANTHROPIC_AUTH_TOKEN",
+  "secretId": "deepseek",
+  "verifiedOn": "2026-07-23",
+  "sourceUrl": "https://api-docs.deepseek.com/guides/coding_agents"
+}

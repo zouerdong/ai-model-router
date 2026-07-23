@@ -1,0 +1,424 @@
+# 02 — 系统架构
+
+状态：`1.1.0` Mac 独立验收 PASS；`1.0.0` 与 `0.1.x` 为历史基线
+更新时间：2026-07-19
+
+## 1. 架构结论
+
+`1.0.0` 采用“数据化 Provider Profile + 干净子进程环境 + Claude Code 参数透明透传”。CMR 的架构边界止于启动 Claude Code 子进程，不进入会话管理层。
+
+```text
+用户所在项目目录
+       │
+       ├── cmr kimi [Claude args...] ── Kimi K3 Profile ────┐
+       │                                                     │
+       └── cmr deepseek [Claude args...] ─ DeepSeek Profile ─┤
+                                                             ▼
+                                                  Claude Code 子进程
+                              args / cwd / TTY / signal / exit code
+```
+
+DeepSeek Auto 不由 CMR 自己判断任务复杂度。CMR 只注入 DeepSeek 官方映射；Claude Code 使用主模型、模型档位和子 Agent 时，自然落到 Pro 或 Flash。Kimi/DeepSeek 均不绑定规划或执行角色。
+
+Profile 选择器之后的参数是不可解释的 opaque token list。CMR 只负责保存顺序和值并传给 Claude Code；不得按已知参数白名单实现，因为 Claude Code 未来新增参数也应自动可用。
+
+## 2. 为什么不沿用旧讨论中的 Python 方案
+
+`0.2.0` 沿用 `0.1.x` 的 Node.js 标准 JavaScript 技术基线，原因来自当前约束：
+
+- Claude Code 官方安装本身要求 Node.js，Mac 与公司 Windows 已有或必然需要该运行时。
+- 不再要求 Windows 额外安装和管理 Python。
+- `child_process`、`fs`、`path`、`os` 与 `node:test` 足够覆盖当前范围；高费用确认移除后启动路径不再需要 `readline`。
+- 两个 Profile 不需要 YAML/TOML；JSON 可直接由标准库读取。
+- 不使用 TypeScript，避免为一个轻量 CLI 增加编译链和发布产物。
+
+源代码可直接跨平台使用；阶段一不做 macOS/Windows 独立二进制。若以后确认确有“零运行时安装包”需求，再单独评估打包。
+
+## 3. `1.0.0` 实现目录
+
+`1.0.0` 的最小结构如下，不得扩张成通用 AI 环境管理器。`docs/09-phase-1-acceptance.md` 中的 `plan.json/build.json` 仅属于 `0.1.x` 历史基线：
+
+```text
+claude-model-router/
+├── AGENTS.md
+├── README.md
+├── package.json
+├── docs/
+├── config/
+│   ├── providers/
+│   │   ├── kimi.json
+│   │   └── deepseek.json
+│   ├── profiles/
+│   │   ├── kimi.json
+│   │   └── deepseek.json
+│   └── pricing/
+│       ├── kimi-k3.json
+│       └── deepseek-v4.json
+├── src/
+│   ├── cli.js
+│   ├── commands/
+│   │   ├── doctor.js
+│   │   ├── launch.js
+│   │   └── list.js
+│   ├── config/
+│   │   ├── loader.js
+│   │   └── validator.js
+│   ├── environment.js
+│   ├── launcher.js
+│   ├── platform.js
+│   ├── redact.js
+│   └── secret-store.js
+└── tests/
+    ├── fixtures/
+    ├── config.test.js
+    ├── doctor.test.js
+    ├── environment.test.js
+    ├── launcher.test.js
+    └── redact.test.js
+```
+
+## 4. 模块职责
+
+| 模块 | 唯一职责 |
+|---|---|
+| `cli.js` | 解析 CMR 管理命令（含 `secret`/`config`）或首个 Profile 选择器；保存后续 opaque Claude 参数；选择菜单；统一错误出口 |
+| `loader.js` | 从项目内只读加载 Provider/Profile/Pricing |
+| `validator.js` | 验证必填字段、变量白名单、Provider 引用与核验日期 |
+| `environment.js` | 从父环境复制、清除 Router 变量、注入当前 Profile |
+| `launch.js` | 解析 Profile、构建环境、显示非交互式费用信息并把 Claude 参数交给启动器 |
+| `launcher.js` | 找到 Claude、合并内部可执行文件前缀参数与用户 Claude 参数、继承 cwd/stdio、转发信号和退出码 |
+| `platform.js` | 路径与可执行文件的 macOS/Windows 差异 |
+| `secret-store.js` | 仓库外读取/写入 Provider 密钥，接口与平台无关 |
+| `redact.js` | 对输出、异常和诊断结构统一脱敏 |
+| `doctor.js` | 只读发现 Claude、Settings、Shell/PowerShell 和环境冲突 |
+
+任何模块都不得顺手修改用户配置。当前产品的 `doctor` 没有 `--fix`。
+
+## 5. 配置模型
+
+### 5.1 Provider
+
+Provider 只描述供应商级事实：
+
+```json
+{
+  "id": "kimi",
+  "displayName": "Kimi",
+  "baseUrl": "https://api.moonshot.cn/anthropic",
+  "authVariable": "ANTHROPIC_AUTH_TOKEN",
+  "secretId": "kimi",
+  "verifiedOn": "2026-07-18",
+  "sourceUrl": "https://platform.kimi.com/docs/guide/claude-code-kimi"
+}
+```
+
+### 5.2 Profile
+
+Profile 描述一次 Claude Code 会话的完整映射：
+
+```json
+{
+  "id": "kimi",
+  "aliases": ["plan", "kimi-k3"],
+  "displayName": "Kimi K3",
+  "provider": "kimi",
+  "purpose": "通过 Kimi K3 运行 Claude Code；适合规划，也可直接执行",
+  "costNotice": "high",
+  "environment": {
+    "ANTHROPIC_MODEL": "kimi-k3[1m]"
+  }
+}
+```
+
+示例仅表示 Schema，正式 Profile 必须包含 `docs/07-official-sources.md` 所列的完整变量。
+
+Profile 中的模型值属于 Claude Code 选择层。对 1M 模型，`[1m]` 是 Claude Code 的上下文选择后缀；Claude Code 会在向 Provider 发请求前剥离它。因此 Kimi Profile 必须继续注入 `kimi-k3[1m]`，实际 Kimi API model 则是 `kimi-k3`。CMR 不增加 Provider 分支或本地代理来重复转换这一后缀；两层事实与验收方式见 `docs/07-official-sources.md`。
+
+### 5.3 Pricing
+
+Pricing 只负责启动提示，不参与路由或账单：
+
+```json
+{
+  "model": "kimi-k3",
+  "currency": "CNY",
+  "unit": "per_million_tokens",
+  "verifiedOn": "2026-07-18",
+  "sourceUrl": "https://platform.kimi.com/docs/pricing/chat-k3"
+}
+```
+
+每次价格变化只能更新配置和核验日期，不能改写历史日志；CMR 默认不记录会话 Token。
+
+### 5.4 Profile ID、别名与保留字
+
+- 规范 ID 只有 `kimi`、`deepseek`。
+- Kimi 兼容别名：`plan`、`kimi-k3`。
+- DeepSeek 兼容别名：`build`、`deepseek-auto`。
+- `help`、`version`、`list`、`doctor`、`config`、`secret` 等管理命令是保留字，Profile ID 与别名不得占用。
+- ID、别名解析必须来自数据化 Profile；CLI 不得分别写一套模型映射。
+- 两个 Profile 配置文件在 `0.2.0` 实施时从 `plan.json/build.json` 重命名为 `kimi.json/deepseek.json`。这是文件移动/删除语义，执行者必须先获得用户对精确文件的批准。
+
+## 6. Router 管理的环境变量
+
+构建子进程环境时，先从继承环境中删除以下键，再注入所选 Profile：
+
+```text
+ANTHROPIC_BASE_URL
+ANTHROPIC_API_KEY
+ANTHROPIC_AUTH_TOKEN
+ANTHROPIC_MODEL
+ANTHROPIC_SMALL_FAST_MODEL
+ANTHROPIC_DEFAULT_OPUS_MODEL
+ANTHROPIC_DEFAULT_OPUS_MODEL_NAME
+ANTHROPIC_DEFAULT_SONNET_MODEL
+ANTHROPIC_DEFAULT_SONNET_MODEL_NAME
+ANTHROPIC_DEFAULT_HAIKU_MODEL
+ANTHROPIC_DEFAULT_HAIKU_MODEL_NAME
+ANTHROPIC_DEFAULT_FABLE_MODEL
+ANTHROPIC_DEFAULT_FABLE_MODEL_NAME
+CLAUDE_CODE_SUBAGENT_MODEL
+ENABLE_TOOL_SEARCH
+CLAUDE_CODE_AUTO_COMPACT_WINDOW
+CLAUDE_CODE_EFFORT_LEVEL
+```
+
+本机现有 `CLAUDE_CODE_MAX_CONTEXT_TOKENS` 不在当前 Kimi 官方推荐清单中，但可能影响上下文。`doctor` 必须单独标记为 legacy/unverified；迁移时经用户确认一并处理。
+
+不属于 Router 的变量不得清除，例如代理、Tavily、MCP、终端与编辑器设置。
+
+## 7. 运行数据流
+
+### 7.1 命令解析与启动前
+
+1. 若无参数，显示交互式 Profile/管理菜单。
+2. 若首个 token 是 CMR 管理命令，由对应管理命令处理，后续参数按该命令自身契约解析。
+3. 否则把首个 token 作为 Profile ID/别名解析；找不到时返回未知命令错误。
+4. 把首个 token 之后的全部 token 保存为 `claudeArgs`；不检查、不改写、不拼接成字符串、不记录。
+5. 加载并校验 Profile 与 Provider。
+6. 定位 `claude` / `claude.cmd`。
+7. 获取本机 Provider 密钥；缺失则停止，不回显值。
+8. Kimi 等高费用 Profile 只显示一行信息，不等待确认。
+9. 检查会阻断本次启动的永久配置冲突。
+
+### 7.2 子进程环境
+
+1. 浅复制 `process.env`。
+2. 删除 Router 管理的全部变量。
+3. 注入 Base URL、选定 Profile 的完整映射和唯一鉴权变量。
+4. 不修改 `process.env` 本身。
+
+### 7.3 启动与退出
+
+1. 内部测试/平台适配所需的 `executableArgs` 必须位于用户 `claudeArgs` 之前；正常 `claude` 可执行文件的 `executableArgs` 为空。
+2. 以 argv 数组启动，禁止把参数拼为 Shell 命令字符串；空格、中文、引号和以 `-` 开头的值不得改变。
+3. 使用当前 `process.cwd()` 启动 Claude Code。
+4. `stdio: "inherit"`，不截获交互界面。
+5. 处理 Ctrl+C/终止信号，避免留下孤儿进程。
+6. 原样返回 Claude Code 的退出码。
+7. 不在日志中打印完整环境对象或任何 `claudeArgs`。
+
+### 7.4 Claude Code 会话与参数边界
+
+- `--continue`、`--resume`、`--fork-session` 完全由 Claude Code 解释；CMR 不读写会话文件。
+- 用户选择哪个 Profile，本次恢复后的子进程就使用哪个 Profile 环境。CMR 不阻止跨 Provider 恢复。
+- `--model`、`--permission-mode`、`-p` 和其他参数同样透明传递。Provider 不支持某个模型时，由 Claude Code/Provider 自然报错。
+- CMR 不应输出“必须新会话”“不能 `/model`”“Kimi 只能规划”“DeepSeek 只能执行”等限制性文案。
+- 项目文件与 Claude Code 本地会话记录不会被 CMR 修改。普通文本与工具会话通常可以跨 Provider 恢复；少数 Provider 不支持的内容块或能力可能自然报错，这不是启动器拦截或转换的理由。
+
+## 8. 永久 Settings 冲突的处理策略
+
+Claude Code 的 `settings.json.env` 可能覆盖终端变量。`0.1.x` 已选择并完成**显式的一次性迁移**，而不是依赖脆弱的运行时覆盖；`0.2.0` 不重复迁移：
+
+1. `cmr doctor` 先只读列出冲突键和来源，不显示值。
+2. 代码、假进程测试完成后再进入本机迁移门禁。
+3. 执行者展示将修改的文件、键名和备份位置。
+4. 用户明确确认后，备份 `settings.json` 与 `.zshrc`。
+5. 只移除模型、端点、鉴权、上下文和 effort 相关项；保留插件、主题、状态栏、Tavily、Hooks、权限等。
+6. 移除 Settings 顶层旧 `model: kimi-k3`，由 `cmr kimi` 明确提供 `kimi-k3[1m]`。
+7. 将两个 Provider 密钥写入仓库外的 CMR 本机存储。
+8. 再次运行 `doctor`，确认冲突消失。
+
+备份可能包含旧 API Key，目录与文件必须限制为当前用户可访问，且永远不进入仓库。
+
+这会使直接运行裸 `claude` 不再自动连接 Kimi。迁移后应使用 `cmr kimi` 或 `cmr deepseek`；`cmr plan/build` 继续作为兼容别名。
+
+## 9. 密钥存储
+
+当前版本沿用最小、透明、跨平台的仓库外 JSON 存储：
+
+- macOS：`~/Library/Application Support/ClaudeModelRouter/secrets.json`
+- Windows：`%APPDATA%\ClaudeModelRouter\secrets.json`
+
+要求：
+
+- macOS 文件权限为 `0600`，父目录不允许其他用户写入。
+- Windows 阶段通过用户目录 ACL 验证，仅当前用户可访问。
+- `cmr secret set` 从 TTY 隐藏输入，不把密钥放入参数或历史。
+- 写入采用同目录临时文件 + 原子替换。
+- 日志只显示 Provider 是否已配置。
+
+如果阶段三发现公司安全政策禁止本地明文凭据，再将 `SecretStore` 接口替换为系统凭据库；不得在阶段一预先引入平台原生依赖。
+
+## 10. Doctor 架构
+
+`cmr doctor` 默认完全只读，输出 `PASS/WARN/FAIL`：
+
+- OS、架构、Node、Claude Code 版本与实际路径。
+- 当前目录。
+- Kimi/DeepSeek 密钥的 configured/missing 状态。
+- 当前进程中 Router 变量的键名与是否非空。
+- 用户、项目、Local、Managed Settings 的来源和冲突键。
+- Mac Shell 或 Windows PowerShell Profile 中的相关变量名。
+- Profile Schema、官方核验日期与过期提醒。
+- `.gitignore` 是否覆盖密钥、`.DS_Store`、日志和本机配置。
+
+Doctor 不联网验证余额，不发送测试请求，不读取或显示完整密钥。
+
+## 11. Windows 扩展点
+
+以下差异必须封装在 `platform.js`，不能散落在业务逻辑中：
+
+- `claude`、`claude.exe`、`claude.cmd` 查找与启动。
+- `HOME` / `USERPROFILE` / `APPDATA` 路径。
+- Shell Profile 与用户环境变量的只读审计。
+- 文件权限/ACL 的验证方法。
+- Ctrl+C 与退出码行为。
+
+阶段一的单元测试应模拟 `win32` 路径与 `.cmd`，但不宣称 Windows 已完成真实验收。
+
+## 12. 关键风险与控制
+
+| 风险 | 控制 |
+|---|---|
+| Settings 覆盖启动环境 | Doctor + 经批准的一次性迁移 |
+| 只改主模型，后台任务失败 | Profile 快照测试覆盖完整映射 |
+| K3 仍使用旧 `kimi-k3` | 正式 Profile 固定 `kimi-k3[1m]`，真实 `/status` 验收 |
+| 用户透传的模型名不受当前 Provider 支持 | 不拦截；由 Claude Code/Provider 报错，使用文档说明恢复到 Profile 默认模型的方法 |
+| 密钥进入 Git/日志 | 仓库外存储、统一脱敏、提交前扫描 |
+| 跨 Provider 恢复旧会话出现上下文或模型兼容差异 | 尊重用户显式选择；不自动恢复、不建 Session Registry；推荐重要任务用文件式交接 |
+| 参数包含提示词或敏感路径并进入日志 | CMR 不记录、回显或序列化 `claudeArgs`；测试故意放置敏感哨兵并检查输出 |
+| 参数拼为 Shell 字符串导致转义或命令注入 | 始终使用 argv 数组；只有既有 Windows `.cmd` 平台边界可使用受控分支 |
+| Mac 代码在 Windows 行为不同 | 标准库核心、平台适配层、Windows 模拟测试与阶段三实机验收 |
+
+## 13. `1.1.0` 首次运行配置架构（已验收）
+
+> 本节记录已通过 Sol 独立验收的实现架构。精确接口、阶段步骤、测试向量与最终证据见 `docs/11-v1.1-first-run-setup-implementation-brief.md`。
+
+### 13.1 架构结论
+
+`1.1.0` 增加两个仓库外组件：薄的 setup 编排层和只保存 onboarding 元数据的 Setup State Store；不改变 Provider 环境注入、Claude argv 透传或 Secret Store 格式：
+
+```text
+安装完成
+   │
+   └── 用户首次运行 cmr（TTY）
+           │
+           ├── state 缺失/存在 unseen Provider
+           │        └── 读取全部 Key 状态 ── setup 向导
+           │               ├── missing ─────── 隐藏输入 ── SecretStore.set()
+           │               ├── configured ──── 保留或显式更换
+           │               └── 完成/稍后 ───── SetupState.markSeen(current providers)
+           ├── state 已覆盖全部当前 Provider ─ 带状态的普通菜单
+           └── 非 TTY ──────────────────────── 帮助/明确错误，不等待输入
+
+cmr <profile> [opaque Claude args...]
+           │
+           ├── secret configured ───────────── 原 launchProfile 路径
+           └── secret missing + TTY ────────── 单 Provider setup ── 成功后继续原启动
+```
+
+首次运行判断不能读取 Key 状态代替。Setup State Store 保存当前用户已经看过的 Provider ID；文件缺失代表第一次进入，当前配置出现未 seen Provider 代表版本增加了新 Provider。两种情况都先展示**全部当前 Provider** 的 Key 状态并进入引导，无论它们是 configured 还是 missing。
+
+状态文件不属于安装包，也不由安装脚本写入。它定义的是“当前本机用户数据目录中的首次 CMR 交互使用”：卸载/重装后若应用数据仍保留，则不重复引导；换新电脑、换用户目录或删除应用数据后会重新引导。
+
+### 13.2 为什么不使用 npm `postinstall`
+
+npm 安装脚本默认不保证与用户共享标准输入输出，可以被 `ignore-scripts`/脚本审批策略跳过，也会在 CI、升级、依赖安装和无 TTY 环境执行。把密钥输入放在安装生命周期会造成安装卡死、重复索取凭据、供应链权限扩大和不可测试的分发差异。
+
+因此安装职责只到“命令可运行”；配置职责从用户主动运行 `cmr` 开始。`package.json` 不增加任何收集凭据的 lifecycle script。
+
+### 13.3 目标模块职责
+
+| 模块 | `1.1.0` 新职责 |
+|---|---|
+| `cli.js` | 识别 `setup`；在无参数 TTY 下按 Setup State 选择首次/新 Provider 向导或普通菜单；管理命令仍优先且不触发隐式写入 |
+| `commands/setup.js` | 纯编排：选择 Provider、显示官方获取地址、调用隐藏输入、处理已配置项、逐项保存、输出脱敏摘要 |
+| `commands/launch.js` | 缺少当前 Provider 密钥且为 TTY 时调用单 Provider setup；成功后继续同一次启动；非 TTY 保持快速失败 |
+| `setup-state.js` | 仓库外读取/原子写入 Schema v1 onboarding 状态；保存 `seenProviderIds`，不保存 Key、账号、时间或使用记录 |
+| `secret-store.js` | 沿用 Schema v1 与原子写入；隐藏输入支持由调用方提供 Provider 标签，但仍负责 raw mode 恢复与长度/空值校验 |
+| `platform.js` | 提供统一 CMR 应用数据目录、Secret/State 路径与 Claude 可执行文件发现；向导不拼接 Shell 命令或打开浏览器 |
+| `config/providers/*.json` | 增加经 Schema 校验的 `apiKeyUrl`，作为向导显示的官方控制台地址 |
+| `validator.js` | 校验 `apiKeyUrl` 必须为 `https:` 绝对 URL，且 Provider ID/secretId 仍符合现有合同 |
+
+交互层与两个 Store 都必须可注入，以便测试不依赖真实终端。`setup.js` 接受 `prompter`、`secretStore`、`setupStateStore`、`input/output`、`platform/env/homeDir` 等选项；单元测试使用 fake prompter 和临时 HOME，不读取本机状态。
+
+### 13.4 CLI 分派优先级
+
+分派顺序固定为：
+
+1. 显式管理命令：`help/version/list/doctor/config/secret/setup`。
+2. 无参数：非 TTY 打印帮助；TTY 比较当前数据化 Provider ID 与 `seenProviderIds`。State 缺失或存在 unseen Provider 时，读取全量 Key 状态并进入 setup；否则进入普通菜单。
+3. Profile ID/别名：保留全部后续 opaque argv；密钥存在则启动，缺失时仅在 TTY 做当前 Provider setup。
+4. 未知首 token：保持未知 Profile 错误，不把 Claude 参数误判为 setup 输入。
+
+`doctor`、`list`、`version`、`help`、`config path` 和 `secret status` 永远不因首次运行而写文件。无参数首次/新 Provider 向导和无 target 的 `cmr setup` 都展示全量状态，因此可在用户完成或明确选择稍后后写 Setup State；定向 `cmr setup <provider>` 与缺 Key 启动只展示一个 Provider，不得把其他 Provider 标为 seen。
+
+### 13.5 Setup 状态机
+
+```text
+START
+  ├─ no TTY ─────────────────────────────── ERROR_NO_TTY
+  └─ load config + setup state + all secret status
+       ├─ corrupt/unreadable Secret Store ── ERROR_SECRET_STORE (不覆盖)
+       ├─ state missing/unseen provider ───── onboarding reason
+       └─ show every current provider status before choices
+            ├─ deliberate not now/continue ── mark all current provider IDs seen
+            ├─ interrupt/EOF/error ────────── CANCELLED (不 mark seen)
+            └─ for each provider, sequentially
+                 ├─ already configured ───── KEEP by default
+                 ├─ show apiKeyUrl
+                 ├─ hidden input cancel ──── stop; 已成功保存项保留
+                 ├─ validation/write fail ── stop; 不打印 Key
+                 └─ write succeeds ───────── configured
+       └─ print refreshed all-provider summary
+            ├─ onboarding completed/not now ─ mark seen atomically
+            └─ targeted/inline setup only ─── do not change unseen Provider state
+```
+
+多 Provider 设置采用逐项原子提交，而不是把两个 Key 暂存在内存后一次性写入。这样第二项取消或失败时，第一项仍是明确、可用的成功结果；重新运行向导必须从实时状态继续，不能重复覆盖第一项。
+
+### 13.6 输出与错误合同
+
+- stdout：欢迎、选择、官方 URL、`configured/missing` 摘要和下一步命令。
+- stderr：错误、警告、隐藏输入提示；不得包含输入值。
+- 不打印 Key 的掩码、末四位、长度、哈希或 JSON Secret Store 内容。
+- Ctrl+C 必须恢复终端 raw mode。显式 `setup` 返回 `130`；Profile 缺 Key 的就地 setup 被取消时不得启动 Claude，同样返回 `130`。
+- 普通“稍后配置/继续”不是异常，返回 `0`；首次/新 Provider 向导在用户已经看过全量状态并明确选择后写入 Setup State，但不创建空 Secret Store。
+- Secret Store 损坏或不可读时停止，不以空对象覆盖；用户通过 `cmr config path` 和错误信息定位，但修复/删除仍需单独确认。
+- Setup State 损坏不能抑制首次引导：显示警告、把当前 Provider 当作 unseen；用户明确完成后用合法 Schema 原子重建该非敏感状态文件。
+- Setup State 如果因权限或 I/O 错误无法读取，则停止并返回错误，不把未知内容当作空状态或强行覆盖。
+
+### 13.7 本地就绪检查与网络边界
+
+向导完成摘要只检查：
+
+- Provider/Profile 配置 Schema 有效。
+- 选定 Provider 的 Secret Store 状态为 `configured`。
+- Claude Code 可执行文件是否能在 PATH 中发现。
+- 当前平台是否在已支持集合中。
+
+`1.1.0` 不自动请求 Provider API。Kimi 与 DeepSeek 都有只读 models 接口，但公司代理、证书、限流和服务波动会把有效 Key 误判为失败；同时现有 Node 核心没有统一代理传输层。在线验证以后若需要，应作为显式 `cmr setup --verify` 或 `cmr doctor --network` 的独立设计，并明确超时、代理和非计费合同。
+
+所有 UI 和测试必须把 `configured` 解释为“已存入本机 Store”，不能输出 `valid/verified/connected`。首次真实启动返回的 401、余额或模型权限错误属于 Provider 可用性结果，不得由 setup 在无网络证据时提前承诺。
+
+### 13.8 兼容性约束
+
+- Secret Store 继续使用 `{ "version": 1, "providers": { ... } }`，`1.0.0` 已有文件无需迁移。
+- Setup State 使用 `{ "version": 1, "seenProviderIds": [...] }`。从 `1.0.0` 升级的用户没有该文件，因此无论已有几把 Key，第一次运行 `1.1.0` 都会看到一次全量状态与向导。
+- Setup UI 与 State 比较必须遍历数据化 Provider 集合，不以 `status.kimi/status.deepseek` 固定分支判断首次。以后新增 Provider 会自动形成 unseen 差集并重新触发一次全量引导。
+- 新增共用既有 Provider Key 的 Profile/模型不会形成 unseen Provider，因此不重复弹凭据向导；只有新增独立凭据边界时才增加 Provider ID。
+- `cmr secret set/status` 保留，作为脚本化维护之外的底层人工管理命令；不删除兼容入口。
+- `cmr kimi/deepseek` 后的 Claude argv 在 setup 前后都不得解析、记录、改写或丢失。
+- setup 不调用阶段一专用 `migrateLocalConfig()`；该函数硬编码 macOS 文件和历史备份路径，不是通用新用户配置方案。
+- 发现 Settings/Shell 冲突时只给出 `cmr doctor` 路径，不自动修改用户文件。通用跨平台引导式迁移必须另立规格和门禁。

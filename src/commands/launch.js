@@ -1,0 +1,63 @@
+import { stderr } from "node:process";
+import { loadConfigSet, resolveProfile } from "../config/loader.js";
+import { buildChildEnvironment } from "../environment.js";
+import { runClaude } from "../launcher.js";
+import { ensureProviderSecret } from "./setup.js";
+import { SecretStore } from "../secret-store.js";
+
+function formatPricing(pricing) {
+  if (pricing.id === "kimi-k3") {
+    const { inputCacheHit, inputCacheMiss, output } = pricing.prices;
+    return `CNY/M tokens: cache hit ${inputCacheHit}, cache miss ${inputCacheMiss}, output ${output}`;
+  }
+  return "DeepSeek V4 Pro/Flash pricing is recorded in config/pricing/deepseek-v4.json";
+}
+
+export async function launchProfile(profileSelector, claudeArgs = [], options = {}) {
+  if (!Array.isArray(claudeArgs)) throw new TypeError("claudeArgs must be an array");
+  const config = options.config ?? await loadConfigSet(options);
+  const profile = resolveProfile(config.profiles, profileSelector);
+  if (!profile) throw new Error(`unknown profile: ${profileSelector}`);
+  const provider = config.providers.find((item) => item.id === profile.provider);
+  const pricing = config.pricing.find((item) => item.id === profile.pricingRef);
+  const input = options.input ?? process.stdin;
+  const output = options.output ?? stderr;
+  const errorOutput = options.errorOutput ?? stderr;
+  const interactive = options.interactive ?? Boolean(input.isTTY && output.isTTY);
+  const secretStore = options.secretStore ?? new SecretStore({
+    ...options,
+    providerIds: config.providers.map((item) => item.secretId)
+  });
+  let secret = options.secret ?? await secretStore.get(provider.secretId);
+  if (!secret) {
+    if (!interactive) throw new Error(`missing ${provider.displayName} secret; run cmr secret set ${provider.secretId}`);
+    const setupResult = await ensureProviderSecret(provider, {
+      ...options,
+      input,
+      output,
+      errorOutput,
+      interactive,
+      secretStore,
+      providerIds: config.providers.map((item) => item.secretId)
+    });
+    if (setupResult.exitCode !== 0) return setupResult.exitCode;
+    secret = await secretStore.get(provider.secretId);
+    if (!secret) throw new Error(`missing ${provider.displayName} secret; run cmr secret set ${provider.secretId}`);
+  }
+
+  if (profile.costNotice === "high") {
+    output.write(`WARN  ${profile.displayName} is a high-cost profile; ${formatPricing(pricing)}; verified ${pricing.verifiedOn}.\n`);
+  }
+  const environment = buildChildEnvironment({ parentEnv: options.parentEnv ?? process.env, provider, profile, secret });
+  return runClaude({
+    env: environment,
+    cwd: options.cwd ?? process.cwd(),
+    executable: options.executable,
+    executableArgs: options.executableArgs,
+    claudeArgs,
+    platform: options.platform ?? process.platform,
+    spawnImpl: options.spawnImpl,
+    processLike: options.processLike ?? process,
+    stdio: options.stdio ?? "inherit"
+  });
+}

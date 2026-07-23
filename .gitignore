@@ -1,0 +1,16 @@
+.DS_Store
+node_modules/
+00_background/
+*.log
+.env
+.env.*
+secrets*.json
+*.secret.json
+.secrets-*
+*.tmp
+*.tgz
+.cmr/
+coverage/
+dist/
+tmp/
+temp/

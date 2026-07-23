@@ -1,0 +1,25 @@
+{
+  "id": "deepseek",
+  "aliases": ["build", "deepseek-auto"],
+  "displayName": "DeepSeek Auto",
+  "provider": "deepseek",
+  "purpose": "通过 DeepSeek Auto 运行 Claude Code；适合执行，也可规划分析",
+  "costNotice": "standard",
+  "pricingRef": "deepseek-v4",
+  "requiredEnvironment": [
+    "ANTHROPIC_MODEL",
+    "ANTHROPIC_DEFAULT_OPUS_MODEL",
+    "ANTHROPIC_DEFAULT_SONNET_MODEL",
+    "ANTHROPIC_DEFAULT_HAIKU_MODEL",
+    "CLAUDE_CODE_SUBAGENT_MODEL",
+    "CLAUDE_CODE_EFFORT_LEVEL"
+  ],
+  "environment": {
+    "ANTHROPIC_MODEL": "deepseek-v4-pro[1m]",
+    "ANTHROPIC_DEFAULT_OPUS_MODEL": "deepseek-v4-pro[1m]",
+    "ANTHROPIC_DEFAULT_SONNET_MODEL": "deepseek-v4-pro[1m]",
+    "ANTHROPIC_DEFAULT_HAIKU_MODEL": "deepseek-v4-flash",
+    "CLAUDE_CODE_SUBAGENT_MODEL": "deepseek-v4-flash",
+    "CLAUDE_CODE_EFFORT_LEVEL": "max"
+  }
+}
