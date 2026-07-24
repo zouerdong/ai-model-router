@@ -4,9 +4,9 @@
 
 本项目为 Claude Code 提供跨平台的“启动前 Provider/Profile 选择”，不修改或管理 Codex，也不接管 Claude Code 自身的会话与命令语义。
 
-当前稳定版为 `1.1.0`，其首次运行配置向导已于 2026-07-19 在 Mac 上通过独立验收；`1.0.0` 是透明 Profile 启动器的已验收历史基线，`0.1.x` 仅作为更早历史基线保留。`1.1.0` 最终证据见 `docs/11-v1.1-first-run-setup-implementation-brief.md` 第 17 节；Windows 实机验收仍属于阶段三。
+当前稳定版为 `1.2.1`：它在 `1.1.0` 首次运行配置向导基线上修复原生 Windows 的 Claude 可执行文件发现与 Doctor POSIX 权限误报警告，并补齐针对性跨平台回归。`1.1.0` 的 Mac 独立验收见 `docs/11-v1.1-first-run-setup-implementation-brief.md` 第 17 节；`1.2.1` 发布证据见 `docs/12-v1.2.1-windows-compatibility-patch.md`。完整 Windows 实机验收仍属于阶段三。
 
-`1.1.0` 继续只提供两个数据化 Profile：
+`1.2.1` 继续只提供两个数据化 Profile：
 
 - `kimi`：Kimi K3 的完整 Claude Code 模型映射。
 - `deepseek`：DeepSeek Auto；主会话由 V4 Pro 承担，Haiku 档与子 Agent 由 V4 Flash 承担。
@@ -25,7 +25,7 @@ Profile 只决定 Claude Code 子进程启动时使用哪套 Provider 环境。K
 6. `docs/08-acceptance-and-recovery.md`。
 7. `docs/09-phase-1-acceptance.md`，用于核对已完成的 Mac 基线。
 
-`docs/10-v0.2-transparent-profile-launcher-implementation-brief.md` 是 `1.0.0` 稳定运行时的历史实施与验收依据。`docs/11-v1.1-first-run-setup-implementation-brief.md` 是当前 `1.1.0` 的实施与验收依据。GitHub 与 Windows 阶段分别按 `docs/04-phase-2-github.md` 和 `docs/05-phase-3-windows.md` 执行。
+`docs/10-v0.2-transparent-profile-launcher-implementation-brief.md` 是 `1.0.0` 稳定运行时的历史实施与验收依据。`docs/11-v1.1-first-run-setup-implementation-brief.md` 是 `1.1.0` 的实施与验收依据。`docs/12-v1.2.1-windows-compatibility-patch.md` 是当前补丁版的发布依据。GitHub 与 Windows 阶段分别按 `docs/04-phase-2-github.md` 和 `docs/05-phase-3-windows.md` 执行。
 
 冲突时，以编号更靠前的现行文档为准。发现规范需要改变时，先修改对应文档并说明理由，再修改实现。
 

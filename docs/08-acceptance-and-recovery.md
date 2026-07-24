@@ -1,6 +1,6 @@
 # 08 — 阶段一验收与修复兜底
 
-状态：`0.1.x` 历史验收基线 + `0.2.0` 与 `1.1.0` 已验收标准
+状态：`0.1.x` 历史验收基线 + `0.2.0`、`1.1.0` 与 `1.2.1` 已验收标准
 角色分离：实现者提供证据；后续审阅者独立复核，不采用执行者自评替代验收。
 
 ## 1. 判定规则
@@ -319,3 +319,19 @@ Windows `.cmd` 已完成无 `shell:true` 的模拟回归，但 Windows 实机仍
 2026-07-19，Sol 按 K/L/M/N/O 与 S/T/R/C/L/P 矩阵完成独立审阅。首轮发现并修复 L5 多行 TTY 粘贴被静默截断后保存、以及 `setup` 未加入 Profile 保留命令集合的问题；补充相应回归与缺失的组合测试后，最终结论为 **PASS — `1.1.0` accepted on Mac**。
 
 最终独立复跑为 79/79 tests passed、lint PASS、`git diff --check` PASS、`npm pack --dry-run` PASS；官方 Kimi/DeepSeek API Key 入口与 Claude Code 安装入口已重新核验。独立验收阶段未读取或替换真实 Key，未运行真实 setup、Provider 请求、全局安装、Git 写操作或发布；用户随后另行授权创建本地 release commit 与 `v1.1.0` tag。Windows 仅保留自动化模拟证据，实机验收仍属于阶段三。详细 UltraQA 场景、修复与命令证据见 `docs/11` 第 17 节。
+
+## 12. `1.2.1` Windows 兼容性补丁验收
+
+`1.2.1` 的发布门槛限定为：
+
+1. Windows PATH 键名任意大小写均能发现 Claude。
+2. PATH 缺失或不含 Claude 时检查 `%USERPROFILE%\.local\bin\claude.exe`。
+3. 显式 `pathValue` 优先级不变。
+4. Windows `.cmd/.bat` 仍使用 `cmd.exe /d /c` 且 `shell: false`。
+5. Doctor 不在 Windows 上输出 POSIX Settings/Secret Store 权限警告。
+6. `package.json`、CLI、README 与稳定标签同为 `1.2.1`。
+7. 全量 test、lint、pack、diff 与敏感信息检查通过。
+
+上述门槛通过只证明本补丁范围可发布，不替代 `docs/05` 的完整 Windows 实机验收。
+
+2026-07-24 独立复跑结论为 **PASS — `1.2.1` READY FOR RELEASE**：Windows/Doctor targeted tests 6/6、全量测试 83/83、lint、pack、`git diff --check` 与敏感信息检查全部通过；package、CLI、README 同为 `1.2.1`。Kimi、DeepSeek 官方映射与 Claude Code Windows 原生安装位置已重新核验。完整 Windows 实机阶段仍未标记 PASS。

@@ -1,7 +1,7 @@
 # 01 — 产品范围
 
-状态：`1.1.0` Mac 独立验收 PASS；`1.0.0` 与 `0.1.x` 为历史基线
-更新时间：2026-07-19
+状态：`1.2.1` Windows 兼容性补丁；`1.1.0` Mac 独立验收 PASS
+更新时间：2026-07-24
 
 ## 1. 一句话定义
 
@@ -241,3 +241,16 @@ onboarding 以“需要独立 API Key 的 Provider”为单位，不以模型/Pr
 5. `npm test`、`npm run lint` 和 `npm pack --dry-run` 通过；发布包不含本机状态或密钥。
 6. README、使用手册、帮助、版本和实际行为一致。
 7. Sol 已按 `docs/08-acceptance-and-recovery.md` 与执行合同完成独立复核；最终 PASS 与修复证据记录在 `docs/11` 第 17 节。
+
+## 10. `1.2.1` Windows 兼容性补丁
+
+`1.2.1` 解决公司原生 Windows 使用中暴露的两个启动前问题：
+
+1. Windows 环境变量名大小写不稳定，子进程环境副本可能保存 `Path` 而不是 `PATH`，导致 CMR 找不到已经安装的 Claude Code。
+2. Doctor 把 POSIX mode bits 用于 Windows 用户 Settings，产生无意义的权限警告。
+
+本补丁允许 Windows PATH 键使用任意大小写，并在 PATH 未包含 Claude 时检查官方原生安装目录 `%USERPROFILE%\.local\bin\claude.exe`。路径解析使用目标平台的 delimiter 与 join 规则，使 Windows 分支可以在非 Windows 主机上可靠自动化。
+
+补丁不改变 Provider/Profile、模型映射、Secret Store、Setup State、Claude argv、cwd、TTY、信号或退出码合同，也不修改用户 Settings、Shell、系统环境或真实 Key。
+
+`1.2.1` 只声明上述兼容性问题已修复并有自动化证据，不把完整 Windows 阶段标记为 PASS。PowerShell/CMD/Git Bash 隐藏输入、`%APPDATA%` ACL、原子替换、真实 Provider 工作流与旧配置迁移仍按 `docs/05-phase-3-windows.md` 验收。

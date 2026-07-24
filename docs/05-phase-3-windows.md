@@ -1,6 +1,6 @@
 # 05 — 阶段三：公司 Windows 拉取与配置计划
 
-状态：`1.1.0` 已通过 Mac 独立验收；Windows 实机阶段尚未执行
+状态：`1.2.1` 已修复公司 Windows 暴露的可执行文件发现与 Doctor 误报警告；完整 Windows 实机阶段仍在进行
 核心原则：先复现现有 DeepSeek Auto，再引入 Kimi；旧工作流在验证期保持可回退。
 
 > `1.0.0` 的规范入口是 `cmr deepseek` 与 `cmr kimi`；Windows 阶段同时验证 `cmr build` 与 `cmr plan` 兼容别名。Profile 只选择 Provider，不限制任务用途或 Claude Code 参数。
@@ -64,7 +64,7 @@
 用户确认目标目录和仓库 URL 后：
 
 1. clone Private 仓库。
-2. checkout 已在 Mac 验收的 `v1.1.0` tag，不直接追逐未知最新提交。
+2. checkout 当前稳定的 `v1.2.1` tag；该补丁继承 `1.1.0` Mac 验收基线并补充 Windows 发现回归。
 3. 本地运行 `npm test`、`npm run lint`。
 4. 先用 `node src/cli.js` 或项目定义的本地命令运行 Doctor。
 
@@ -129,7 +129,7 @@ cmr build      # compatibility alias for deepseek
 
 ## 12. 完成定义
 
-- [ ] Windows checkout Mac 已验收的 `v1.1.0` tag。
+- [ ] Windows checkout 当前稳定的 `v1.2.1` tag。
 - [ ] `cmr deepseek` 与原稳定 DeepSeek Auto 行为一致。
 - [ ] `cmr kimi` 正确使用 `kimi-k3[1m]`。
 - [ ] 两个规范 Profile 及其兼容别名均继承当前项目目录并透明透传 Claude Code 参数。
@@ -151,3 +151,22 @@ cmr build      # compatibility alias for deepseek
 - Setup State 只保存 `seenProviderIds`；以后版本新增 Provider 时，Windows 会再次显示全量状态并进入一次引导。
 
 setup 只解决 CMR 自有 Secret Store，不自动清理公司电脑上已经存在的 Settings、PowerShell Profile 或用户/系统环境变量。阶段三仍须先执行 Step 1/2/8 的只读审计和并行验证；发现覆盖冲突时按 Step 10 提供预览、备份和回退，并在用户确认后处理。不得把“setup 已保存 Key”误报为“旧永久配置已安全迁移”。
+
+## 14. `1.2.1` 已闭环问题与剩余范围
+
+2026-07-24，公司原生 Windows 使用暴露出 Claude 已安装但 CMR 无法发现，以及 Doctor 对 Windows Settings 输出 POSIX 权限警告的问题。根因分别是环境副本保留 `Path` 键名而发现逻辑只读取 `PATH`，以及 Doctor 未在用户 Settings 权限分支排除 `win32`。
+
+`1.2.1` 已完成：
+
+- Windows PATH 键名大小写不敏感查找。
+- `%USERPROFILE%\.local\bin\claude.exe` 官方原生安装目录后备查找。
+- 目标平台路径 delimiter/join，允许非 Windows 主机可靠模拟。
+- Windows 用户 Settings 不再显示 POSIX mode 警告。
+- 对上述分支的独立自动化回归与 Mac 全量回归。
+
+仍未完成、不得提前标记 PASS：
+
+- 在公司电脑重新 checkout `v1.2.1` 后复跑 PowerShell、CMD 与 Git Bash。
+- 隐藏输入、Ctrl+C、`%APPDATA%` ACL、Secret/State 原子替换的实机证据。
+- DeepSeek/Kimi `/status`、最小请求、子 Agent 与现有公司工作流对照。
+- 旧永久配置的迁移预览、备份、用户确认与回退演练。

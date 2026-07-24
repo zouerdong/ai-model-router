@@ -1,7 +1,7 @@
 # 02 — 系统架构
 
-状态：`1.1.0` Mac 独立验收 PASS；`1.0.0` 与 `0.1.x` 为历史基线
-更新时间：2026-07-19
+状态：`1.2.1` Windows 兼容性补丁；`1.1.0` Mac 独立验收 PASS
+更新时间：2026-07-24
 
 ## 1. 架构结论
 
@@ -422,3 +422,17 @@ START
 - `cmr kimi/deepseek` 后的 Claude argv 在 setup 前后都不得解析、记录、改写或丢失。
 - setup 不调用阶段一专用 `migrateLocalConfig()`；该函数硬编码 macOS 文件和历史备份路径，不是通用新用户配置方案。
 - 发现 Settings/Shell 冲突时只给出 `cmr doctor` 路径，不自动修改用户文件。通用跨平台引导式迁移必须另立规格和门禁。
+
+## 14. `1.2.1` Windows 可执行文件发现
+
+Windows 环境变量名在操作系统层面不区分大小写，但 `{ ...process.env }` 得到的普通 JavaScript 对象会保留实际键名。`findClaudeExecutable()` 因此不能只读取 `env.PATH`，必须在 `win32` 下按不区分大小写的键名查找 PATH。
+
+可执行文件发现顺序为：
+
+1. 用户显式注入的 `pathValue`。
+2. Windows 环境对象中任意大小写的 PATH 键。
+3. 官方原生安装后备目录 `%USERPROFILE%\.local\bin`。
+
+Windows 分支使用 `path.win32.delimiter` 与 `path.win32.join`，以便在 Mac/Linux 自动化中也能验证分号 PATH 和反斜杠候选路径。候选名称继续按 `claude.exe`、`claude.cmd`、`claude.bat`、`claude` 顺序查找；`.cmd/.bat` 仍由既有 `cmd.exe /d /c`、`shell: false` 分支启动。
+
+Doctor 在 Windows 上不解释 POSIX mode bits。Secret Store 与 Settings 的 Windows ACL 仍属于阶段三实机验收，不得把“无 POSIX 警告”写成“ACL 已安全验证”。

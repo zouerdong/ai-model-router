@@ -1,8 +1,8 @@
 # Claude Model Router
 
-当前状态：**`1.1.0` 已在 Mac 通过独立验收。** `1.0.0` 是透明 Profile 启动器的历史稳定基线；Windows 实机阶段尚未执行。
+当前稳定版：**`1.2.1`。** 它在已通过 Mac 独立验收的 `1.1.0` 基线上修复原生 Windows 的 Claude 可执行文件发现与 Doctor POSIX 权限误报警告，并补齐对应自动化回归。
 
-`1.1.0` 增加首次运行配置向导、随时更换 Key 和缺 Key 就地配置。最终验收证据见 `docs/11-v1.1-first-run-setup-implementation-brief.md` 第 17 节。
+`1.2.1` 不改变 Profile、模型映射、Secret Store 或 Claude argv 合同。完整 Windows 实机阶段仍需继续验证 PowerShell/CMD/Git Bash 终端行为、`%APPDATA%` 权限和真实 Provider 工作流；详见 `docs/12-v1.2.1-windows-compatibility-patch.md`。
 
 Claude Model Router（`cmr`）是一个跨平台 Claude Code Profile 启动器。它只在启动前选择 Kimi 或 DeepSeek，注入对应的临时 Provider 环境，然后把后续 Claude Code argv 原样交给 Claude Code。
 
@@ -21,7 +21,7 @@ Profile 不绑定规划或执行角色，也不管理 Codex、会话、提示词
 从 GitHub 安装稳定标签：
 
 ```bash
-npm install --global "git+https://github.com/ErdongZou-ai/ai-model-router.git#v1.1.0"
+npm install --global "git+https://github.com/ErdongZou-ai/ai-model-router.git#v1.2.1"
 cmr version
 cmr
 ```
@@ -123,5 +123,6 @@ cmr setup deepseek
 9. [阶段一历史验收证据](docs/09-phase-1-acceptance.md)
 10. [0.2.0 实施合同与当前运行时验收证据](docs/10-v0.2-transparent-profile-launcher-implementation-brief.md)
 11. [1.1.0 首次运行配置向导实施与验收记录](docs/11-v1.1-first-run-setup-implementation-brief.md)
+12. [1.2.1 Windows 兼容性补丁与发布证据](docs/12-v1.2.1-windows-compatibility-patch.md)
 
-运行时无第三方依赖。公开仓库以 `main` 为默认分支，当前稳定标签为 `v1.1.0`。Windows 实机阶段尚未执行；自动化中的 Windows 分支覆盖不等于 Windows 实机验收。
+运行时无第三方依赖。公开仓库以 `main` 为默认分支，当前稳定标签为 `v1.2.1`。本补丁包含由公司 Windows 实机问题触发的修复，但自动化与局部实机证据不等于完整 Windows 阶段验收。

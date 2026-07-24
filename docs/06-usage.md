@@ -1,7 +1,7 @@
 # 06 — 操作说明手册
 
-状态：`1.1.0` 已通过 Mac 独立验收；Windows 实机阶段尚未执行
-适用范围：当前 Mac；Windows 实机安装与验证见 `docs/05-phase-3-windows.md`
+状态：`1.2.1` Windows 兼容性补丁；完整 Windows 实机验收仍见 `docs/05-phase-3-windows.md`
+适用范围：Mac 与原生 Windows/WSL 的当前稳定用法
 
 CMR 只在启动 Claude Code 前选择 Provider/Profile，并注入临时子进程环境。进入 Claude Code 后，任务用途、权限模式、会话和参数都遵循 Claude Code 原生行为。
 
@@ -13,7 +13,7 @@ CMR 只在启动 Claude Code 前选择 Provider/Profile，并注入临时子进�
 cmr version
 ```
 
-当前版本应输出 `1.1.0`。然后在交互式终端执行：
+当前版本应输出 `1.2.1`。然后在交互式终端执行：
 
 ```bash
 cmr
@@ -220,6 +220,7 @@ cmr secret status
 ```
 
 - `cmr: command not found`：检查用户级 bin 目录是否仍在 PATH，以及项目目录是否被移动。
+- Windows 上 Claude 已安装但 CMR 报 `executable was not found`：升级到 `1.2.1`，再用 `Get-Command claude | Select-Object Source` 核对实际路径；CMR 会兼容任意大小写的 PATH 键，并后备检查 `%USERPROFILE%\.local\bin\claude.exe`。
 - `missing ... secret`：交互式终端会就地配置当前 Provider 后继续原命令；非 TTY 请在本机 TTY 执行 `cmr setup <provider>` 或兼容的 `cmr secret set <provider>`。
 - `setup requires an interactive terminal`：当前 stdin/stdout 不是完整 TTY；回到本机交互式终端运行 setup，不要通过管道传 Key。
 - `setup could not be completed`：运行 `cmr config path` 定位 Store，再检查文件权限或损坏情况；不要直接覆盖或删除现有 Secret Store。

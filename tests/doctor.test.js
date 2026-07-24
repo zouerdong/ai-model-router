@@ -87,3 +87,31 @@ test("doctor invokes Windows cmd shims through cmd.exe without shell mode", asyn
   assert.equal(call.options.shell, false);
   assert.match(result.text, /Claude Code 2\.1\.214/);
 });
+
+test("doctor does not apply POSIX settings permission warnings on Windows", async (t) => {
+  const home = await mkdtemp(path.join(tmpdir(), "cmr-doctor-win-permissions-"));
+  const cwd = await mkdtemp(path.join(tmpdir(), "cmr-doctor-win-project-"));
+  t.after(async () => {
+    const { rm } = await import("node:fs/promises");
+    await rm(home, { recursive: true, force: true });
+    await rm(cwd, { recursive: true, force: true });
+  });
+  const settingsPath = path.join(home, ".claude", "settings.json");
+  await mkdir(path.dirname(settingsPath), { recursive: true });
+  await writeFile(settingsPath, JSON.stringify({ env: {} }), { mode: 0o644 });
+
+  const result = await runDoctor({
+    platform: "win32",
+    homeDir: home,
+    cwd,
+    env: {
+      USERPROFILE: home,
+      APPDATA: path.join(home, "AppData", "Roaming"),
+      Path: ""
+    },
+    claudeExecutable: null,
+    configRoot: getDefaultConfigRoot()
+  });
+
+  assert.doesNotMatch(result.text, /user settings permissions are/);
+});
