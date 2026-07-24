@@ -74,9 +74,27 @@ export async function isExecutable(file) {
   }
 }
 
-export async function findClaudeExecutable({ platform = process.platform, env = process.env, pathValue = env.PATH ?? "", fsAccess = isExecutable } = {}) {
+export async function findClaudeExecutable({ platform = process.platform, env = process.env, pathValue, fsAccess = isExecutable } = {}) {
+  // On Windows, PATH may be stored as "Path" or "PATH" depending on how env was
+  // obtained (process.env is case-insensitive, but a spread copy is not).
+  if (pathValue === undefined) {
+    pathValue = env?.PATH ?? env?.Path ?? "";
+  }
   const names = platform === "win32" ? ["claude.exe", "claude.cmd", "claude.bat", "claude"] : ["claude"];
-  for (const directory of pathValue.split(path.delimiter).filter(Boolean)) {
+  const directories = pathValue.split(path.delimiter).filter(Boolean);
+
+  // Common install locations that may not be on PATH in every terminal session
+  if (platform === "win32") {
+    const homeDir = env?.USERPROFILE ?? env?.HOME ?? os.homedir();
+    const fallbackDirs = [
+      path.join(homeDir, ".local", "bin"),
+    ];
+    for (const dir of fallbackDirs) {
+      if (!directories.includes(dir)) directories.push(dir);
+    }
+  }
+
+  for (const directory of directories) {
     for (const name of names) {
       const candidate = path.join(directory, name);
       if (await fsAccess(candidate)) return candidate;

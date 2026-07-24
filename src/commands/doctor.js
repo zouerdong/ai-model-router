@@ -158,7 +158,7 @@ export async function runDoctor(options = {}) {
   const userSettings = details.settings.find((item) => item.source === "user");
   if (userSettings && (await getPermissions(userSettings.file)) !== null) {
     const mode = await getPermissions(userSettings.file);
-    if ((mode & 0o077) !== 0) lines.push(line("WARN", `user settings permissions are ${mode.toString(8).padStart(3, "0")}; review sensitive configuration exposure`));
+    if (platform !== "win32" && (mode & 0o077) !== 0) lines.push(line("WARN", `user settings permissions are ${mode.toString(8).padStart(3, "0")}; review sensitive configuration exposure`));
   }
 
   for (const file of getShellProfilePaths({ platform, env, homedir: homeDir })) {
