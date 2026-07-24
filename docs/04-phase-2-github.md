@@ -170,6 +170,10 @@ GitHub 成为源码来源，不等于已经形成完整的新用户安装体验�
 
 - README 以 `cmr` 首次交互向导和 `cmr setup` 作为 `1.1.0` 的主配置方式，同时保留 `cmr secret set` 兼容说明。
 - GitHub `main` 与 annotated tag `v1.1.0` 已推送并完成独立 clone、测试、lint 和临时安装验收。
+
+## 10. 仓库 canonical 地址更新
+
+2026-07-24，GitHub 将仓库 canonical 地址解析为 `https://github.com/zouerdong/ai-model-router`；历史 `ErdongZou-ai/ai-model-router` 地址继续由 GitHub 重定向。`1.2.1` 起，README、安装命令、package metadata、Issues 与 Release 链接统一使用新 canonical 地址；历史首次发布记录中的旧地址保留为当时事实。
 - GitHub Release、npm 包发布和 CI/CD 仍未创建；源码与 Git tag 可公开获取不等于这些分发渠道已经完成。
 
 阶段二的 clone 验收还应增加：在全新临时 HOME 中安装候选包，首次交互运行无论预置零个、一个或全部 Key 都先显示全量状态并进入 setup；非 TTY 安装与命令均不挂起；打包清单不含本机 Secret Store、Setup State、日志或备份。

@@ -1,6 +1,6 @@
 # 07 — 官方参数与事实基线
 
-核验日期：2026-07-23
+核验日期：2026-07-24
 用途：实现者不得用历史对话或记忆替代本文件中的官方来源；开始实现与发布前必须重新核验。
 
 ## 1. Kimi K3 Profile
@@ -158,9 +158,11 @@ Provider 配置已增加：
 
 ### 6.2 Claude Code 安装入口
 
-Claude Code 当前官方推荐安装方式与平台要求见：[Claude Code Advanced setup](https://code.claude.com/docs/en/installation)。CMR setup 只检查 `claude` 是否可发现并显示官方文档链接，不自行下载、执行安装脚本或修改 PATH。
+Claude Code 当前官方推荐安装方式与平台要求见：[Claude Code Advanced setup](https://code.claude.com/docs/en/installation)。官方排错文档明确列出 Windows 原生安装目标为 `%USERPROFILE%\.local\bin\claude.exe`。CMR setup 只检查 `claude` 是否可发现并显示官方文档链接，不自行下载、执行安装脚本或修改 PATH。
 
 Claude Code 的安装方式已经从旧版“只依赖全局 npm 包”演进为原生安装、Homebrew、WinGet 与 npm 等多种方式。因此 CMR 的首次设置不能把 `npm root`、某个固定 Claude 路径或 `@anthropic-ai/claude-code` 是否存在当作唯一成功条件；继续使用 `platform.js` 的可执行文件发现边界。
+
+`1.2.1` 仍优先使用 PATH，只在 Windows PATH 未找到 Claude 时检查上述官方原生目录。来源：[Claude Code 安装与登录排错](https://code.claude.com/docs/en/troubleshoot-install)。该后备查找不安装、更新或修改 PATH。
 
 ### 6.3 为什么不用 npm 安装生命周期收集 Key
 

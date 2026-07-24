@@ -22,7 +22,7 @@ function capture() {
 test("version and list are non-interactive and do not expose secrets", async () => {
   const version = capture();
   assert.equal(await runCli(["version"], { output: version.output }), 0);
-  assert.equal(version.value, "1.1.0\n");
+  assert.equal(version.value, "1.2.1\n");
   const list = capture();
   assert.equal(await runCli(["list"], { output: list.output }), 0);
   assert.match(list.value, /kimi: Kimi K3/);
