@@ -10,6 +10,11 @@ import { buildSpawnSpec } from "../src/platform.js";
 
 const fixture = fileURLToPath(new URL("./fixtures/fake-claude.js", import.meta.url));
 
+async function canonicalPath(value) {
+  const resolved = await realpath(value);
+  return process.platform === "win32" ? resolved.toLowerCase() : resolved;
+}
+
 test("fake Claude receives cwd, profile environment and returns its exit code", async (t) => {
   const root = await mkdtemp(path.join(tmpdir(), "cmr cwd space 中文-"));
   const outputFile = path.join(root, "snapshot.json");
@@ -33,7 +38,7 @@ test("fake Claude receives cwd, profile environment and returns its exit code", 
   });
   const snapshot = JSON.parse(await readFile(outputFile, "utf8"));
   assert.equal(code, 7);
-  assert.equal(snapshot.cwd, await realpath(root));
+  assert.equal(await canonicalPath(snapshot.cwd), await canonicalPath(root));
   assert.equal(snapshot.baseUrl, "https://api.moonshot.cn/anthropic");
   assert.equal(snapshot.model, "kimi-k3[1m]");
   assert.equal(snapshot.hasAuthToken, true);

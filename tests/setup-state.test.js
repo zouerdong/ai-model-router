@@ -49,8 +49,10 @@ test("state compares current IDs, preserves historical IDs, and writes sorted un
     version: 1,
     seenProviderIds: ["deepseek", "kimi", "third-provider"]
   });
-  assert.equal((await stat(filePath)).mode & 0o777, 0o600);
-  assert.equal((await stat(path.dirname(filePath))).mode & 0o777, 0o700);
+  if (process.platform !== "win32") {
+    assert.equal((await stat(filePath)).mode & 0o777, 0o600);
+    assert.equal((await stat(path.dirname(filePath))).mode & 0o777, 0o700);
+  }
   assert.equal((await readdir(path.dirname(filePath))).some((name) => name.endsWith(".tmp")), false);
   await store.markSeen(["kimi"]);
   assert.deepEqual((await store.read()).seenProviderIds, ["deepseek", "kimi", "third-provider"]);

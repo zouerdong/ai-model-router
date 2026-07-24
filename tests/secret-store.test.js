@@ -19,7 +19,7 @@ test("secret store writes owner-only JSON atomically and exposes status only", a
   assert.deepEqual(await store.status(), { deepseek: true, kimi: true });
   assert.equal(await store.get("deepseek"), "test-deepseek-key");
   const details = await stat(filePath);
-  assert.equal(details.mode & 0o777, 0o600);
+  if (process.platform !== "win32") assert.equal(details.mode & 0o777, 0o600);
   const raw = await readFile(filePath, "utf8");
   assert.match(raw, /test-deepseek-key/);
   assert.equal((await readdir(path.dirname(filePath))).some((name) => name.endsWith(".tmp")), false);
@@ -157,6 +157,7 @@ test("secret replacement keeps the old file when chmod or rename fails", async (
   assert.equal(await initial.get("kimi"), "test-kimi-old");
   const failTempChmod = new SecretStore({
     filePath,
+    platform: "darwin",
     fs: {
       ...stableFs,
       chmod: async (target, mode) => {

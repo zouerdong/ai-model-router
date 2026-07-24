@@ -49,8 +49,14 @@ jobs:
             "git=$(git --version)"
           ) | Set-Content -Encoding utf8 "windows-t4-node-${{ matrix.node-version }}.txt"
 
-      - name: PowerShell full regression and T4 E2E
+      - name: PowerShell T4 E2E
         shell: pwsh
+        timeout-minutes: 10
+        run: node --test tests/update-e2e.test.js
+
+      - name: PowerShell full regression
+        shell: pwsh
+        timeout-minutes: 15
         run: |
           npm test
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
@@ -60,10 +66,12 @@ jobs:
 
       - name: CMD T4 E2E
         shell: cmd
+        timeout-minutes: 10
         run: node --test tests\update-e2e.test.js
 
       - name: Git Bash T4 E2E
         shell: bash
+        timeout-minutes: 10
         run: node --test tests/update-e2e.test.js
 
       - name: Pack and record candidate metadata

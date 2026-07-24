@@ -318,7 +318,7 @@ test("post-verify failure and rollback failure are reported without false succes
   const recoveryPath = failedError.value.match(/'([^']*rollback-[^']+\.tgz)'/)?.[1];
   assert.ok(recoveryPath);
   await readFile(recoveryPath);
-  assert.match(failedResult.recoveryCommand, /recovery\/npm-cache/);
+  assert.match(failedResult.recoveryCommand, /recovery[\\/]npm-cache/);
 });
 
 test("post-install verification rejects a command shim that no longer maps to the package", async (t) => {

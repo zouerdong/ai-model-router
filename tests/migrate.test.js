@@ -5,7 +5,9 @@ import path from "node:path";
 import test from "node:test";
 import { migrateLocalConfig } from "../src/commands/migrate.js";
 
-test("migration backs up files, removes only Router settings and tightens permissions", async (t) => {
+test("migration backs up files, removes only Router settings and tightens permissions", {
+  skip: process.platform === "win32"
+}, async (t) => {
   const home = await mkdtemp(path.join(tmpdir(), "cmr-migration-home-"));
   const settingsPath = path.join(home, ".claude", "settings.json");
   const shellPath = path.join(home, ".zshrc");

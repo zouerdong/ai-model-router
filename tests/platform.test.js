@@ -50,11 +50,12 @@ test("explicit pathValue takes priority over environment PATH variants", async (
 
 test("finds npm from the active PATH with platform-specific executable names", async () => {
   const unixDirectory = "/opt/node/bin";
+  const unixNpm = path.posix.join(unixDirectory, "npm");
   assert.equal(await findNpmExecutable({
     platform: "darwin",
     env: { PATH: `/other/bin:${unixDirectory}` },
-    fsAccess: async (candidate) => candidate === path.join(unixDirectory, "npm")
-  }), path.join(unixDirectory, "npm"));
+    fsAccess: async (candidate) => candidate === unixNpm
+  }), unixNpm);
 
   const windowsDirectory = path.win32.join("C:", "Program Files", "nodejs");
   const expected = path.win32.join(windowsDirectory, "npm.cmd");

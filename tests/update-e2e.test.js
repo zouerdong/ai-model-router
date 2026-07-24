@@ -304,7 +304,7 @@ test("Windows real npm install failure rolls back the damaged package", {
     async run(request) {
       const args = [...request.args];
       if (args[0] === "pack" && args[1] === LATEST_RELEASE_ASSET_URL) args[1] = candidateTarball;
-      if (!injectedFailure && args[0] === "install" && args.at(-1) === candidateTarball) {
+      if (!injectedFailure && args[0] === "install") {
         injectedFailure = true;
         await writeFile(installation.packageJson, JSON.stringify({
           name: CMR_PACKAGE_NAME,

@@ -14,6 +14,11 @@ function outputCapture() {
   return { stream: { isTTY: false, write: (chunk) => { text += chunk; } }, get text() { return text; } };
 }
 
+async function canonicalPath(value) {
+  const resolved = await realpath(value);
+  return process.platform === "win32" ? resolved.toLowerCase() : resolved;
+}
+
 function fakePrompter({ secret = "test-kimi-key", cancel = false } = {}) {
   let hiddenCalls = 0;
   return {
@@ -183,7 +188,7 @@ test("missing Provider Key is configured in place and the original opaque argv r
   const snapshot = JSON.parse(await readFile(outputFile, "utf8"));
   assert.equal(result, 7);
   assert.deepEqual(snapshot.args, claudeArgs);
-  assert.equal(snapshot.cwd, await realpath(root));
+  assert.equal(await canonicalPath(snapshot.cwd), await canonicalPath(root));
   assert.equal(snapshot.model, "kimi-k3[1m]");
   assert.equal(parentEnv.ANTHROPIC_AUTH_TOKEN, "test-parent-token");
   assert.equal(await secretStore.get("kimi"), "test-kimi-key");

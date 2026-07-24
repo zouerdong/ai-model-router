@@ -7,7 +7,7 @@ import { fileURLToPath } from "node:url";
 import test from "node:test";
 import { isMainModule, runCli } from "../src/cli.js";
 import { loadConfigSet } from "../src/config/loader.js";
-import { getApplicationDataDir } from "../src/platform.js";
+import { getApplicationDataDir, getSetupStatePath } from "../src/platform.js";
 import { SecretStore } from "../src/secret-store.js";
 import { SetupStateStore } from "../src/setup-state.js";
 
@@ -17,6 +17,15 @@ const cli = fileURLToPath(new URL("../src/cli.js", import.meta.url));
 function capture() {
   let value = "";
   return { output: { isTTY: false, write: (chunk) => { value += chunk; } }, get value() { return value; } };
+}
+
+function isolatedEnvironment(home) {
+  return {
+    HOME: home,
+    USERPROFILE: home,
+    APPDATA: path.join(home, "app-data"),
+    PATH: ""
+  };
 }
 
 test("version and list are non-interactive and do not expose secrets", async () => {
@@ -91,8 +100,9 @@ test("first interactive bare cmr shows the full dashboard, marks seen, then retu
   const output = capture(true);
   const errorOutput = capture(true);
   const prompter = fakeMenuPrompter(["continue", "exit"]);
+  const env = isolatedEnvironment(home);
   const code = await runCli([], {
-    env: { HOME: home, PATH: "" },
+    env,
     homedir: home,
     input: { isTTY: true },
     output: output.output,
@@ -107,7 +117,9 @@ test("first interactive bare cmr shows the full dashboard, marks seen, then retu
   assert.match(output.value, /deepseek: missing/);
   assert.match(prompter.calls[1].choices[0].label, /kimi — Kimi K3 \[missing\]/);
   assert.match(prompter.calls[1].choices[2].label, /setup — Configure or replace API Keys/);
-  assert.deepEqual((await new SetupStateStore({ filePath: path.join(home, "Library", "Application Support", "ClaudeModelRouter", "state.json") }).read()).seenProviderIds, ["deepseek", "kimi"]);
+  assert.deepEqual((await new SetupStateStore({
+    filePath: getSetupStatePath({ platform: process.platform, env, homedir: home })
+  }).read()).seenProviderIds, ["deepseek", "kimi"]);
 });
 
 test("first interactive bare cmr is independent of whether zero, one, or all keys already exist", async (t) => {
@@ -152,13 +164,15 @@ test("seen state enters the daily status menu even when keys later become missin
     const { rm } = await import("node:fs/promises");
     await rm(home, { recursive: true, force: true });
   });
-  const stateFile = path.join(home, "Library", "Application Support", "ClaudeModelRouter", "state.json");
+  const env = isolatedEnvironment(home);
+  const stateFile = getSetupStatePath({ platform: process.platform, env, homedir: home });
   const stateStore = new SetupStateStore({ filePath: stateFile });
   await stateStore.markSeen(["kimi", "deepseek"]);
   const output = capture(true);
   const prompter = fakeMenuPrompter(["exit"]);
   const code = await runCli([], {
-    env: { HOME: home, PATH: "" },
+    env,
+    homedir: home,
     input: { isTTY: true },
     output: output.output,
     errorOutput: capture(true).output,
@@ -218,13 +232,16 @@ test("read-only management commands do not create Secret or Setup State files", 
     const { rm } = await import("node:fs/promises");
     await rm(home, { recursive: true, force: true });
   });
-  const env = { HOME: home, PATH: "" };
+  const env = isolatedEnvironment(home);
   const commands = [["help"], ["version"], ["list"], ["doctor"], ["config", "path"], ["secret", "status"]];
   for (const argv of commands) {
     const code = await runCli(argv, { env, homedir: home, output: capture().output, errorOutput: capture().output });
     assert.ok(code === 0 || argv[0] === "doctor" && code === 1, argv.join(" "));
   }
-  await assert.rejects(() => stat(getApplicationDataDir({ platform: "darwin", env })), { code: "ENOENT" });
+  await assert.rejects(
+    () => stat(getApplicationDataDir({ platform: process.platform, env, homedir: home })),
+    { code: "ENOENT" }
+  );
 });
 
 test("non-TTY setup returns a stable error without waiting for input", async () => {
