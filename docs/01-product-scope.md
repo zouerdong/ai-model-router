@@ -1,6 +1,6 @@
 # 01 — 产品范围
 
-状态：`1.3.0` Sol 本机审阅完成；整体验收仍被原生 Windows 与 Release 门禁阻断；`1.2.1` 已发布
+状态：`1.3.0` 已完成跨平台验收并正式发布
 更新时间：2026-07-24
 
 ## 1. 一句话定义
@@ -255,9 +255,9 @@ onboarding 以“需要独立 API Key 的 Provider”为单位，不以模型/Pr
 
 `1.2.1` 只声明上述兼容性问题已修复并有自动化证据，不把完整 Windows 阶段标记为 PASS。PowerShell/CMD/Git Bash 隐藏输入、`%APPDATA%` ACL、原子替换、真实 Provider 工作流与旧配置迁移仍按 `docs/05-phase-3-windows.md` 验收。
 
-## 11. `1.3.0` GitHub Release 自更新（实现候选；发布门禁未闭环）
+## 11. `1.3.0` GitHub Release 自更新（已发布）
 
-`1.3.0` 当前候选已实现两个显式管理命令：
+`1.3.0` 提供两个显式管理命令：
 
 ```bash
 cmr update
@@ -274,4 +274,4 @@ https://github.com/zouerdong/ai-model-router/releases/latest/download/claude-mod
 
 源码链接、junction、checkout、Homebrew、WinGet、独立二进制及无法唯一确定安装映射的来源均 fail closed，不执行 `git pull`、不切换到 npm 默认 prefix、不提权。更新不读取或修改 Secret Store、Setup State、Claude Settings、Shell、Provider Key、Claude argv、Codex 或系统环境。
 
-`1.2.1` 用户必须先按一次性 bootstrap 命令安装 `1.3.0`；之后才进入 `cmr update` 闭环。固定 Release 资产、checksum、draft/immutable 发布门槛和原生 Windows 实机证据仍属于发布前验收，不在本节提前标记为 PASS。实现与测试证据见 `src/updater.js`、`src/commands/update.js`、`tests/update*.test.js` 与 `docs/13-v1.3-self-update-implementation-brief.md` 第 15、18 节。
+`1.2.1` 用户必须先按 README 的一次性 exact-release bootstrap 命令安装 `1.3.0`；之后才进入 `cmr update` 闭环。`v1.3.0` 已以 immutable GitHub Release 发布，固定资产、checksum、Mac/Windows T4、公开 bootstrap 与 latest `--check` 均通过。实现、测试与发布证据见 `src/updater.js`、`src/commands/update.js`、`tests/update*.test.js` 与 `docs/13-v1.3-self-update-implementation-brief.md` 第 15、18、19 节。

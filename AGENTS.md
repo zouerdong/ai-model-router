@@ -4,11 +4,11 @@
 
 本项目为 Claude Code 提供跨平台的“启动前 Provider/Profile 选择”，不修改或管理 Codex，也不接管 Claude Code 自身的会话与命令语义。
 
-当前稳定版为 `1.2.1`：它在 `1.1.0` 首次运行配置向导基线上修复原生 Windows 的 Claude 可执行文件发现与 Doctor POSIX 权限误报警告，并补齐针对性跨平台回归。`1.1.0` 的 Mac 独立验收见 `docs/11-v1.1-first-run-setup-implementation-brief.md` 第 17 节；`1.2.1` 发布证据见 `docs/12-v1.2.1-windows-compatibility-patch.md`。完整 Windows 实机验收仍属于阶段三。
+当前稳定版为 `1.3.0`：它在 `1.2.1` Windows 兼容性补丁基线上增加 GitHub Release 自更新，并完成 Mac、Node 18/npm 9 与 GitHub-hosted Windows Server 2025 的跨平台验收。`1.1.0` 的 Mac 独立验收见 `docs/11-v1.1-first-run-setup-implementation-brief.md` 第 17 节；`1.2.1` 发布证据见 `docs/12-v1.2.1-windows-compatibility-patch.md`；`1.3.0` 发布与公开回读证据见 `docs/13-v1.3-self-update-implementation-brief.md` 第 19 节。
 
-`1.3.0` GitHub Release 自更新已完成 Sol 的仓库、Mac、Node 18/npm 9 与 GitHub-hosted Windows Server 2025 T4 审阅；PowerShell、CMD、Git Bash 的隔离 prefix、自替换、回滚、junction 与中断场景均已通过。正式 Release 资产/checksum、tag、immutable 发布与公开 bootstrap/readback 尚未闭环。执行与验收记录见 `docs/13-v1.3-self-update-implementation-brief.md`。在剩余发布门禁通过并正式发布前，不得把 `cmr update` 写成当前稳定版可用功能。
+`1.3.0` GitHub Release 自更新已正式发布。PowerShell、CMD、Git Bash 的隔离 prefix、自替换、回滚、junction 与中断场景均已通过；固定 Release 资产、checksum、tag、immutable 发布、exact/latest 下载、临时 prefix bootstrap 与公开 `cmr update --check` 已闭环。
 
-`1.2.1` 继续只提供两个数据化 Profile：
+`1.3.0` 继续只提供两个数据化 Profile：
 
 - `kimi`：Kimi K3 的完整 Claude Code 模型映射。
 - `deepseek`：DeepSeek Auto；主会话由 V4 Pro 承担，Haiku 档与子 Agent 由 V4 Flash 承担。
@@ -27,7 +27,7 @@ Profile 只决定 Claude Code 子进程启动时使用哪套 Provider 环境。K
 6. `docs/08-acceptance-and-recovery.md`。
 7. `docs/09-phase-1-acceptance.md`，用于核对已完成的 Mac 基线。
 
-`docs/10-v0.2-transparent-profile-launcher-implementation-brief.md` 是 `1.0.0` 稳定运行时的历史实施与验收依据。`docs/11-v1.1-first-run-setup-implementation-brief.md` 是 `1.1.0` 的实施与验收依据。`docs/12-v1.2.1-windows-compatibility-patch.md` 是当前补丁版的发布依据。`docs/13-v1.3-self-update-implementation-brief.md` 是下一阶段自更新功能的实施与验收合同，但不代表功能已经存在。GitHub 与 Windows 阶段分别按 `docs/04-phase-2-github.md` 和 `docs/05-phase-3-windows.md` 执行。
+`docs/10-v0.2-transparent-profile-launcher-implementation-brief.md` 是 `1.0.0` 稳定运行时的历史实施与验收依据。`docs/11-v1.1-first-run-setup-implementation-brief.md` 是 `1.1.0` 的实施与验收依据。`docs/12-v1.2.1-windows-compatibility-patch.md` 是 `1.2.1` 的发布依据。`docs/13-v1.3-self-update-implementation-brief.md` 是当前稳定版自更新功能的实施、验收与发布依据。GitHub 与 Windows 阶段分别按 `docs/04-phase-2-github.md` 和 `docs/05-phase-3-windows.md` 执行。
 
 冲突时，以编号更靠前的现行文档为准。发现规范需要改变时，先修改对应文档并说明理由，再修改实现。
 

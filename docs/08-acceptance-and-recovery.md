@@ -336,9 +336,9 @@ Windows `.cmd` 已完成无 `shell:true` 的模拟回归，但 Windows 实机仍
 
 2026-07-24 独立复跑结论为 **PASS — `1.2.1` READY FOR RELEASE**：Windows/Doctor targeted tests 6/6、全量测试 83/83、lint、pack、`git diff --check` 与敏感信息检查全部通过；package、CLI、README 同为 `1.2.1`。Kimi、DeepSeek 官方映射与 Claude Code Windows 原生安装位置已重新核验。完整 Windows 实机阶段仍未标记 PASS。
 
-## 13. `1.3.0` 自更新验收矩阵（Sol 跨平台审阅完成；整体发布门禁未闭环）
+## 13. `1.3.0` 自更新验收矩阵（PASS — RELEASED）
 
-本节只增加绑定验收标准，不提前给出 `PASS`。任一 Blocker 失败，`1.3.0` 不得发布。
+本节为绑定验收标准。任一 Blocker 失败，`1.3.0` 不得发布；2026-07-24 的最终结果为全部 Blocker/Major 通过并正式发布。
 
 ### P — 产品与 Release channel
 
@@ -408,4 +408,6 @@ Windows `.cmd` 已完成无 `shell:true` 的模拟回归，但 Windows 实机仍
 
 Windows T4 必须在实际 Windows 内核、Windows 文件系统与 Windows shell 中运行；物理机不是必要条件，GitHub-hosted Windows VM 可作为可重复的正式证据。macOS 上注入 `platform: "win32"` 仍只能算模拟，不能替代 T4。`docs/13-v1.3-self-update-implementation-brief.md` 第 15 节是实现者证据，不替代本节的独立判定。
 
-2026-07-24，T4 在 GitHub-hosted Windows Server 2025 x64 上完成独立验收：[run 30094641599](https://github.com/zouerdong/ai-model-router/actions/runs/30094641599)，commit `f8f68d301e54b1d2008c32c00378a27346091c1f`。Node `18.20.8` 与 `24.18.0` 两档均通过 PowerShell 全量回归，以及 PowerShell、CMD、Git Bash 下的 custom prefix 自替换、multi-prefix 不变、bad candidate、junction 拒绝、install failure rollback 与 Ctrl+C 子进程终止场景。因此 Q3/T4 判定为 PASS；P6/P7/T6/T7 仍需正式 Release 流程闭环。
+2026-07-24，T4 在 GitHub-hosted Windows Server 2025 x64 上完成独立验收：[run 30094641599](https://github.com/zouerdong/ai-model-router/actions/runs/30094641599)，commit `f8f68d301e54b1d2008c32c00378a27346091c1f`。Node `18.20.8` 与 `24.18.0` 两档均通过 PowerShell 全量回归，以及 PowerShell、CMD、Git Bash 下的 custom prefix 自替换、multi-prefix 不变、bad candidate、junction 拒绝、install failure rollback 与 Ctrl+C 子进程终止场景。英文 README 的最终 release commit `515d7160055c53ab76c10dc9967c5950e139ab82` 又由 [run 30095977923](https://github.com/zouerdong/ai-model-router/actions/runs/30095977923) 复跑两档矩阵并全绿。
+
+同日，`v1.3.0` immutable Release 从已验收 Draft 发布为 Latest。固定资产 `claude-model-router.tgz` 为 33,167 bytes，SHA-256 为 `593835bc3ee8297ee1533680e564037b517735083f18c9b538a510e712fa66f0`；GitHub digest、`SHA256SUMS`、exact/latest 下载三者一致。公开 exact URL 临时 prefix 安装输出 `1.3.0`，帮助文本正确，`cmr update --check` 输出已是最新稳定版。因此 P1–P7、Q1–Q7、R1–R10、S1–S8、T1–T9 全部 PASS，最终结论为 **PASS — `1.3.0` RELEASED**。

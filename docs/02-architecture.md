@@ -1,6 +1,6 @@
 # 02 — 系统架构
 
-状态：`1.3.0` Sol 本机审阅完成；整体验收仍被原生 Windows 与 Release 门禁阻断；`1.2.1` 已发布
+状态：`1.3.0` 已完成跨平台验收并正式发布
 更新时间：2026-07-24
 
 ## 1. 架构结论
@@ -439,7 +439,7 @@ Windows 分支使用 `path.win32.delimiter` 与 `path.win32.join`，以便在 Ma
 
 Doctor 在 Windows 上不解释 POSIX mode bits。Secret Store 与 Settings 的 Windows ACL 仍属于阶段三实机验收，不得把“无 POSIX 警告”写成“ACL 已安全验证”。
 
-## 15. `1.3.0` 自更新架构（实现候选；发布门禁未闭环）
+## 15. `1.3.0` 自更新架构（已发布）
 
 自更新是 CMR 的显式管理路径，不进入 Profile 启动路径：
 
@@ -466,8 +466,8 @@ npm 子进程的 stdout/stderr 捕获有固定上限，pack/install 有五分钟
 
 ## 16. `1.3.0` 实现状态
 
-状态：**Sol 本机代码/Mac/Node 18 审阅通过；整体发布门禁未闭环**。
+状态：**PASS — `1.3.0` RELEASED**。
 
 上述架构已落地为标准 JavaScript ESM 实现；`command-runner.js` 统一 argv、`shell: false`、Windows shim 与信号边界，`update-lock.js` 提供互斥，`commands/update.js` 预加载 backup/install/verify/rollback/cleanup 路径。实现不引入运行时第三方依赖，也不触碰 CMR Secret/State、Claude Settings、Shell 或 Provider 配置。
 
-原生 Windows self-update、Release asset/checksum/immutable 发布仍需 Sol 独立验收；在此之前候选保持 awaiting review。
+原生 Windows self-update 已由 GitHub-hosted Windows Server 2025 的 PowerShell、CMD、Git Bash T4 验收；固定 Release asset、checksum、immutable 发布、exact/latest bootstrap 与公开 `cmr update --check` 已闭环。最终证据见 `docs/13-v1.3-self-update-implementation-brief.md` 第 19 节。

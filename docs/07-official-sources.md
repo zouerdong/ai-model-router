@@ -1,7 +1,7 @@
 # 07 — 官方参数与事实基线
 
 核验日期：2026-07-24
-实现状态：`1.3.0` 本机与 GitHub-hosted Windows T4 审阅完成；正式 Release 门禁未闭环
+实现状态：`1.3.0` 跨平台验收、immutable Release 与公开回读已完成
 用途：实现者不得用历史对话或记忆替代本文件中的官方来源；开始实现与发布前必须重新核验。
 
 ## 1. Kimi K3 Profile
@@ -186,7 +186,7 @@ Kimi 官方列出 `GET https://api.moonshot.cn/v1/models`，DeepSeek 官方列�
 
 ## 7. `1.3.0` GitHub Release 与 npm 自更新事实
 
-核验日期：2026-07-24。以下页面在自更新实现前重新打开并用于本候选实现；本节只记录公开机制，不代表本仓库已完成 Release 或 immutable 发布。
+核验日期：2026-07-24。以下页面在自更新实现与发布前重新打开；GitHub Release、immutable policy 与公开下载均已按这些机制完成。
 
 - [GitHub About releases](https://docs.github.com/en/repositories/releasing-projects-on-github/about-releases)：Release 是基于 Git tag 的可分发软件迭代，并可附带手工资产。
 - [GitHub Linking to releases](https://docs.github.com/en/repositories/releasing-projects-on-github/linking-to-releases)：`/releases/latest` 指向最新 Release，固定手工资产可使用 `/releases/latest/download/<asset-name>`。
@@ -207,7 +207,7 @@ https://github.com/zouerdong/ai-model-router/releases/latest/download/claude-mod
 
 ## 8. `1.3.0` 实现状态
 
-状态：**Mac 与 Windows T4 候选审阅完成；整体发布门禁未闭环**。候选运行时已严格使用本节 canonical asset URL；Release asset、checksum、tag、immutable 发布与公开回读尚未执行。npm 默认 cache、prefix 与配置事实仅用于理解 npm 行为，不被 updater 当作当前活动 CMR 安装的唯一真相源。
+状态：**PASS — `1.3.0` RELEASED**。运行时严格使用本节 canonical asset URL；`v1.3.0` tag、固定资产、checksum、immutable 发布、exact/latest 下载、临时 prefix bootstrap 与公开 `cmr update --check` 均已通过。npm 默认 cache、prefix 与配置事实仅用于理解 npm 行为，不被 updater 当作当前活动 CMR 安装的唯一真相源。完整发布证据见 `docs/13-v1.3-self-update-implementation-brief.md` 第 19 节。
 
 ## 9. Windows T4 托管验收事实
 
@@ -219,4 +219,4 @@ https://github.com/zouerdong/ai-model-router/releases/latest/download/claude-mod
 
 T4 的本质约束是测试必须运行在实际 Windows OS 中，而不是必须使用物理 Windows 电脑。有效证据包括物理机、本地 Windows VM 或 GitHub-hosted Windows VM；macOS 上仅注入 `platform: "win32"` 无效。
 
-2026-07-24 实施结果：GitHub Actions [run 30094641599](https://github.com/zouerdong/ai-model-router/actions/runs/30094641599) 在 `win25-vs2026` image `20260714.173.1`、Windows NT `10.0.26100.0`、AMD64 上通过；矩阵为 Node `18.20.8`/npm `10.8.2` 与 Node `24.18.0`/npm `11.16.0`，Git 均为 `2.55.0.windows.2`。两档均通过 PowerShell 全回归与 PowerShell/CMD/Git Bash T4 E2E。
+2026-07-24 实施结果：GitHub Actions [run 30094641599](https://github.com/zouerdong/ai-model-router/actions/runs/30094641599) 在 `win25-vs2026` image `20260714.173.1`、Windows NT `10.0.26100.0`、AMD64 上通过；矩阵为 Node `18.20.8`/npm `10.8.2` 与 Node `24.18.0`/npm `11.16.0`，Git 均为 `2.55.0.windows.2`。两档均通过 PowerShell 全回归与 PowerShell/CMD/Git Bash T4 E2E。英文 README 的最终 release commit `515d7160055c53ab76c10dc9967c5950e139ab82` 又由 [run 30095977923](https://github.com/zouerdong/ai-model-router/actions/runs/30095977923) 复跑两档 Windows 矩阵并全绿。
