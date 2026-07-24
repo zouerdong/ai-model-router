@@ -75,7 +75,7 @@ export async function isExecutable(file) {
 }
 
 export async function findClaudeExecutable({ platform = process.platform, env = process.env, pathValue, fsAccess = isExecutable } = {}) {
-  const pathApi = platform === "win32" ? path.win32 : path;
+  const pathApi = platform === "win32" ? path.win32 : path.posix;
   pathValue = getPathValue({ platform, env, pathValue });
   const names = platform === "win32" ? ["claude.exe", "claude.cmd", "claude.bat", "claude"] : ["claude"];
   const directories = pathValue.split(pathApi.delimiter).filter(Boolean);
@@ -109,7 +109,7 @@ function getPathValue({ platform, env, pathValue }) {
 }
 
 async function findOnPath({ platform, env, pathValue, names, fsAccess }) {
-  const pathApi = platform === "win32" ? path.win32 : path;
+  const pathApi = platform === "win32" ? path.win32 : path.posix;
   const directories = String(getPathValue({ platform, env, pathValue }) ?? "")
     .split(pathApi.delimiter)
     .filter(Boolean);
