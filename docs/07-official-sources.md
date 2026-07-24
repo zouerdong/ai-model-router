@@ -1,7 +1,7 @@
 # 07 — 官方参数与事实基线
 
 核验日期：2026-07-24
-实现状态：`1.3.0` 本机候选审阅完成；原生 Windows 与正式 Release 门禁未闭环
+实现状态：`1.3.0` 本机与 GitHub-hosted Windows T4 审阅完成；正式 Release 门禁未闭环
 用途：实现者不得用历史对话或记忆替代本文件中的官方来源；开始实现与发布前必须重新核验。
 
 ## 1. Kimi K3 Profile
@@ -207,7 +207,7 @@ https://github.com/zouerdong/ai-model-router/releases/latest/download/claude-mod
 
 ## 8. `1.3.0` 实现状态
 
-状态：**本机候选审阅完成；整体发布门禁未闭环**。候选运行时已严格使用本节 canonical asset URL；Release asset、checksum、immutable 发布与公开回读尚未执行。npm 默认 cache、prefix 与配置事实仅用于理解 npm 行为，不被 updater 当作当前活动 CMR 安装的唯一真相源。
+状态：**Mac 与 Windows T4 候选审阅完成；整体发布门禁未闭环**。候选运行时已严格使用本节 canonical asset URL；Release asset、checksum、tag、immutable 发布与公开回读尚未执行。npm 默认 cache、prefix 与配置事实仅用于理解 npm 行为，不被 updater 当作当前活动 CMR 安装的唯一真相源。
 
 ## 9. Windows T4 托管验收事实
 
@@ -218,3 +218,5 @@ https://github.com/zouerdong/ai-model-router/releases/latest/download/claude-mod
 - [Windows 11 Arm ISO overview](https://learn.microsoft.com/en-us/windows/arm/iso)：Apple Silicon Mac 也可运行 Windows 11 Arm64 VM，但本项目优先选择可重复、无需维护本地 VM 的 GitHub-hosted x64 runner。
 
 T4 的本质约束是测试必须运行在实际 Windows OS 中，而不是必须使用物理 Windows 电脑。有效证据包括物理机、本地 Windows VM 或 GitHub-hosted Windows VM；macOS 上仅注入 `platform: "win32"` 无效。
+
+2026-07-24 实施结果：GitHub Actions [run 30094641599](https://github.com/zouerdong/ai-model-router/actions/runs/30094641599) 在 `win25-vs2026` image `20260714.173.1`、Windows NT `10.0.26100.0`、AMD64 上通过；矩阵为 Node `18.20.8`/npm `10.8.2` 与 Node `24.18.0`/npm `11.16.0`，Git 均为 `2.55.0.windows.2`。两档均通过 PowerShell 全回归与 PowerShell/CMD/Git Bash T4 E2E。

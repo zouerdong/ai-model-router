@@ -336,7 +336,7 @@ Windows `.cmd` 已完成无 `shell:true` 的模拟回归，但 Windows 实机仍
 
 2026-07-24 独立复跑结论为 **PASS — `1.2.1` READY FOR RELEASE**：Windows/Doctor targeted tests 6/6、全量测试 83/83、lint、pack、`git diff --check` 与敏感信息检查全部通过；package、CLI、README 同为 `1.2.1`。Kimi、DeepSeek 官方映射与 Claude Code Windows 原生安装位置已重新核验。完整 Windows 实机阶段仍未标记 PASS。
 
-## 13. `1.3.0` 自更新验收矩阵（Sol 本机审阅完成；整体发布门禁未闭环）
+## 13. `1.3.0` 自更新验收矩阵（Sol 跨平台审阅完成；整体发布门禁未闭环）
 
 本节只增加绑定验收标准，不提前给出 `PASS`。任一 Blocker 失败，`1.3.0` 不得发布。
 
@@ -406,4 +406,6 @@ Windows `.cmd` 已完成无 `shell:true` 的模拟回归，但 Windows 实机仍
 | T8 | Major | source-linked 安装给出安全人工维护说明 |
 | T9 | Blocker | 未经批准没有真实全局更新、push、Release 或 CI/CD |
 
-Windows T4 必须在实际 Windows 内核、Windows 文件系统与 Windows shell 中运行；物理机不是必要条件，GitHub-hosted Windows VM 可作为可重复的正式证据。macOS 上注入 `platform: "win32"` 仍只能算模拟，不能替代 T4。T4 未完成前不能宣称跨平台 updater 已完成。`docs/13-v1.3-self-update-implementation-brief.md` 第 15 节是实现者证据，不替代本节的独立判定。
+Windows T4 必须在实际 Windows 内核、Windows 文件系统与 Windows shell 中运行；物理机不是必要条件，GitHub-hosted Windows VM 可作为可重复的正式证据。macOS 上注入 `platform: "win32"` 仍只能算模拟，不能替代 T4。`docs/13-v1.3-self-update-implementation-brief.md` 第 15 节是实现者证据，不替代本节的独立判定。
+
+2026-07-24，T4 在 GitHub-hosted Windows Server 2025 x64 上完成独立验收：[run 30094641599](https://github.com/zouerdong/ai-model-router/actions/runs/30094641599)，commit `f8f68d301e54b1d2008c32c00378a27346091c1f`。Node `18.20.8` 与 `24.18.0` 两档均通过 PowerShell 全量回归，以及 PowerShell、CMD、Git Bash 下的 custom prefix 自替换、multi-prefix 不变、bad candidate、junction 拒绝、install failure rollback 与 Ctrl+C 子进程终止场景。因此 Q3/T4 判定为 PASS；P6/P7/T6/T7 仍需正式 Release 流程闭环。

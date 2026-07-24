@@ -1,6 +1,6 @@
 # 05 — 阶段三：公司 Windows 拉取与配置计划
 
-状态：`1.3.0` 本机候选审阅完成、原生 Windows self-update 未验收；`1.2.1` 兼容性问题已修复；完整 Windows 实机阶段仍在进行
+状态：`1.3.0` self-update T4 已在 GitHub-hosted Windows Server 2025 通过；`1.2.1` 兼容性问题已修复；真实 Provider、凭据 ACL 与旧配置迁移等完整 Windows 阶段仍在进行
 核心原则：先复现现有 DeepSeek Auto，再引入 Kimi；旧工作流在验证期保持可回退。
 
 > `1.0.0` 的规范入口是 `cmr deepseek` 与 `cmr kimi`；Windows 阶段同时验证 `cmr build` 与 `cmr plan` 兼容别名。Profile 只选择 Provider，不限制任务用途或 Claude Code 参数。
@@ -173,6 +173,6 @@ setup 只解决 CMR 自有 Secret Store，不自动清理公司电脑上已经�
 
 ## 15. `1.3.0` 自更新状态
 
-状态：**实现候选已完成本机审阅；Windows T4 GitHub-hosted Windows VM 验收流程实施中**。
+状态：**PASS — Windows T4 GitHub-hosted Windows VM 验收完成；正式 Release 门禁另行执行**。
 
-Updater 已提供 Windows `.cmd`/`.bat` 的显式 `cmd.exe /d /c` argv 边界、Windows global package 识别、junction/source-link fail-closed、exact prefix 与 install 后绝对入口验证。当前已有 win32 模拟与 macOS 隔离 prefix 真实 npm 证据；T4 将通过 GitHub Actions `windows-2025` 的实际 Windows x64 VM 补验 PowerShell、CMD、Git Bash、文件锁、自替换、回滚、junction 与多 prefix。物理电脑不是门槛，但不得用 macOS `platform: "win32"` 注入替代 Windows OS 结果。
+Updater 已提供 Windows `.cmd`/`.bat` 的显式 `cmd.exe /d /c` argv 边界、Windows global package 识别、junction/source-link fail-closed、exact prefix 与 install 后绝对入口验证。GitHub Actions [run 30094641599](https://github.com/zouerdong/ai-model-router/actions/runs/30094641599) 在 `windows-2025` x64 VM 上，以 Node `18.20.8` 与 Node `24.18.0` 分别完成 PowerShell 全量回归，并在 PowerShell、CMD、Git Bash 三种 shell 中重复通过 5/5 T4 E2E；候选包打包 hash 在两档 Node 下相同。该结果闭环 self-update 的 Windows T4，但不替代本文件中的真实 Provider、凭据 ACL、公司旧配置迁移等完整阶段三工作。

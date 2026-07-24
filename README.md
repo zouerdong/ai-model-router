@@ -1,6 +1,6 @@
 # Claude Model Router
 
-当前稳定版：**`1.2.1`。** 当前仓库实现候选为 **`1.3.0`**；仓库、Mac 隔离 prefix 与 Node 18/npm 9 审阅已通过，但原生 Windows self-update 和正式 Release/immutable/bootstrap 门禁尚未完成，因此整体仍不是可发布结论。
+当前稳定版：**`1.2.1`。** 当前仓库实现候选为 **`1.3.0`**；仓库、Mac 隔离 prefix、Node 18/npm 9 与 GitHub-hosted Windows Server 2025 T4 审阅已通过。正式 Release asset/checksum、tag、immutable 发布与公开 bootstrap/readback 尚未完成，因此整体仍不是可发布结论。
 
 `1.3.0` 的自更新只从固定 GitHub Release asset 获取候选包，并只替换当前活动入口对应的实体 npm global package。源码链接、checkout、junction、Homebrew、WinGet 或无法唯一识别 prefix 的安装会安全拒绝自动替换。
 
@@ -151,6 +151,6 @@ cmr setup deepseek
 10. [0.2.0 实施合同与当前运行时验收证据](docs/10-v0.2-transparent-profile-launcher-implementation-brief.md)
 11. [1.1.0 首次运行配置向导实施与验收记录](docs/11-v1.1-first-run-setup-implementation-brief.md)
 12. [1.2.1 Windows 兼容性补丁与发布证据](docs/12-v1.2.1-windows-compatibility-patch.md)
-13. [1.3.0 GitHub Release 自更新实施与验收合同（本机审阅通过，待 Windows/Release 门禁）](docs/13-v1.3-self-update-implementation-brief.md)
+13. [1.3.0 GitHub Release 自更新实施与验收合同（跨平台审阅通过，待 Release 门禁）](docs/13-v1.3-self-update-implementation-brief.md)
 
 运行时无第三方依赖。公开仓库以 `main` 为默认分支，当前稳定标签为 `v1.2.1`。本补丁包含由公司 Windows 实机问题触发的修复，但自动化与局部实机证据不等于完整 Windows 阶段验收。

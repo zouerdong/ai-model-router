@@ -6,7 +6,7 @@
 
 当前稳定版为 `1.2.1`：它在 `1.1.0` 首次运行配置向导基线上修复原生 Windows 的 Claude 可执行文件发现与 Doctor POSIX 权限误报警告，并补齐针对性跨平台回归。`1.1.0` 的 Mac 独立验收见 `docs/11-v1.1-first-run-setup-implementation-brief.md` 第 17 节；`1.2.1` 发布证据见 `docs/12-v1.2.1-windows-compatibility-patch.md`。完整 Windows 实机验收仍属于阶段三。
 
-`1.3.0` GitHub Release 自更新已形成实现候选并完成 Sol 的仓库、Mac 与 Node 18/npm 9 审阅，但原生 Windows T4、正式 Release 资产/checksum、immutable 发布与公开 bootstrap/readback 尚未闭环。执行与验收记录见 `docs/13-v1.3-self-update-implementation-brief.md`。在全部门禁通过并正式发布前，不得把 `cmr update` 写成当前稳定版可用功能。
+`1.3.0` GitHub Release 自更新已完成 Sol 的仓库、Mac、Node 18/npm 9 与 GitHub-hosted Windows Server 2025 T4 审阅；PowerShell、CMD、Git Bash 的隔离 prefix、自替换、回滚、junction 与中断场景均已通过。正式 Release 资产/checksum、tag、immutable 发布与公开 bootstrap/readback 尚未闭环。执行与验收记录见 `docs/13-v1.3-self-update-implementation-brief.md`。在剩余发布门禁通过并正式发布前，不得把 `cmr update` 写成当前稳定版可用功能。
 
 `1.2.1` 继续只提供两个数据化 Profile：
 
