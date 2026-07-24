@@ -7,11 +7,12 @@ export function signalExitCode(signal) {
   return SIGNAL_EXIT_CODES[signal] ?? 1;
 }
 
-export function installSignalForwarding(child, processLike = process) {
+export function installSignalForwarding(child, processLike = process, onSignal = () => {}) {
   const handlers = new Map();
   for (const signal of ["SIGINT", "SIGTERM", "SIGHUP"]) {
     const handler = () => {
       if (child.exitCode == null && child.signalCode == null) {
+        onSignal(signal);
         try {
           child.kill(signal);
         } catch {

@@ -24,7 +24,10 @@ export function buildChildEnvironment({ parentEnv = process.env, provider, profi
   if (!provider || !profile) throw new Error("provider and profile are required to build a child environment");
   if (typeof secret !== "string" || secret.length === 0) throw new Error("a configured provider secret is required");
   const environment = { ...parentEnv };
-  for (const key of ROUTER_MANAGED_ENV_VARS) delete environment[key];
+  const managedKeys = new Set(ROUTER_MANAGED_ENV_VARS.map((key) => key.toLowerCase()));
+  for (const key of Object.keys(environment)) {
+    if (managedKeys.has(key.toLowerCase())) delete environment[key];
+  }
   environment.ANTHROPIC_BASE_URL = provider.baseUrl;
   environment[provider.authVariable] = secret;
   for (const key of PROFILE_ENV_KEYS) {

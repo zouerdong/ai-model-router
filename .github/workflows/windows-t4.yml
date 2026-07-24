@@ -1,0 +1,97 @@
+name: Windows T4 acceptance
+
+on:
+  push:
+    branches:
+      - codex/windows-t4-validation
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: windows-t4-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  windows-t4:
+    name: Windows 2025 / Node ${{ matrix.node-version }}
+    runs-on: windows-2025
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        node-version:
+          - 18.20.8
+          - 24
+
+    steps:
+      - name: Check out candidate
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Set up Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: ${{ matrix.node-version }}
+
+      - name: Record runner evidence
+        shell: pwsh
+        run: |
+          @(
+            "runUrl=${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+            "commit=${{ github.sha }}"
+            "runnerImage=$env:ImageOS"
+            "runnerVersion=$env:ImageVersion"
+            "windows=$([System.Environment]::OSVersion.VersionString)"
+            "architecture=$env:PROCESSOR_ARCHITECTURE"
+            "node=$(node --version)"
+            "npm=$(npm --version)"
+            "git=$(git --version)"
+          ) | Set-Content -Encoding utf8 "windows-t4-node-${{ matrix.node-version }}.txt"
+
+      - name: PowerShell full regression and T4 E2E
+        shell: pwsh
+        run: |
+          npm test
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          npm run lint
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          git diff --check
+
+      - name: CMD T4 E2E
+        shell: cmd
+        run: node --test tests\update-e2e.test.js
+
+      - name: Git Bash T4 E2E
+        shell: bash
+        run: node --test tests/update-e2e.test.js
+
+      - name: Pack and record candidate metadata
+        shell: pwsh
+        run: |
+          $packJson = npm pack --json --ignore-scripts --no-audit --no-fund --pack-destination "$env:RUNNER_TEMP"
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          $metadata = $packJson | ConvertFrom-Json
+          if ($metadata.Count -ne 1) { throw "npm pack did not return exactly one item" }
+          $tarball = Join-Path "$env:RUNNER_TEMP" $metadata[0].filename
+          $hash = (Get-FileHash -Algorithm SHA256 $tarball).Hash.ToLowerInvariant()
+          @(
+            "package=$($metadata[0].name)"
+            "version=$($metadata[0].version)"
+            "filename=$($metadata[0].filename)"
+            "files=$($metadata[0].entryCount)"
+            "unpackedBytes=$($metadata[0].unpackedSize)"
+            "sha256=$hash"
+          ) | Add-Content -Encoding utf8 "windows-t4-node-${{ matrix.node-version }}.txt"
+          $packJson | Set-Content -Encoding utf8 "windows-t4-pack-node-${{ matrix.node-version }}.json"
+
+      - name: Upload T4 evidence
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: windows-t4-node-${{ matrix.node-version }}
+          path: |
+            windows-t4-node-${{ matrix.node-version }}.txt
+            windows-t4-pack-node-${{ matrix.node-version }}.json
+          if-no-files-found: warn
+          retention-days: 14

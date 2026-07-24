@@ -22,7 +22,7 @@ function capture() {
 test("version and list are non-interactive and do not expose secrets", async () => {
   const version = capture();
   assert.equal(await runCli(["version"], { output: version.output }), 0);
-  assert.equal(version.value, "1.2.1\n");
+  assert.equal(version.value, "1.3.0\n");
   const list = capture();
   assert.equal(await runCli(["list"], { output: list.output }), 0);
   assert.match(list.value, /kimi: Kimi K3/);
@@ -41,6 +41,8 @@ test("help shows CMR usage without starting Claude Code", async () => {
   assert.match(help.value, /cmr setup <provider>/);
   assert.match(help.value, /first interactive cmr run shows all Provider API Key status/);
   assert.match(help.value, /passed through unchanged/);
+  assert.match(help.value, /entity npm global packages only/);
+  assert.match(help.value, /never updates Claude Code, Node\.js, or Provider API Keys/);
 });
 
 function fakeMenuPrompter(actions) {
@@ -243,6 +245,7 @@ test("bare cmr with mismatched TTY streams prints help and never enters setup", 
   const code = await runCli([], { input, output: output.output });
   assert.equal(code, 0);
   assert.match(output.value, /Usage:/);
+  assert.match(output.value, /cmr update --check/);
   assert.doesNotMatch(output.value, /Claude Model Router setup/);
 });
 
@@ -285,6 +288,27 @@ test("management commands reject unexpected arguments", async () => {
   for (const command of ["version", "help", "list", "doctor"]) {
     await assert.rejects(() => runCli([command, "--unexpected"]), new RegExp(`usage: cmr ${command}`));
   }
+});
+
+test("invalid update arguments fail inside the update boundary without reading secrets", async () => {
+  const sentinel = "CMR_UPDATE_PRIVATE_SENTINEL";
+  const output = capture();
+  const errorOutput = capture();
+  let secretRead = false;
+  const code = await runCli(["update", "--url", sentinel], {
+    output: output.output,
+    errorOutput: errorOutput.output,
+    secretStore: {
+      async readSecretsForRedaction() {
+        secretRead = true;
+        return ["test-secret"];
+      }
+    }
+  });
+  assert.equal(code, 1);
+  assert.equal(secretRead, false);
+  assert.match(errorOutput.value, /usage: cmr update/);
+  assert.doesNotMatch(`${output.value}${errorOutput.value}`, new RegExp(sentinel));
 });
 
 test("top-level launch failures do not expose secrets or opaque Claude arguments", async (t) => {

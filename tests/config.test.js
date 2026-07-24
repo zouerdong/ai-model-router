@@ -145,6 +145,10 @@ test("validator rejects profile ID, alias, and reserved-command collisions", asy
   aliasMatchesSetupCommand.profiles[0].aliases.push("setup");
   assert.throws(() => validateConfigSet(aliasMatchesSetupCommand), /reserved command/);
 
+  const aliasMatchesUpdateCommand = structuredClone(config);
+  aliasMatchesUpdateCommand.profiles[0].aliases.push("update");
+  assert.throws(() => validateConfigSet(aliasMatchesUpdateCommand), /reserved command/);
+
   const duplicateAlias = structuredClone(config);
   duplicateAlias.profiles[1].aliases = ["plan", "deepseek-auto"];
   assert.throws(() => validateConfigSet(duplicateAlias), /duplicate profile alias/);

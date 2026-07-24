@@ -1,6 +1,6 @@
 # 01 — 产品范围
 
-状态：`1.2.1` Windows 兼容性补丁；`1.1.0` Mac 独立验收 PASS
+状态：`1.3.0` Sol 本机审阅完成；整体验收仍被原生 Windows 与 Release 门禁阻断；`1.2.1` 已发布
 更新时间：2026-07-24
 
 ## 1. 一句话定义
@@ -254,3 +254,24 @@ onboarding 以“需要独立 API Key 的 Provider”为单位，不以模型/Pr
 补丁不改变 Provider/Profile、模型映射、Secret Store、Setup State、Claude argv、cwd、TTY、信号或退出码合同，也不修改用户 Settings、Shell、系统环境或真实 Key。
 
 `1.2.1` 只声明上述兼容性问题已修复并有自动化证据，不把完整 Windows 阶段标记为 PASS。PowerShell/CMD/Git Bash 隐藏输入、`%APPDATA%` ACL、原子替换、真实 Provider 工作流与旧配置迁移仍按 `docs/05-phase-3-windows.md` 验收。
+
+## 11. `1.3.0` GitHub Release 自更新（实现候选；发布门禁未闭环）
+
+`1.3.0` 当前候选已实现两个显式管理命令：
+
+```bash
+cmr update
+cmr update --check
+```
+
+它们只面向当前被调用的、由 npm 安装形成的实体 CMR global package。更新源固定为 canonical GitHub 仓库最新正式 Release 的手工资产：
+
+```text
+https://github.com/zouerdong/ai-model-router/releases/latest/download/claude-model-router.tgz
+```
+
+`--check` 只报告当前版本与最新稳定版本，不写 prefix；`update` 会从当前命令入口反推出实际 package root/prefix，在覆盖前打包本地 rollback 件，将候选包下载到隔离临时目录并禁用 lifecycle scripts，随后用同一个绝对入口验证新版本，失败时恢复旧包。
+
+源码链接、junction、checkout、Homebrew、WinGet、独立二进制及无法唯一确定安装映射的来源均 fail closed，不执行 `git pull`、不切换到 npm 默认 prefix、不提权。更新不读取或修改 Secret Store、Setup State、Claude Settings、Shell、Provider Key、Claude argv、Codex 或系统环境。
+
+`1.2.1` 用户必须先按一次性 bootstrap 命令安装 `1.3.0`；之后才进入 `cmr update` 闭环。固定 Release 资产、checksum、draft/immutable 发布门槛和原生 Windows 实机证据仍属于发布前验收，不在本节提前标记为 PASS。实现与测试证据见 `src/updater.js`、`src/commands/update.js`、`tests/update*.test.js` 与 `docs/13-v1.3-self-update-implementation-brief.md` 第 15、18 节。

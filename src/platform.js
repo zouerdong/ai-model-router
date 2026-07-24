@@ -76,14 +76,7 @@ export async function isExecutable(file) {
 
 export async function findClaudeExecutable({ platform = process.platform, env = process.env, pathValue, fsAccess = isExecutable } = {}) {
   const pathApi = platform === "win32" ? path.win32 : path;
-  if (pathValue === undefined) {
-    if (platform === "win32") {
-      const pathKey = Object.keys(env ?? {}).find((key) => key.toLowerCase() === "path");
-      pathValue = pathKey === undefined ? "" : env[pathKey];
-    } else {
-      pathValue = env?.PATH ?? "";
-    }
-  }
+  pathValue = getPathValue({ platform, env, pathValue });
   const names = platform === "win32" ? ["claude.exe", "claude.cmd", "claude.bat", "claude"] : ["claude"];
   const directories = pathValue.split(pathApi.delimiter).filter(Boolean);
 
@@ -106,13 +99,46 @@ export async function findClaudeExecutable({ platform = process.platform, env = 
   return null;
 }
 
-export function buildSpawnSpec(executable, { platform = process.platform, env = process.env } = {}) {
+function getPathValue({ platform, env, pathValue }) {
+  if (pathValue !== undefined) return pathValue;
+  if (platform === "win32") {
+    const pathKey = Object.keys(env ?? {}).find((key) => key.toLowerCase() === "path");
+    return pathKey === undefined ? "" : env[pathKey];
+  }
+  return env?.PATH ?? "";
+}
+
+async function findOnPath({ platform, env, pathValue, names, fsAccess }) {
+  const pathApi = platform === "win32" ? path.win32 : path;
+  const directories = String(getPathValue({ platform, env, pathValue }) ?? "")
+    .split(pathApi.delimiter)
+    .filter(Boolean);
+  for (const directory of directories) {
+    for (const name of names) {
+      const candidate = pathApi.join(directory, name);
+      if (await fsAccess(candidate)) return candidate;
+    }
+  }
+  return null;
+}
+
+export async function findNpmExecutable({ platform = process.platform, env = process.env, pathValue, fsAccess = isExecutable } = {}) {
+  const names = platform === "win32" ? ["npm.cmd", "npm.exe", "npm.bat", "npm"] : ["npm"];
+  return findOnPath({ platform, env, pathValue, names, fsAccess });
+}
+
+export function buildCommandSpawnSpec(executable, { platform = process.platform, env = process.env, args = [] } = {}) {
+  if (!Array.isArray(args)) throw new TypeError("command args must be an array");
   if (platform === "win32" && /\.(?:cmd|bat)$/i.test(executable)) {
     return {
       command: env.ComSpec || env.COMSPEC || "cmd.exe",
-      args: ["/d", "/c", executable],
+      args: ["/d", "/c", executable, ...args],
       options: { shell: false }
     };
   }
-  return { command: executable, args: [], options: { shell: false } };
+  return { command: executable, args: [...args], options: { shell: false } };
+}
+
+export function buildSpawnSpec(executable, { platform = process.platform, env = process.env } = {}) {
+  return buildCommandSpawnSpec(executable, { platform, env, args: [] });
 }

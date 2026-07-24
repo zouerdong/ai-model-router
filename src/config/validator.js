@@ -53,7 +53,8 @@ export const CMR_RESERVED_COMMANDS = Object.freeze([
   "doctor",
   "config",
   "secret",
-  "setup"
+  "setup",
+  "update"
 ]);
 
 export class ValidationError extends Error {

@@ -1,6 +1,6 @@
 # 06 — 操作说明手册
 
-状态：`1.2.1` Windows 兼容性补丁；完整 Windows 实机验收仍见 `docs/05-phase-3-windows.md`
+状态：`1.3.0` 本机候选审阅完成、发布门禁未闭环；当前稳定版仍为 `1.2.1`
 适用范围：Mac 与原生 Windows/WSL 的当前稳定用法
 
 CMR 只在启动 Claude Code 前选择 Provider/Profile，并注入临时子进程环境。进入 Claude Code 后，任务用途、权限模式、会话和参数都遵循 Claude Code 原生行为。
@@ -13,7 +13,7 @@ CMR 只在启动 Claude Code 前选择 Provider/Profile，并注入临时子进�
 cmr version
 ```
 
-当前版本应输出 `1.2.1`。然后在交互式终端执行：
+当前仓库实现候选应输出 `1.3.0`；`1.2.1` 用户按本文档 bootstrap 升级后再使用候选自更新。然后在交互式终端执行：
 
 ```bash
 cmr
@@ -229,3 +229,16 @@ cmr secret status
 - 裸 `claude` 不再自动进入旧 Kimi 配置：使用 `cmr kimi` 或 `cmr deepseek` 选择本次 Provider。
 
 CMR 不做提示词分类、请求级动态路由、代理层、失败自动回退、精确计费或 Codex 管理，也不修改 Claude Code Settings、Shell、MCP、Skills、Hooks、插件、主题或权限。
+
+## 16. `1.3.0` 自更新（实现候选）
+
+状态：**实现候选已完成本机审阅，但尚未发布**。`1.2.1` 用户须在 `v1.3.0` Release 正式发布后，先用 README 中的一次性 exact-release bootstrap 安装候选版本；之后才使用：
+
+```bash
+cmr update --check
+cmr update
+```
+
+旧版若位于自定义 npm prefix，一次性 bootstrap 必须加 `--prefix <current-prefix>` 并保持原 prefix；不要依赖当前 npm 默认 prefix 猜测安装位置。
+
+`--check` 只读检查固定 Release asset。`update` 只处理当前活动入口对应的实体 npm global package，使用临时 cache、exact prefix、`--ignore-scripts`、`--no-audit`、`--no-fund`，并执行 backup、install、verify、rollback。源码链接、checkout、junction、Homebrew、WinGet 或无法唯一识别来源的安装不自动替换；请按原来源手工维护。Release 尚未创建前，不要把上述命令当作当前可用的公开升级通道。

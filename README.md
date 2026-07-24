@@ -1,6 +1,8 @@
 # Claude Model Router
 
-当前稳定版：**`1.2.1`。** 它在已通过 Mac 独立验收的 `1.1.0` 基线上修复原生 Windows 的 Claude 可执行文件发现与 Doctor POSIX 权限误报警告，并补齐对应自动化回归。
+当前稳定版：**`1.2.1`。** 当前仓库实现候选为 **`1.3.0`**；仓库、Mac 隔离 prefix 与 Node 18/npm 9 审阅已通过，但原生 Windows self-update 和正式 Release/immutable/bootstrap 门禁尚未完成，因此整体仍不是可发布结论。
+
+`1.3.0` 的自更新只从固定 GitHub Release asset 获取候选包，并只替换当前活动入口对应的实体 npm global package。源码链接、checkout、junction、Homebrew、WinGet 或无法唯一识别 prefix 的安装会安全拒绝自动替换。
 
 `1.2.1` 不改变 Profile、模型映射、Secret Store 或 Claude argv 合同。完整 Windows 实机阶段仍需继续验证 PowerShell/CMD/Git Bash 终端行为、`%APPDATA%` 权限和真实 Provider 工作流；详见 `docs/12-v1.2.1-windows-compatibility-patch.md`。
 
@@ -25,6 +27,27 @@ npm install --global "git+https://github.com/zouerdong/ai-model-router.git#v1.2.
 cmr version
 cmr
 ```
+
+`1.2.1` 用户在 `v1.3.0` Release 正式发布后的一次性 bootstrap：
+
+```bash
+npm install --global "https://github.com/zouerdong/ai-model-router/releases/download/v1.3.0/claude-model-router.tgz"
+cmr version
+```
+
+如果旧版安装使用自定义 prefix，bootstrap 必须显式使用同一个 prefix，避免把新版本装到另一处而终端继续命中旧命令：
+
+```bash
+npm install --global --prefix <current-prefix> "https://github.com/zouerdong/ai-model-router/releases/download/v1.3.0/claude-model-router.tgz"
+```
+
+候选 Release 发布后，也可以安装最新固定资产：
+
+```bash
+npm install --global "https://github.com/zouerdong/ai-model-router/releases/latest/download/claude-model-router.tgz"
+```
+
+需要可复现的版本时，使用上面的 `releases/download/v1.3.0/claude-model-router.tgz` 精确资产，而不是 `latest`。在 `1.3.0` 正式 Release 前，上述 Release asset 尚未可用。
 
 从源码检查后安装：
 
@@ -82,6 +105,8 @@ Kimi 启动时显示一行价格意识提示，不要求二次确认；CMR 不�
 cmr version
 cmr list
 cmr doctor
+cmr update --check
+cmr update
 cmr config path
 cmr secret status
 cmr secret set kimi
@@ -98,6 +123,8 @@ cmr setup deepseek
 ```
 
 向导只做本地格式校验与原子保存，不联网验证 Key，也不会自动打开浏览器或修改 Claude Settings、Shell 或环境变量。
+
+`cmr update --check` 只检查固定 GitHub latest Release asset，不修改安装；`cmr update` 会在当前实体 npm global package 上备份、安装并验证候选包，失败时尝试恢复。它不会执行 lifecycle scripts、修改 Provider 配置或切换到 npm 默认 prefix。源码链接安装不支持自动更新，请按源码工作流手工维护。
 
 `cmr help` 只显示 CMR 帮助。查看 Claude Code 帮助请执行 `cmr kimi --help` 或 `cmr deepseek --help`。
 
@@ -124,5 +151,6 @@ cmr setup deepseek
 10. [0.2.0 实施合同与当前运行时验收证据](docs/10-v0.2-transparent-profile-launcher-implementation-brief.md)
 11. [1.1.0 首次运行配置向导实施与验收记录](docs/11-v1.1-first-run-setup-implementation-brief.md)
 12. [1.2.1 Windows 兼容性补丁与发布证据](docs/12-v1.2.1-windows-compatibility-patch.md)
+13. [1.3.0 GitHub Release 自更新实施与验收合同（本机审阅通过，待 Windows/Release 门禁）](docs/13-v1.3-self-update-implementation-brief.md)
 
 运行时无第三方依赖。公开仓库以 `main` 为默认分支，当前稳定标签为 `v1.2.1`。本补丁包含由公司 Windows 实机问题触发的修复，但自动化与局部实机证据不等于完整 Windows 阶段验收。

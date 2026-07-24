@@ -1,6 +1,7 @@
 # 07 — 官方参数与事实基线
 
 核验日期：2026-07-24
+实现状态：`1.3.0` 本机候选审阅完成；原生 Windows 与正式 Release 门禁未闭环
 用途：实现者不得用历史对话或记忆替代本文件中的官方来源；开始实现与发布前必须重新核验。
 
 ## 1. Kimi K3 Profile
@@ -182,3 +183,38 @@ Kimi 官方列出 `GET https://api.moonshot.cn/v1/models`，DeepSeek 官方列�
 - [DeepSeek Lists Models](https://api-docs.deepseek.com/api/list-models/)
 
 `1.1.0` 首版仍明确不调用这些接口。原因不是接口不存在，而是当前项目没有统一的代理、证书、超时与网络故障分类层；自动网络检查可能在公司环境中把有效 Key 误报为无效。若后续增加显式网络验证，必须先更新产品范围与架构，并保证不发起模型生成请求、不记录响应正文或 Key。
+
+## 7. `1.3.0` GitHub Release 与 npm 自更新事实
+
+核验日期：2026-07-24。以下页面在自更新实现前重新打开并用于本候选实现；本节只记录公开机制，不代表本仓库已完成 Release 或 immutable 发布。
+
+- [GitHub About releases](https://docs.github.com/en/repositories/releasing-projects-on-github/about-releases)：Release 是基于 Git tag 的可分发软件迭代，并可附带手工资产。
+- [GitHub Linking to releases](https://docs.github.com/en/repositories/releasing-projects-on-github/linking-to-releases)：`/releases/latest` 指向最新 Release，固定手工资产可使用 `/releases/latest/download/<asset-name>`。
+- [GitHub Managing releases](https://docs.github.com/en/repositories/releasing-projects-on-github/managing-releases-in-a-repository)：Release 可先创建 draft、附加资产后发布。
+- [GitHub Immutable releases](https://docs.github.com/en/code-security/concepts/supply-chain-security/immutable-releases)：immutable Release 发布后保护关联 tag 与资产；官方建议先以 draft 准备完整资产。
+- [npm install](https://docs.npmjs.com/cli/v11/commands/npm-install)：npm 支持从 tarball URL 或本地 tarball 安装，并提供 `--prefix`、`--ignore-scripts` 等选项。
+- [npm pack](https://docs.npmjs.com/cli/v11/commands/npm-pack)：`npm pack` 可对 package spec 生成 tarball，并以 JSON 输出 pack metadata。
+- [npm folders](https://docs.npmjs.com/cli/v11/configuring-npm/folders)：global package 与 bin 在 Unix/Windows prefix 下具有不同目录结构。
+- [npm prefix](https://docs.npmjs.com/cli/v11/commands/npm-prefix) 与 [npm config](https://docs.npmjs.com/cli/v11/using-npm/config)：`npm prefix --global` 和 npm 配置只描述 npm 当前配置上下文，不能替代从活动命令入口识别安装的逻辑。
+
+运行时只使用固定 canonical asset URL：
+
+```text
+https://github.com/zouerdong/ai-model-router/releases/latest/download/claude-model-router.tgz
+```
+
+不使用 GitHub REST Release API、`main`、最高 tag 猜测、npm registry `latest` 或用户提供的任意 URL。实现与发布前仍需用临时 prefix、固定资产和 checksum 验证实际候选包。
+
+## 8. `1.3.0` 实现状态
+
+状态：**本机候选审阅完成；整体发布门禁未闭环**。候选运行时已严格使用本节 canonical asset URL；Release asset、checksum、immutable 发布与公开回读尚未执行。npm 默认 cache、prefix 与配置事实仅用于理解 npm 行为，不被 updater 当作当前活动 CMR 安装的唯一真相源。
+
+## 9. Windows T4 托管验收事实
+
+核验日期：2026-07-24。
+
+- [GitHub-hosted runners reference](https://docs.github.com/en/actions/reference/runners/github-hosted-runners)：标准 `windows-2025` runner 是 GitHub 托管的全新 Windows x64 VM，可提供实际 Windows OS、文件系统和 shell 语义。
+- [GitHub Actions billing and usage](https://docs.github.com/en/actions/concepts/billing-and-usage)：公开仓库使用标准 GitHub-hosted runner 免费。
+- [Windows 11 Arm ISO overview](https://learn.microsoft.com/en-us/windows/arm/iso)：Apple Silicon Mac 也可运行 Windows 11 Arm64 VM，但本项目优先选择可重复、无需维护本地 VM 的 GitHub-hosted x64 runner。
+
+T4 的本质约束是测试必须运行在实际 Windows OS 中，而不是必须使用物理 Windows 电脑。有效证据包括物理机、本地 Windows VM 或 GitHub-hosted Windows VM；macOS 上仅注入 `platform: "win32"` 无效。

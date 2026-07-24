@@ -9,12 +9,13 @@ import { runDoctor } from "./commands/doctor.js";
 import { formatList } from "./commands/list.js";
 import { launchProfile } from "./commands/launch.js";
 import { createProductionPrompter, runSetup } from "./commands/setup.js";
+import { runUpdate } from "./commands/update.js";
 import { redactError } from "./redact.js";
 import { readHiddenSecret, SecretStore } from "./secret-store.js";
 import { getSecretStorePath, getSetupStatePath } from "./platform.js";
 import { SetupStateStore, isSetupStateCorrupt } from "./setup-state.js";
 
-export const VERSION = "1.2.1";
+export const VERSION = "1.3.0";
 
 export function isMainModule(
   entryPath = process.argv[1],
@@ -44,6 +45,8 @@ function printUsage(output = stdout) {
   output.write("  cmr setup <provider>               Configure or replace one Provider API Key\n");
   output.write("  cmr list             Show profiles and model mappings\n");
   output.write("  cmr doctor           Run a read-only local diagnostic\n");
+  output.write("  cmr update           Update this CMR installation from the latest stable GitHub Release\n");
+  output.write("  cmr update --check   Check the latest stable version without changing the installation\n");
   output.write("  cmr config path      Show repository and secret-store paths\n");
   output.write("  cmr secret set <provider>\n");
   output.write("  cmr secret status    Show configured/missing status only\n");
@@ -51,6 +54,8 @@ function printUsage(output = stdout) {
   output.write("\nThe first interactive cmr run shows all Provider API Key status; new unseen Providers do the same.\n");
   output.write("Keys are entered only through hidden TTY input, never as command arguments.\n");
   output.write("Claude Code arguments after the profile are passed through unchanged.\n");
+  output.write("Self-update supports entity npm global packages only; source-linked checkouts must be maintained manually.\n");
+  output.write("Self-update never updates Claude Code, Node.js, or Provider API Keys.\n");
 }
 
 async function getProviderStatuses(providers, secretStore) {
@@ -224,6 +229,15 @@ export async function runCli(argv = process.argv.slice(2), options = {}) {
     const result = await runDoctor(sharedOptions);
     output.write(`${result.text}\n`);
     return result.lines.some((item) => item.startsWith("FAIL")) ? 1 : 0;
+  }
+  if (command === "update") {
+    const result = await runUpdate(args, {
+      ...sharedOptions,
+      entryPath: sharedOptions.entryPath ?? process.argv[1],
+      modulePath: sharedOptions.modulePath ?? fileURLToPath(import.meta.url),
+      currentVersion: VERSION
+    });
+    return result.exitCode;
   }
   if (command === "config") return commandConfig(args, sharedOptions);
   if (command === "secret") return commandSecret(args, sharedOptions);

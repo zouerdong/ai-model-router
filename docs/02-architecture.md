@@ -1,6 +1,6 @@
 # 02 — 系统架构
 
-状态：`1.2.1` Windows 兼容性补丁；`1.1.0` Mac 独立验收 PASS
+状态：`1.3.0` Sol 本机审阅完成；整体验收仍被原生 Windows 与 Release 门禁阻断；`1.2.1` 已发布
 更新时间：2026-07-24
 
 ## 1. 架构结论
@@ -186,6 +186,8 @@ CLAUDE_CODE_EFFORT_LEVEL
 本机现有 `CLAUDE_CODE_MAX_CONTEXT_TOKENS` 不在当前 Kimi 官方推荐清单中，但可能影响上下文。`doctor` 必须单独标记为 legacy/unverified；迁移时经用户确认一并处理。
 
 不属于 Router 的变量不得清除，例如代理、Tavily、MCP、终端与编辑器设置。
+
+环境副本清理按键名大小写不敏感执行。原因是 Windows 环境变量名不区分大小写，而 `{ ...process.env }` 得到的普通对象会保留实际大小写；如果只删除规范大写键，旧的混合大小写 Router 变量可能与新值同时进入子进程。
 
 ## 7. 运行数据流
 
@@ -436,3 +438,36 @@ Windows 环境变量名在操作系统层面不区分大小写，但 `{ ...proce
 Windows 分支使用 `path.win32.delimiter` 与 `path.win32.join`，以便在 Mac/Linux 自动化中也能验证分号 PATH 和反斜杠候选路径。候选名称继续按 `claude.exe`、`claude.cmd`、`claude.bat`、`claude` 顺序查找；`.cmd/.bat` 仍由既有 `cmd.exe /d /c`、`shell: false` 分支启动。
 
 Doctor 在 Windows 上不解释 POSIX mode bits。Secret Store 与 Settings 的 Windows ACL 仍属于阶段三实机验收，不得把“无 POSIX 警告”写成“ACL 已安全验证”。
+
+## 15. `1.3.0` 自更新架构（实现候选；发布门禁未闭环）
+
+自更新是 CMR 的显式管理路径，不进入 Profile 启动路径：
+
+```text
+cmr update / --check
+        │
+        ├─ 当前绝对入口 → package root → 实际 npm prefix
+        ├─ 固定 GitHub latest Release asset
+        ├─ npm pack 到临时目录 → 严格校验 name/version/path
+        └─ update：lock → current rollback pack → candidate pack
+                         → exact-prefix install → package/入口双验证
+                         → success 或 rollback/re-verify
+```
+
+实现边界：`updater.js` 只承载稳定 SemVer、npm pack metadata、实体安装识别与 update plan 等可测试逻辑；`platform.js` 负责 npm/npm.cmd 发现、Windows `.cmd/.bat` 的 `cmd.exe /d /c` argv 边界和平台路径；update command 负责 lock、临时目录、npm 编排、验证、回滚、信号和脱敏输出。所有 npm 子进程使用 argv 数组、`shell: false`、临时 cwd/cache、`--ignore-scripts`、`--no-audit`、`--no-fund`；不得调用 GitHub API、拼接 Shell 字符串或执行 git 操作。
+
+安装识别以当前活动 `cmr` 入口为真相源，不以 `npm prefix --global` 覆盖推导结果。Unix 需要确认 `<prefix>/bin/cmr` 与 `<prefix>/lib/node_modules/claude-model-router` 的实体映射；Windows 需要确认 `<prefix>\\cmr.cmd` 与 `<prefix>\\node_modules\\claude-model-router` 的实体映射。任何 source link/junction、checkout、未知包管理器或模糊映射都在写操作前拒绝。
+
+Windows npm shim 启动 Node 后，`process.argv[1]` 通常是 package 内的 `src/cli.js`，而不是 `cmr.cmd`。安装识别因此同时接受标准 global layout 中的 CLI entry path 与 shim path，再反推出同一 prefix 的 `cmr.cmd` 并核对 shim 内容；安装后重新核对 command → package 映射，不能只相信 package.json 与一段看似正确的 version 输出。
+
+`--check` 不创建 update lock、不备份、不安装；普通 `cmr`、Profile、`list`、`doctor`、`version`、`setup` 不隐式联网。更新 lock 只保存 schema、PID、startedAt 和随机 owner token；新鲜但尚未写完的 lock 不能被当作 stale，超过阈值但 PID 仍存活的 lock 也不能仅因年龄被删除。finally 清理自己的 lock 与临时目录。
+
+npm 子进程的 stdout/stderr 捕获有固定上限，pack/install 有五分钟上限，绝对入口 version 验证有三十秒上限；转发过的 SIGINT 即使被 npm 映射为普通失败码，CMR 对外仍保持 `130`。候选 tarball 与 unpacked metadata 另有尺寸上限，避免异常 Release 资产造成无界内存、磁盘或安装风险。Windows 自替换所需的回滚、验证、清理和平台逻辑必须在 install 前完整加载。
+
+## 16. `1.3.0` 实现状态
+
+状态：**Sol 本机代码/Mac/Node 18 审阅通过；整体发布门禁未闭环**。
+
+上述架构已落地为标准 JavaScript ESM 实现；`command-runner.js` 统一 argv、`shell: false`、Windows shim 与信号边界，`update-lock.js` 提供互斥，`commands/update.js` 预加载 backup/install/verify/rollback/cleanup 路径。实现不引入运行时第三方依赖，也不触碰 CMR Secret/State、Claude Settings、Shell 或 Provider 配置。
+
+原生 Windows self-update、Release asset/checksum/immutable 发布仍需 Sol 独立验收；在此之前候选保持 awaiting review。

@@ -1,6 +1,6 @@
 # 04 — 阶段二：GitHub 首次推送计划
 
-状态：**PASS — 2026-07-23 已完成首次公共源码与 `v1.1.0` 标签推送、远端 clone 验收**
+状态：GitHub 公共源码阶段已通过；`1.3.0` 本机候选审阅完成，Release 门禁未闭环
 目标：让 GitHub 成为 Mac 与 Windows 的唯一公共源码来源，不让任何本机凭据、私有背景资料或个人机器路径进入公开历史。
 
 ## 1. 为什么必须独立成一个阶段
@@ -177,3 +177,9 @@ GitHub 成为源码来源，不等于已经形成完整的新用户安装体验�
 - GitHub Release、npm 包发布和 CI/CD 仍未创建；源码与 Git tag 可公开获取不等于这些分发渠道已经完成。
 
 阶段二的 clone 验收还应增加：在全新临时 HOME 中安装候选包，首次交互运行无论预置零个、一个或全部 Key 都先显示全量状态并进入 setup；非 TTY 安装与命令均不挂起；打包清单不含本机 Secret Store、Setup State、日志或备份。
+
+## 11. `1.3.0` 自更新实现状态
+
+状态：**本机候选审阅完成；正式 Release 门禁未闭环**。
+
+仓库内已实现从 canonical GitHub latest Release 固定资产读取候选包的 `cmr update --check` 与 `cmr update` 编排，并补充 npm pack/install 的隔离 cache、exact prefix、rollback 与绝对入口验证。Release draft、checksum、immutable 发布、公开资产回读与正式 tag 仍属于 Sol 审阅后的发布门禁；本轮未执行 Git 写操作或 CI/CD。

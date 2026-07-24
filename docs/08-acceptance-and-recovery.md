@@ -335,3 +335,75 @@ Windows `.cmd` 已完成无 `shell:true` 的模拟回归，但 Windows 实机仍
 上述门槛通过只证明本补丁范围可发布，不替代 `docs/05` 的完整 Windows 实机验收。
 
 2026-07-24 独立复跑结论为 **PASS — `1.2.1` READY FOR RELEASE**：Windows/Doctor targeted tests 6/6、全量测试 83/83、lint、pack、`git diff --check` 与敏感信息检查全部通过；package、CLI、README 同为 `1.2.1`。Kimi、DeepSeek 官方映射与 Claude Code Windows 原生安装位置已重新核验。完整 Windows 实机阶段仍未标记 PASS。
+
+## 13. `1.3.0` 自更新验收矩阵（Sol 本机审阅完成；整体发布门禁未闭环）
+
+本节只增加绑定验收标准，不提前给出 `PASS`。任一 Blocker 失败，`1.3.0` 不得发布。
+
+### P — 产品与 Release channel
+
+| ID | 级别 | 验收项 |
+|---|---|---|
+| P1 | Blocker | 只使用 canonical GitHub latest Release 固定资产 `claude-model-router.tgz` |
+| P2 | Blocker | 不使用 main、任意 URL、用户 branch/tag 或 GitHub API token |
+| P3 | Blocker | 候选包名正确且 version 为严格稳定 SemVer |
+| P4 | Major | `cmr update --check` 只读且 exit 0 |
+| P5 | Major | 其他命令无后台或隐式联网 |
+| P6 | Blocker | 资产来自验收过的 `npm pack` 并附带 checksum |
+| P7 | Blocker | 资产准备完成后再发布 immutable Release |
+
+### Q — 安装来源与 prefix
+
+| ID | 级别 | 验收项 |
+|---|---|---|
+| Q1 | Blocker | 更新当前活动入口对应的精确 prefix，不盲用 npm 默认 prefix |
+| Q2 | Blocker | macOS/Unix 实体 global package 可识别 |
+| Q3 | Blocker | Windows 实体 global package 与 `.cmd` 可识别 |
+| Q4 | Blocker | source symlink/junction 在写入前拒绝 |
+| Q5 | Blocker | checkout、未知包管理器和模糊映射 fail closed |
+| Q6 | Major | 多份 PATH 命令时只处理当前活动入口 |
+| Q7 | Major | 权限不足不提权、不换 prefix |
+
+### R — 更新事务与恢复
+
+| ID | 级别 | 验收项 |
+|---|---|---|
+| R1 | Blocker | 覆盖前存在可安装的当前包 rollback tgz |
+| R2 | Blocker | 候选先下载并校验，再从本地 tgz 安装 |
+| R3 | Blocker | npm argv 使用 exact prefix、ignore-scripts、no-audit/no-fund 和临时 cache |
+| R4 | Blocker | 安装后同时验证 package.json 与同一绝对入口 version |
+| R5 | Blocker | install failure 能区分旧版完整可用与需要恢复 |
+| R6 | Blocker | post-verify failure 自动 rollback 并再次验证 |
+| R7 | Blocker | rollback 失败不误报成功，并给精确人工恢复命令 |
+| R8 | Major | same version 不 install，older candidate 不 downgrade |
+| R9 | Blocker | 并发 update 互斥，stale lock 安全恢复 |
+| R10 | Major | 成功、失败、中断后清理临时目录与 lock |
+
+### S — 安全与范围
+
+| ID | 级别 | 验收项 |
+|---|---|---|
+| S1 | Blocker | current/candidate lifecycle scripts 均不执行 |
+| S2 | Blocker | Secret/State/Settings/Shell/系统环境/Provider 配置不变 |
+| S3 | Blocker | 不输出 Key、npm token、完整 env、`.npmrc` 或敏感哨兵 |
+| S4 | Blocker | 无 `shell: true`、无命令字符串拼接 |
+| S5 | Blocker | 不执行 git pull/merge/rebase/reset/stash |
+| S6 | Major | 清除 Router 管理变量但保留 npm PATH、代理与 CA 能力 |
+| S7 | Major | 只修改自身 package，不改其他 global package |
+| S8 | Blocker | 无第三方运行时依赖、无 install lifecycle script |
+
+### T — 兼容与发布
+
+| ID | 级别 | 验收项 |
+|---|---|---|
+| T1 | Blocker | 既有测试与新增 update tests 全部通过 |
+| T2 | Blocker | lint、pack、diff、敏感扫描通过 |
+| T3 | Blocker | Mac 隔离 prefix self-update E2E 通过 |
+| T4 | Blocker | 实际 Windows OS（物理机、本地 VM 或 GitHub-hosted Windows VM）隔离 prefix self-update E2E 通过 |
+| T5 | Major | Node 18/npm 9 与当前 Node/npm 的核心测试通过 |
+| T6 | Blocker | package/CLI/README/tag/Release asset 版本一致为 1.3.0 |
+| T7 | Blocker | 1.2.1 bootstrap 文档与临时安装验证通过 |
+| T8 | Major | source-linked 安装给出安全人工维护说明 |
+| T9 | Blocker | 未经批准没有真实全局更新、push、Release 或 CI/CD |
+
+Windows T4 必须在实际 Windows 内核、Windows 文件系统与 Windows shell 中运行；物理机不是必要条件，GitHub-hosted Windows VM 可作为可重复的正式证据。macOS 上注入 `platform: "win32"` 仍只能算模拟，不能替代 T4。T4 未完成前不能宣称跨平台 updater 已完成。`docs/13-v1.3-self-update-implementation-brief.md` 第 15 节是实现者证据，不替代本节的独立判定。
