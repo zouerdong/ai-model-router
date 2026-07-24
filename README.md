@@ -21,7 +21,7 @@ Profile 不绑定规划或执行角色，也不管理 Codex、会话、提示词
 从 GitHub 安装稳定标签：
 
 ```bash
-npm install --global "git+https://github.com/ErdongZou-ai/ai-model-router.git#v1.2.1"
+npm install --global "git+https://github.com/zouerdong/ai-model-router.git#v1.2.1"
 cmr version
 cmr
 ```
@@ -29,7 +29,7 @@ cmr
 从源码检查后安装：
 
 ```bash
-git clone https://github.com/ErdongZou-ai/ai-model-router.git
+git clone https://github.com/zouerdong/ai-model-router.git
 cd ai-model-router
 npm test
 npm run lint
@@ -108,7 +108,7 @@ cmr setup deepseek
 - 许可证：[MIT](LICENSE)。
 - 安全问题：[Security Policy](SECURITY.md)。不要在公开 Issue 中提交 Key、Token、日志或本机配置。
 - 参与开发：[Contributing](CONTRIBUTING.md)。
-- Issues：[GitHub Issues](https://github.com/ErdongZou-ai/ai-model-router/issues)。
+- Issues：[GitHub Issues](https://github.com/zouerdong/ai-model-router/issues)。
 
 ## 文档入口
 

@@ -6,12 +6,12 @@
   "author": "ErDongZou-AI",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/ErdongZou-ai/ai-model-router.git"
+    "url": "git+https://github.com/zouerdong/ai-model-router.git"
   },
   "bugs": {
-    "url": "https://github.com/ErdongZou-ai/ai-model-router/issues"
+    "url": "https://github.com/zouerdong/ai-model-router/issues"
   },
-  "homepage": "https://github.com/ErdongZou-ai/ai-model-router#readme",
+  "homepage": "https://github.com/zouerdong/ai-model-router#readme",
   "type": "module",
   "bin": {
     "cmr": "src/cli.js"
