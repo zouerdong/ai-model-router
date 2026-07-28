@@ -16,13 +16,55 @@ test("secret store writes owner-only JSON atomically and exposes status only", a
   const store = new SecretStore({ filePath });
   await store.set("deepseek", "test-deepseek-key");
   await store.set("kimi", "test-kimi-key");
-  assert.deepEqual(await store.status(), { deepseek: true, kimi: true });
+  assert.deepEqual(await store.status(), { deepseek: true, glm: false, "glm-api": false, kimi: true });
   assert.equal(await store.get("deepseek"), "test-deepseek-key");
   const details = await stat(filePath);
   if (process.platform !== "win32") assert.equal(details.mode & 0o777, 0o600);
   const raw = await readFile(filePath, "utf8");
   assert.match(raw, /test-deepseek-key/);
   assert.equal((await readdir(path.dirname(filePath))).some((name) => name.endsWith(".tmp")), false);
+});
+
+test("secret store reads the old three-provider v1 schema and atomically adds GLM API", async (t) => {
+  const directory = await mkdtemp(path.join(tmpdir(), "cmr-secret-glm-upgrade-"));
+  t.after(async () => {
+    const { rm } = await import("node:fs/promises");
+    await rm(directory, { recursive: true, force: true });
+  });
+  const filePath = path.join(directory, "secrets.json");
+  await writeFile(filePath, JSON.stringify({
+    version: 1,
+    providers: { kimi: "test-kimi-key", deepseek: "test-deepseek-key", glm: "test-glm-key" }
+  }, null, 2));
+  const store = new SecretStore({ filePath });
+  assert.deepEqual(await store.status(), { deepseek: true, glm: true, "glm-api": false, kimi: true });
+  await store.set("glm-api", "test-glm-api-key");
+  assert.deepEqual(await store.readAll(), {
+    version: 1,
+    providers: {
+      kimi: "test-kimi-key",
+      deepseek: "test-deepseek-key",
+      glm: "test-glm-key",
+      "glm-api": "test-glm-api-key"
+    }
+  });
+  assert.equal(await store.get("glm"), "test-glm-key");
+  assert.equal(await store.get("glm-api"), "test-glm-api-key");
+
+  const beforeFailure = await readFile(filePath, "utf8");
+  const failingStore = new SecretStore({
+    filePath,
+    fs: {
+      readFile: (target, encoding) => import("node:fs/promises").then((fs) => fs.readFile(target, encoding)),
+      mkdir: (target, options) => import("node:fs/promises").then((fs) => fs.mkdir(target, options)),
+      writeFile: (target, content, options) => import("node:fs/promises").then((fs) => fs.writeFile(target, content, options)),
+      rename: async () => { const error = new Error("rename failed"); error.code = "EIO"; throw error; },
+      chmod,
+      unlink
+    }
+  });
+  await assert.rejects(() => failingStore.set("glm-api", "test-glm-api-replacement"), /cannot write secret store/);
+  assert.equal(await readFile(filePath, "utf8"), beforeFailure);
 });
 
 test("secret store rejects blank and multiline values", async () => {
@@ -34,6 +76,20 @@ test("secret store rejects blank and multiline values", async () => {
   await assert.rejects(() => store.set("kimi", "value\0with-null"), /null byte/);
   const { rm } = await import("node:fs/promises");
   await rm(directory, { recursive: true, force: true });
+});
+
+test("GLM API secrets reject hostile input without creating a store", async (t) => {
+  const directory = await mkdtemp(path.join(tmpdir(), "cmr-secret-glm-hostile-"));
+  t.after(async () => {
+    const { rm } = await import("node:fs/promises");
+    await rm(directory, { recursive: true, force: true });
+  });
+  const filePath = path.join(directory, "secrets.json");
+  const store = new SecretStore({ filePath });
+  for (const value of ["", " test-glm-api-key", "line1\nline2", "value\0with-null", "x".repeat(16_385)]) {
+    await assert.rejects(() => store.set("glm-api", value));
+  }
+  await assert.rejects(() => readFile(filePath, "utf8"), { code: "ENOENT" });
 });
 
 test("secret store rejects corrupted values and macOS permission setup failures", async (t) => {

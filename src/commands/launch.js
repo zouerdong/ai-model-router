@@ -10,7 +10,14 @@ function formatPricing(pricing) {
     const { inputCacheHit, inputCacheMiss, output } = pricing.prices;
     return `CNY/M tokens: cache hit ${inputCacheHit}, cache miss ${inputCacheMiss}, output ${output}`;
   }
-  return "DeepSeek V4 Pro/Flash pricing is recorded in config/pricing/deepseek-v4.json";
+  if (pricing.id === "deepseek-v4") {
+    return "DeepSeek V4 Pro/Flash pricing is recorded in config/pricing/deepseek-v4.json";
+  }
+  if (pricing.id === "glm-5.2") {
+    const { inputCacheHit, inputCacheMiss, output } = pricing.prices;
+    return `CNY/M GLM-5.2 tokens: cache hit ${inputCacheHit}, input ${inputCacheMiss}, output ${output}`;
+  }
+  throw new Error(`unsupported pricing configuration: ${pricing.id}`);
 }
 
 export async function launchProfile(profileSelector, claudeArgs = [], options = {}) {
@@ -47,6 +54,8 @@ export async function launchProfile(profileSelector, claudeArgs = [], options = 
 
   if (profile.costNotice === "high") {
     output.write(`WARN  ${profile.displayName} is a high-cost profile; ${formatPricing(pricing)}; verified ${pricing.verifiedOn}.\n`);
+  } else if (profile.costNotice === "payg") {
+    output.write(`WARN  ${profile.displayName} uses direct standard API billing; ${formatPricing(pricing)}; other mapped models may have different rates; verified ${pricing.verifiedOn}.\n`);
   }
   const environment = buildChildEnvironment({ parentEnv: options.parentEnv ?? process.env, provider, profile, secret });
   return runClaude({

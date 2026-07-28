@@ -7,7 +7,9 @@ export const PROFILE_ENV_KEYS = Object.freeze([
   "CLAUDE_CODE_SUBAGENT_MODEL",
   "ENABLE_TOOL_SEARCH",
   "CLAUDE_CODE_AUTO_COMPACT_WINDOW",
-  "CLAUDE_CODE_EFFORT_LEVEL"
+  "CLAUDE_CODE_EFFORT_LEVEL",
+  "CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC",
+  "API_TIMEOUT_MS"
 ]);
 
 export const PROVIDER_KEYS = Object.freeze([
@@ -195,7 +197,7 @@ export function validateProfile(profile, providerIds) {
   assertString(profile.provider, "profile.provider");
   if (!providerIds.has(profile.provider)) fail(`profile.provider is unknown: ${profile.provider}`);
   assertString(profile.purpose, "profile.purpose");
-  if (!["high", "standard"].includes(profile.costNotice)) fail("profile.costNotice must be high or standard");
+  if (!["high", "standard", "payg"].includes(profile.costNotice)) fail("profile.costNotice must be high, standard or payg");
   assertString(profile.pricingRef, "profile.pricingRef");
   if (!Array.isArray(profile.requiredEnvironment) || profile.requiredEnvironment.length === 0) {
     fail("profile.requiredEnvironment must be a non-empty array");
@@ -245,6 +247,16 @@ export function validatePricing(pricing, { now = new Date() } = {}) {
       assertExactPriceKeys(pricing.prices[model], ["inputCacheHit", "inputCacheMiss", "output"], `pricing.prices.${model}`);
     }
   }
+  if (pricing.id === "glm-5.2") {
+    if (pricing.model !== "glm-5.2" || pricing.currency !== "CNY" || pricing.unit !== "per_million_tokens"
+      || pricing.contextWindowTokens !== 1_000_000) {
+      fail("glm-5.2 pricing metadata is invalid");
+    }
+    assertExactPriceKeys(pricing.prices, ["inputCacheHit", "inputCacheMiss", "output"], "pricing.prices");
+    if (pricing.prices.inputCacheHit !== 2 || pricing.prices.inputCacheMiss !== 8 || pricing.prices.output !== 28) {
+      fail("glm-5.2 pricing values are invalid");
+    }
+  }
   assertDate(pricing.verifiedOn, "pricing.verifiedOn", now);
   assertUrl(pricing.sourceUrl, "pricing.sourceUrl");
   return pricing;
@@ -279,20 +291,24 @@ export function validateConfigSet({ providers, profiles, pricing, now = new Date
     if (pricingIds.has(item.id)) fail(`duplicate pricing id: ${item.id}`);
     pricingIds.add(item.id);
   }
-  if (profileIds.size !== 2 || !profileIds.has("kimi") || !profileIds.has("deepseek")) {
-    fail("V2 must contain exactly the kimi and deepseek profiles");
+  if (profileIds.size !== 4 || !profileIds.has("kimi") || !profileIds.has("deepseek") || !profileIds.has("glm") || !profileIds.has("glm-api")) {
+    fail("configuration must contain exactly the kimi, deepseek, glm and glm-api profiles");
   }
-  if (providerIds.size !== 2 || !providerIds.has("kimi") || !providerIds.has("deepseek")) {
-    fail("V2 must contain exactly the kimi and deepseek providers");
+  if (providerIds.size !== 4 || !providerIds.has("kimi") || !providerIds.has("deepseek") || !providerIds.has("glm") || !providerIds.has("glm-api")) {
+    fail("configuration must contain exactly the kimi, deepseek, glm and glm-api providers");
   }
-  if (pricingIds.size !== 2 || !pricingIds.has("kimi-k3") || !pricingIds.has("deepseek-v4")) {
-    fail("V2 must contain exactly the kimi-k3 and deepseek-v4 pricing records");
+  if (pricingIds.size !== 3 || !pricingIds.has("kimi-k3") || !pricingIds.has("deepseek-v4") || !pricingIds.has("glm-5.2")) {
+    fail("configuration must contain exactly the kimi-k3, deepseek-v4 and glm-5.2 pricing records");
   }
   for (const alias of aliases) {
     if (profileIds.has(alias)) fail(`profile alias collides with profile id: ${alias}`);
   }
   const kimi = profiles.find((profile) => profile.id === "kimi");
   const deepseek = profiles.find((profile) => profile.id === "deepseek");
+  const glm = profiles.find((profile) => profile.id === "glm");
+  const glmApi = profiles.find((profile) => profile.id === "glm-api");
+  const glmProvider = providers.find((provider) => provider.id === "glm");
+  const glmApiProvider = providers.find((provider) => provider.id === "glm-api");
   if (!kimi.aliases.includes("plan") || !kimi.aliases.includes("kimi-k3")) {
     fail("kimi profile must include plan and kimi-k3 aliases");
   }
@@ -304,6 +320,47 @@ export function validateConfigSet({ providers, profiles, pricing, now = new Date
   }
   if (deepseek.provider !== "deepseek" || deepseek.pricingRef !== "deepseek-v4") {
     fail("deepseek profile must reference the deepseek provider and deepseek-v4 pricing");
+  }
+  if (!glm.aliases.includes("glm-5.2") || !glm.aliases.includes("glm-plan")) {
+    fail("glm profile must include glm-5.2 and glm-plan aliases");
+  }
+  if (glm.provider !== "glm" || glm.pricingRef !== "glm-5.2") {
+    fail("glm profile must reference the glm provider and glm-5.2 pricing");
+  }
+  if (glmProvider.authVariable !== "ANTHROPIC_AUTH_TOKEN" || glmProvider.secretId !== "glm") {
+    fail("glm provider authentication boundary is invalid");
+  }
+  if (glmApi.aliases.length !== 1 || glmApi.aliases[0] !== "glm-payg") {
+    fail("glm-api profile must contain exactly the glm-payg alias");
+  }
+  if (glmApi.provider !== "glm-api" || glmApi.pricingRef !== "glm-5.2" || glmApi.costNotice !== "payg") {
+    fail("glm-api profile must reference the glm-api provider, glm-5.2 pricing and payg cost notice");
+  }
+  if (glmApiProvider.baseUrl !== "https://open.bigmodel.cn/api/anthropic"
+    || glmApiProvider.apiKeyUrl !== "https://bigmodel.cn/usercenter/proj-mgmt/apikeys"
+    || glmApiProvider.authVariable !== "ANTHROPIC_API_KEY"
+    || glmApiProvider.secretId !== "glm-api"
+    || glmApiProvider.sourceUrl !== "https://docs.bigmodel.cn/cn/guide/develop/claude/introduction") {
+    fail("glm-api provider contract is invalid");
+  }
+  if (glmProvider.secretId === glmApiProvider.secretId) {
+    fail("glm and glm-api providers must use distinct secret IDs");
+  }
+  const expectedGlmEnvironment = {
+    ANTHROPIC_DEFAULT_OPUS_MODEL: "glm-5.2[1m]",
+    ANTHROPIC_DEFAULT_SONNET_MODEL: "glm-5.2[1m]",
+    ANTHROPIC_DEFAULT_HAIKU_MODEL: "glm-4.7",
+    CLAUDE_CODE_AUTO_COMPACT_WINDOW: "1000000",
+    CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC: "1",
+    API_TIMEOUT_MS: "3000000"
+  };
+  if (JSON.stringify(glm.environment) !== JSON.stringify(expectedGlmEnvironment)
+    || JSON.stringify(glm.requiredEnvironment) !== JSON.stringify(Object.keys(expectedGlmEnvironment))) {
+    fail("glm profile environment mapping is invalid");
+  }
+  if (JSON.stringify(glmApi.environment) !== JSON.stringify(expectedGlmEnvironment)
+    || JSON.stringify(glmApi.requiredEnvironment) !== JSON.stringify(Object.keys(expectedGlmEnvironment))) {
+    fail("glm-api profile environment mapping is invalid");
   }
   for (const profile of profiles) {
     if (!pricingIds.has(profile.pricingRef)) fail(`profile.pricingRef is unknown: ${profile.pricingRef}`);

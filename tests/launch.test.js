@@ -105,6 +105,48 @@ test("launchProfile injects the selected profile and passes Claude args unchange
   assert.equal(buildSnapshot.fable, null);
   assert.equal(buildSnapshot.hasAuthToken, true);
   assert.doesNotMatch(buildOutput.text, /test-deepseek-key/);
+
+  const glm = await runFake(root, "glm", ["--resume", "glm-session-123", "-p", "CMR_GLM_PRIVATE_PROMPT_SENTINEL"], "glm.json", "test-glm-key");
+  assert.equal(glm.code, 0);
+  assert.deepEqual(glm.snapshot.args, ["--resume", "glm-session-123", "-p", "CMR_GLM_PRIVATE_PROMPT_SENTINEL"]);
+  assert.equal(glm.snapshot.baseUrl, "https://open.bigmodel.cn/api/anthropic");
+  assert.equal(glm.snapshot.hasAuthToken, true);
+  assert.equal(glm.snapshot.hasApiKey, false);
+  assert.equal(glm.snapshot.model, null);
+  assert.equal(glm.snapshot.opus, "glm-5.2[1m]");
+  assert.equal(glm.snapshot.sonnet, "glm-5.2[1m]");
+  assert.equal(glm.snapshot.haiku, "glm-4.7");
+  assert.equal(glm.snapshot.compact, "1000000");
+  assert.equal(glm.snapshot.apiTimeoutMs, "3000000");
+  assert.equal(glm.snapshot.disableNonessentialTraffic, "1");
+  assert.equal(glm.snapshot.fable, null);
+  assert.equal(glm.snapshot.subagent, null);
+  assert.equal(glm.snapshot.effort, null);
+  assert.equal(glm.snapshot.toolSearch, null);
+  assert.doesNotMatch(glm.output, /test-glm-key|CMR_GLM_PRIVATE_PROMPT_SENTINEL/);
+
+  const glmApi = await runFake(root, "glm-api", ["--help", "-p", "CMR_GLM_API_PRIVATE_PROMPT_SENTINEL"], "glm-api.json", "test-glm-api-key");
+  assert.equal(glmApi.code, 0);
+  assert.deepEqual(glmApi.snapshot.args, ["--help", "-p", "CMR_GLM_API_PRIVATE_PROMPT_SENTINEL"]);
+  assert.equal(glmApi.snapshot.baseUrl, "https://open.bigmodel.cn/api/anthropic");
+  assert.equal(glmApi.snapshot.hasApiKey, true);
+  assert.equal(glmApi.snapshot.hasAuthToken, false);
+  assert.equal(glmApi.snapshot.model, null);
+  assert.equal(glmApi.snapshot.opus, "glm-5.2[1m]");
+  assert.equal(glmApi.snapshot.sonnet, "glm-5.2[1m]");
+  assert.equal(glmApi.snapshot.haiku, "glm-4.7");
+  assert.equal(glmApi.snapshot.compact, "1000000");
+  assert.equal(glmApi.snapshot.apiTimeoutMs, "3000000");
+  assert.equal(glmApi.snapshot.disableNonessentialTraffic, "1");
+  assert.equal(glmApi.snapshot.fable, null);
+  assert.equal(glmApi.snapshot.subagent, null);
+  assert.equal(glmApi.snapshot.effort, null);
+  assert.equal(glmApi.snapshot.toolSearch, null);
+  assert.match(glmApi.output, /GLM-5\.2 API \(Pay-as-you-go\) uses direct standard API billing/);
+  assert.match(glmApi.output, /cache hit 2, input 8, output 28/);
+  assert.match(glmApi.output, /verified 2026-07-28/);
+  assert.doesNotMatch(glmApi.output, /test-glm-api-key|CMR_GLM_API_PRIVATE_PROMPT_SENTINEL/);
+  assert.doesNotMatch(glm.output, /direct standard API billing/);
 });
 
 test("hostile Claude argv vectors remain exact and private", async (t) => {
@@ -124,7 +166,11 @@ test("hostile Claude argv vectors remain exact and private", async (t) => {
     ["kimi", ["-p", `含 空格、中文 and 'quotes' 的 prompt ${sentinel}`], "test-kimi-key"],
     ["deepseek", ["--future-claude-flag", "future-value"], "test-deepseek-key"],
     ["plan", ["--flag", "--value-that-starts-with-dashes"], "test-kimi-key"],
-    ["build", [], "test-deepseek-key"]
+    ["build", [], "test-deepseek-key"],
+    ["glm", ["--resume", "glm-session-123", "-p", `glm prompt ${sentinel}`], "test-glm-key"],
+    ["glm-plan", ["--model", "provider-supported-model"], "test-glm-key"],
+    ["glm-api", ["--model", "provider-supported-model"], "test-glm-api-key"],
+    ["glm-payg", ["--help"], "test-glm-api-key"]
   ];
   for (const [index, [selector, claudeArgs, secret]] of vectors.entries()) {
     const result = await runFake(root, selector, claudeArgs, `vector-${index}.json`, secret);
@@ -133,6 +179,54 @@ test("hostile Claude argv vectors remain exact and private", async (t) => {
     assert.deepEqual(result.inputArgs, claudeArgs);
     assert.doesNotMatch(result.output, new RegExp(sentinel));
   }
+});
+
+test("GLM standard API launch clears both authentication modes without mutating the parent", async (t) => {
+  const root = await mkdtemp(path.join(tmpdir(), "cmr-launch-glm-api-"));
+  t.after(async () => {
+    const { rm } = await import("node:fs/promises");
+    await rm(root, { recursive: true, force: true });
+  });
+  const outputFile = path.join(root, "glm-api.json");
+  const output = outputCapture();
+  const parentEnv = {
+    PATH: process.env.PATH,
+    FAKE_OUTPUT_FILE: outputFile,
+    FAKE_CLAUDE_EXIT_CODE: "7",
+    ANTHROPIC_API_KEY: "old-api",
+    ANTHROPIC_AUTH_TOKEN: "old-token",
+    Anthropic_Api_Key: "old-mixed-api",
+    aNtHrOpIc_AuTh_ToKeN: "old-mixed-token",
+    API_TIMEOUT_MS: "999",
+    Claude_Code_Disable_Nonessential_Traffic: "0"
+  };
+  const before = { ...parentEnv };
+  const claudeArgs = ["--resume", "glm-api-session-123", "--model", "provider-supported-model", "-p", "CMR_GLM_API_PRIVATE_PROMPT_SENTINEL"];
+  const result = await launchProfile("glm-api", claudeArgs, {
+    secret: "test-glm-api-key",
+    output: output.stream,
+    parentEnv,
+    cwd: root,
+    executable: process.execPath,
+    executableArgs: [fixture],
+    stdio: "ignore"
+  });
+  const snapshot = JSON.parse(await readFile(outputFile, "utf8"));
+  assert.equal(result, 7);
+  assert.deepEqual(parentEnv, before);
+  assert.deepEqual(snapshot.args, claudeArgs);
+  assert.equal(await canonicalPath(snapshot.cwd), await canonicalPath(root));
+  assert.equal(snapshot.baseUrl, "https://open.bigmodel.cn/api/anthropic");
+  assert.equal(snapshot.hasApiKey, true);
+  assert.equal(snapshot.hasAuthToken, false);
+  assert.equal(snapshot.opus, "glm-5.2[1m]");
+  assert.equal(snapshot.sonnet, "glm-5.2[1m]");
+  assert.equal(snapshot.haiku, "glm-4.7");
+  assert.equal(snapshot.compact, "1000000");
+  assert.equal(snapshot.apiTimeoutMs, "3000000");
+  assert.equal(snapshot.disableNonessentialTraffic, "1");
+  for (const key of ["model", "fable", "subagent", "effort", "toolSearch"]) assert.equal(snapshot[key], null, key);
+  assert.doesNotMatch(output.text, /test-glm-api-key|CMR_GLM_API_PRIVATE_PROMPT_SENTINEL/);
 });
 
 test("canonical IDs and aliases have identical environments and argv", async (t) => {
@@ -147,7 +241,14 @@ test("canonical IDs and aliases have identical environments and argv", async (t)
   const deepseekArgs = ["--permission-mode", "plan"];
   const deepseek = await runFake(root, "deepseek", deepseekArgs, "deepseek.json", "test-deepseek-key");
   const build = await runFake(root, "build", deepseekArgs, "build.json", "test-deepseek-key");
-  for (const pair of [[kimi, plan], [deepseek, build]]) {
+  const glmArgs = ["--resume", "glm-session-123"];
+  const glm = await runFake(root, "glm", glmArgs, "glm.json", "test-glm-key");
+  const glm52 = await runFake(root, "glm-5.2", glmArgs, "glm-5.2.json", "test-glm-key");
+  const glmPlan = await runFake(root, "glm-plan", glmArgs, "glm-plan.json", "test-glm-key");
+  const glmApiArgs = ["--help"];
+  const glmApi = await runFake(root, "glm-api", glmApiArgs, "glm-api.json", "test-glm-api-key");
+  const glmPayg = await runFake(root, "glm-payg", glmApiArgs, "glm-payg.json", "test-glm-api-key");
+  for (const pair of [[kimi, plan], [deepseek, build], [glm, glm52], [glm, glmPlan], [glmApi, glmPayg]]) {
     assert.equal(pair[0].code, pair[1].code);
     assert.deepEqual(pair[0].snapshot, pair[1].snapshot);
     assert.deepEqual(pair[0].inputArgs, pair[1].inputArgs);
@@ -227,6 +328,80 @@ test("DeepSeek missing Key setup preserves resume argv and the child exit code",
   assert.doesNotMatch(output.text, /deepseek-session-123|test-deepseek-key/);
 });
 
+test("GLM missing Key setup preserves opaque argv, cwd and the child exit code", async (t) => {
+  const root = await mkdtemp(path.join(tmpdir(), "cmr-launch-glm-inline-"));
+  t.after(async () => {
+    const { rm } = await import("node:fs/promises");
+    await rm(root, { recursive: true, force: true });
+  });
+  const outputFile = path.join(root, "glm-inline.json");
+  const output = outputCapture();
+  output.stream.isTTY = true;
+  const claudeArgs = ["--resume", "glm-session-123", "-p", "CMR_GLM_PRIVATE_PROMPT_SENTINEL"];
+  const secretStore = new SecretStore({ filePath: path.join(root, "secrets.json") });
+  const result = await launchProfile("glm", claudeArgs, {
+    secretStore,
+    prompter: fakePrompter({ secret: "test-glm-key" }),
+    input: { isTTY: true },
+    output: output.stream,
+    errorOutput: output.stream,
+    interactive: true,
+    parentEnv: {
+      PATH: process.env.PATH,
+      FAKE_OUTPUT_FILE: outputFile,
+      FAKE_CLAUDE_EXIT_CODE: "7"
+    },
+    cwd: root,
+    executable: process.execPath,
+    executableArgs: [fixture],
+    stdio: "ignore"
+  });
+  const snapshot = JSON.parse(await readFile(outputFile, "utf8"));
+  assert.equal(result, 7);
+  assert.deepEqual(snapshot.args, claudeArgs);
+  assert.equal(await canonicalPath(snapshot.cwd), await canonicalPath(root));
+  assert.equal(await secretStore.get("glm"), "test-glm-key");
+  assert.doesNotMatch(output.text, /test-glm-key|CMR_GLM_PRIVATE_PROMPT_SENTINEL/);
+});
+
+test("GLM standard API missing Key setup preserves opaque argv, cwd and the child exit code", async (t) => {
+  const root = await mkdtemp(path.join(tmpdir(), "cmr-launch-glm-api-inline-"));
+  t.after(async () => {
+    const { rm } = await import("node:fs/promises");
+    await rm(root, { recursive: true, force: true });
+  });
+  const outputFile = path.join(root, "glm-api-inline.json");
+  const output = outputCapture();
+  output.stream.isTTY = true;
+  const claudeArgs = ["--resume", "glm-api-session-123", "-p", "CMR_GLM_API_PRIVATE_PROMPT_SENTINEL"];
+  const secretStore = new SecretStore({ filePath: path.join(root, "secrets.json") });
+  const result = await launchProfile("glm-api", claudeArgs, {
+    secretStore,
+    prompter: fakePrompter({ secret: "test-glm-api-key" }),
+    input: { isTTY: true },
+    output: output.stream,
+    errorOutput: output.stream,
+    interactive: true,
+    parentEnv: {
+      PATH: process.env.PATH,
+      FAKE_OUTPUT_FILE: outputFile,
+      FAKE_CLAUDE_EXIT_CODE: "7"
+    },
+    cwd: root,
+    executable: process.execPath,
+    executableArgs: [fixture],
+    stdio: "ignore"
+  });
+  const snapshot = JSON.parse(await readFile(outputFile, "utf8"));
+  assert.equal(result, 7);
+  assert.deepEqual(snapshot.args, claudeArgs);
+  assert.equal(await canonicalPath(snapshot.cwd), await canonicalPath(root));
+  assert.equal(snapshot.hasApiKey, true);
+  assert.equal(snapshot.hasAuthToken, false);
+  assert.equal(await secretStore.get("glm-api"), "test-glm-api-key");
+  assert.doesNotMatch(output.text, /test-glm-api-key|CMR_GLM_API_PRIVATE_PROMPT_SENTINEL/);
+});
+
 test("missing Key cancellation returns 130 and never spawns Claude", async (t) => {
   const root = await mkdtemp(path.join(tmpdir(), "cmr-launch-inline-cancel-"));
   t.after(async () => {
@@ -257,6 +432,56 @@ test("missing Key cancellation returns 130 and never spawns Claude", async (t) =
   assert.doesNotMatch(output.text, /CMR_PRIVATE_PROMPT_SENTINEL/);
 });
 
+test("GLM missing Key cancellation returns 130 and never spawns Claude", async (t) => {
+  const root = await mkdtemp(path.join(tmpdir(), "cmr-launch-glm-cancel-"));
+  t.after(async () => {
+    const { rm } = await import("node:fs/promises");
+    await rm(root, { recursive: true, force: true });
+  });
+  const output = outputCapture();
+  output.stream.isTTY = true;
+  const result = await launchProfile("glm", ["-p", "CMR_GLM_PRIVATE_PROMPT_SENTINEL"], {
+    secretStore: new SecretStore({ filePath: path.join(root, "secrets.json") }),
+    prompter: fakePrompter({ cancel: true }),
+    input: { isTTY: true },
+    output: output.stream,
+    errorOutput: output.stream,
+    interactive: true,
+    cwd: root,
+    executable: process.execPath,
+    executableArgs: [fixture],
+    stdio: "ignore"
+  });
+  assert.equal(result, 130);
+  await assert.rejects(() => readFile(path.join(root, "inline.json")));
+  assert.doesNotMatch(output.text, /CMR_GLM_PRIVATE_PROMPT_SENTINEL/);
+});
+
+test("GLM standard API missing Key cancellation returns 130 and never spawns Claude", async (t) => {
+  const root = await mkdtemp(path.join(tmpdir(), "cmr-launch-glm-api-cancel-"));
+  t.after(async () => {
+    const { rm } = await import("node:fs/promises");
+    await rm(root, { recursive: true, force: true });
+  });
+  const output = outputCapture();
+  output.stream.isTTY = true;
+  const result = await launchProfile("glm-api", ["-p", "CMR_GLM_API_PRIVATE_PROMPT_SENTINEL"], {
+    secretStore: new SecretStore({ filePath: path.join(root, "secrets.json") }),
+    prompter: fakePrompter({ cancel: true }),
+    input: { isTTY: true },
+    output: output.stream,
+    errorOutput: output.stream,
+    interactive: true,
+    cwd: root,
+    executable: process.execPath,
+    executableArgs: [fixture],
+    stdio: "ignore"
+  });
+  assert.equal(result, 130);
+  await assert.rejects(() => readFile(path.join(root, "inline.json")));
+  assert.doesNotMatch(output.text, /CMR_GLM_API_PRIVATE_PROMPT_SENTINEL/);
+});
+
 test("missing Key in a non-TTY returns a fast stable error without reading input", async (t) => {
   const root = await mkdtemp(path.join(tmpdir(), "cmr-launch-inline-nontty-"));
   t.after(async () => {
@@ -272,6 +497,40 @@ test("missing Key in a non-TTY returns a fast stable error without reading input
       interactive: false
     }),
     /missing DeepSeek secret; run cmr secret set deepseek/
+  );
+});
+
+test("GLM missing Key in a non-TTY returns a fast stable error without reading input", async (t) => {
+  const root = await mkdtemp(path.join(tmpdir(), "cmr-launch-glm-nontty-"));
+  t.after(async () => {
+    const { rm } = await import("node:fs/promises");
+    await rm(root, { recursive: true, force: true });
+  });
+  await assert.rejects(
+    () => launchProfile("glm", [], {
+      secretStore: new SecretStore({ filePath: path.join(root, "secrets.json") }),
+      input: { isTTY: false },
+      output: outputCapture().stream,
+      interactive: false
+    }),
+    /missing GLM Coding Plan secret; run cmr secret set glm/
+  );
+});
+
+test("GLM standard API missing Key in a non-TTY returns a fast stable error without reading input", async (t) => {
+  const root = await mkdtemp(path.join(tmpdir(), "cmr-launch-glm-api-nontty-"));
+  t.after(async () => {
+    const { rm } = await import("node:fs/promises");
+    await rm(root, { recursive: true, force: true });
+  });
+  await assert.rejects(
+    () => launchProfile("glm-api", [], {
+      secretStore: new SecretStore({ filePath: path.join(root, "secrets.json") }),
+      input: { isTTY: false },
+      output: outputCapture().stream,
+      interactive: false
+    }),
+    /missing GLM Standard API \(Pay-as-you-go\) secret; run cmr secret set glm-api/
   );
 });
 
@@ -320,7 +579,12 @@ test("compatibility aliases configure the correct Provider in place", async (t) 
     const { rm } = await import("node:fs/promises");
     await rm(root, { recursive: true, force: true });
   });
-  for (const [selector, provider, secret] of [["plan", "kimi", "test-kimi-key"], ["build", "deepseek", "test-deepseek-key"]]) {
+  for (const [selector, provider, secret] of [
+    ["plan", "kimi", "test-kimi-key"],
+    ["build", "deepseek", "test-deepseek-key"],
+    ["glm-5.2", "glm", "test-glm-key"],
+    ["glm-plan", "glm", "test-glm-key"]
+  ]) {
     const output = outputCapture();
     output.stream.isTTY = true;
     const store = new SecretStore({ filePath: path.join(root, `${provider}.json`) });

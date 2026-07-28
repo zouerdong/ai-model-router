@@ -42,12 +42,16 @@ test("state compares current IDs, preserves historical IDs, and writes sorted un
   const store = new SetupStateStore({ filePath });
   await store.markSeen(["deepseek", "kimi"]);
   assert.deepEqual(await store.getUnseenProviderIds(["kimi", "deepseek"]), []);
+  assert.deepEqual(await store.getUnseenProviderIds(["kimi", "deepseek", "glm"]), ["glm"]);
+  assert.deepEqual(await store.getUnseenProviderIds(["kimi", "deepseek", "glm", "glm-api"]), ["glm", "glm-api"]);
+  await store.markSeen(["glm"]);
+  assert.deepEqual(await store.getUnseenProviderIds(["kimi", "deepseek", "glm", "glm-api"]), ["glm-api"]);
   assert.deepEqual(await store.getUnseenProviderIds(["kimi", "deepseek", "third-provider"]), ["third-provider"]);
   const result = await store.markSeen(["third-provider"]);
-  assert.deepEqual(result.seenProviderIds, ["deepseek", "kimi", "third-provider"]);
+  assert.deepEqual(result.seenProviderIds, ["deepseek", "glm", "kimi", "third-provider"]);
   assert.deepEqual(JSON.parse(await readFile(filePath, "utf8")), {
     version: 1,
-    seenProviderIds: ["deepseek", "kimi", "third-provider"]
+    seenProviderIds: ["deepseek", "glm", "kimi", "third-provider"]
   });
   if (process.platform !== "win32") {
     assert.equal((await stat(filePath)).mode & 0o777, 0o600);
@@ -55,7 +59,7 @@ test("state compares current IDs, preserves historical IDs, and writes sorted un
   }
   assert.equal((await readdir(path.dirname(filePath))).some((name) => name.endsWith(".tmp")), false);
   await store.markSeen(["kimi"]);
-  assert.deepEqual((await store.read()).seenProviderIds, ["deepseek", "kimi", "third-provider"]);
+  assert.deepEqual((await store.read()).seenProviderIds, ["deepseek", "glm", "kimi", "third-provider"]);
 });
 
 test("state rejects duplicate, unsorted, unknown-field, wrong-version and empty schemas", async (t) => {

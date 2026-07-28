@@ -1,0 +1,25 @@
+{
+  "id": "glm-api",
+  "aliases": ["glm-payg"],
+  "displayName": "GLM-5.2 API (Pay-as-you-go)",
+  "provider": "glm-api",
+  "purpose": "通过智谱标准按量 API 运行 Claude Code；Sonnet/Opus 使用 GLM-5.2 1M，Haiku 使用 GLM-4.7；按实际 Token 计费",
+  "costNotice": "payg",
+  "pricingRef": "glm-5.2",
+  "requiredEnvironment": [
+    "ANTHROPIC_DEFAULT_OPUS_MODEL",
+    "ANTHROPIC_DEFAULT_SONNET_MODEL",
+    "ANTHROPIC_DEFAULT_HAIKU_MODEL",
+    "CLAUDE_CODE_AUTO_COMPACT_WINDOW",
+    "CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC",
+    "API_TIMEOUT_MS"
+  ],
+  "environment": {
+    "ANTHROPIC_DEFAULT_OPUS_MODEL": "glm-5.2[1m]",
+    "ANTHROPIC_DEFAULT_SONNET_MODEL": "glm-5.2[1m]",
+    "ANTHROPIC_DEFAULT_HAIKU_MODEL": "glm-4.7",
+    "CLAUDE_CODE_AUTO_COMPACT_WINDOW": "1000000",
+    "CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC": "1",
+    "API_TIMEOUT_MS": "3000000"
+  }
+}

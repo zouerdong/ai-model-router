@@ -3,7 +3,7 @@ import path from "node:path";
 import { randomUUID } from "node:crypto";
 import { getSecretStorePath } from "./platform.js";
 
-const DEFAULT_PROVIDER_IDS = Object.freeze(["kimi", "deepseek"]);
+const DEFAULT_PROVIDER_IDS = Object.freeze(["kimi", "deepseek", "glm", "glm-api"]);
 const MAX_SECRET_LENGTH = 16_384;
 
 function assertProvider(provider, providerIds) {

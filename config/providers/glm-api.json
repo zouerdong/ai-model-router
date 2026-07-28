@@ -1,0 +1,10 @@
+{
+  "id": "glm-api",
+  "displayName": "GLM Standard API (Pay-as-you-go)",
+  "baseUrl": "https://open.bigmodel.cn/api/anthropic",
+  "apiKeyUrl": "https://bigmodel.cn/usercenter/proj-mgmt/apikeys",
+  "authVariable": "ANTHROPIC_API_KEY",
+  "secretId": "glm-api",
+  "verifiedOn": "2026-07-28",
+  "sourceUrl": "https://docs.bigmodel.cn/cn/guide/develop/claude/introduction"
+}

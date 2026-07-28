@@ -1,7 +1,7 @@
 # 01 — 产品范围
 
-状态：`1.3.0` 已完成跨平台验收并正式发布
-更新时间：2026-07-24
+状态：`1.4.0` 统一发布 GLM Coding Plan 与 GLM 标准 API 按量 Profile
+更新时间：2026-07-28
 
 ## 1. 一句话定义
 
@@ -275,3 +275,47 @@ https://github.com/zouerdong/ai-model-router/releases/latest/download/claude-mod
 源码链接、junction、checkout、Homebrew、WinGet、独立二进制及无法唯一确定安装映射的来源均 fail closed，不执行 `git pull`、不切换到 npm 默认 prefix、不提权。更新不读取或修改 Secret Store、Setup State、Claude Settings、Shell、Provider Key、Claude argv、Codex 或系统环境。
 
 `1.2.1` 用户必须先按 README 的一次性 exact-release bootstrap 命令安装 `1.3.0`；之后才进入 `cmr update` 闭环。`v1.3.0` 已以 immutable GitHub Release 发布，固定资产、checksum、Mac/Windows T4、公开 bootstrap 与 latest `--check` 均通过。实现、测试与发布证据见 `src/updater.js`、`src/commands/update.js`、`tests/update*.test.js` 与 `docs/13-v1.3-self-update-implementation-brief.md` 第 15、18、19 节。
+
+## 12. `1.4.0` GLM-5.2 Coding Plan 范围
+
+> 本节描述 `1.4.0` 中的 Coding Plan 入口。实施合同见 `docs/14-v1.4-glm-5.2-coding-plan-implementation-brief.md`；与标准 API 的统一版本决策和发布证据见 `docs/16-v1.4-unified-glm-release.md`。
+
+`1.4.0` 新增第三个规范 Profile：
+
+```bash
+cmr glm [claude args...]
+```
+
+- `glm` 只表示智谱中国区 GLM Coding Plan。
+- `glm-5.2`、`glm-plan` 是数据化兼容别名。
+- Sonnet/Opus 档按当前官方 Claude Code 配置映射到 `glm-5.2[1m]`，Haiku 档映射到 `glm-4.7`。
+- GLM 使用独立 Provider/Secret ID `glm`；升级用户现有 Setup State 会因 unseen Provider 再显示一次全量状态。
+- 所有 Claude Code 参数继续透明透传；CMR 不建立 GLM 专用会话、任务角色或路由逻辑。
+
+`glm` 本身不实现 Plan/PAYG 自动识别、额度查询、账单代理或余额 fallback。Coding Plan 与标准 API 即使使用相同 Anthropic 兼容 Base URL，也存在凭据 Header 和计费语义差异；按量 API 以同一版本中的独立显式 `glm-api` Profile 提供。
+
+运行时代码不识别或回显真实 Key；`configured` 只表示本机 Store 已保存凭据。Provider 验收、Windows 回归与发布证据统一记录在 `docs/16`。
+
+## 13. `1.4.0` GLM 标准 API 按量付费范围
+
+> 该功能最初按独立 `1.5.0` 候选规划。维护者在两种模式均完成实现与 Provider 验收后，决定与 Coding Plan 统一进入 `1.4.0`；运行时的独立凭据和费用边界不变。
+
+`1.4.0` 新增一个独立、显式的标准 API 入口：
+
+```bash
+cmr glm-api [claude args...]
+cmr glm-payg [claude args...]
+```
+
+- `glm-api` 是规范入口；`glm-payg` 是唯一兼容别名。
+- `glm`、`glm-5.2` 与 `glm-plan` 继续且只表示 GLM Coding Plan，绝不改绑到按量 API。
+- `glm-api` 使用独立 Provider/Profile/Secret ID `glm-api`，通过 `ANTHROPIC_API_KEY` 连接 `https://open.bigmodel.cn/api/anthropic`；Claude Code 对此变量发送 `X-Api-Key`。
+- `glm` 保持独立的 `ANTHROPIC_AUTH_TOKEN`/Bearer 鉴权。每次启动只能注入本次 Profile 所需的一种鉴权变量，不能让两种变量或其混合大小写残留共同进入子进程。
+- 按量 Profile 的 Opus/Sonnet 映射为 `glm-5.2[1m]`，Haiku 为 `glm-4.7`；此映射是基于标准 Claude API 兼容事实和当前完整 Claude Code 映射的受约束推断，仍须由获批的真实标准 API 验收确认。
+- `glm-api` 启动前显示一行直接标准 API 按量计费警告，价格只读取既有 `glm-5.2` Pricing 记录；CMR 不读取余额、不估算会话费用，也不为警告增加二次确认。
+
+按量 API 与 Coding Plan 即使共享 Base URL，也有不同的 Key 来源、Header、Secret 槽位与费用通道。CMR 不识别 Key 类型、不查询额度、不在 401/403/429 或任意 Provider 失败后进行自动 fallback、重试或费用通道切换；用户必须在命令行明确选择本次使用 `glm` 或 `glm-api`。
+
+新增第四个正式 Provider 后，动态 Setup State 差集会使已有三家均已 seen 的用户看到一次全量四家 onboarding；用户可选择 Not now，`cmr setup glm-api` 与缺 Key 的 TTY inline setup 只处理该独立槽位。Schema 仍为 v1，旧三 Provider Store 可读，但写入 `glm-api` 后手工降级到不识别第四槽位的旧版本可能拒绝整个 Store；不得为降级自动删除或静默忽略该字段。
+
+两种 GLM 模式共享一次版本发布，但 CMR 仍不合并 Secret、不检测 Key 类型、不查询账单，也不在任意错误后自动切换费用通道。

@@ -1,7 +1,7 @@
 # 06 — 操作说明手册
 
-状态：当前稳定版为 `1.3.0`
-适用范围：Mac 与原生 Windows/WSL 的当前稳定用法
+状态：当前稳定版为 `1.4.0`
+适用范围：Mac 与原生 Windows/WSL
 
 CMR 只在启动 Claude Code 前选择 Provider/Profile，并注入临时子进程环境。进入 Claude Code 后，任务用途、权限模式、会话和参数都遵循 Claude Code 原生行为。
 
@@ -13,13 +13,13 @@ CMR 只在启动 Claude Code 前选择 Provider/Profile，并注入临时子进�
 cmr version
 ```
 
-当前稳定版应输出 `1.3.0`；`1.2.1` 用户先按 README 的 exact-release bootstrap 升级。然后在交互式终端执行：
+稳定 Release 应输出 `1.4.0`。`1.3.0` 用户可运行 `cmr update`；`1.2.1` 或更旧版本先按 README 的 exact-release bootstrap 升级。然后在交互式终端执行：
 
 ```bash
 cmr
 ```
 
-首次运行时，无论当前已经保存零个、一个还是全部 Provider Key，CMR 都会先显示 Kimi 与 DeepSeek 的 `configured/missing` 状态并进入一次 setup：
+首次运行时，无论当前已经保存零个、一个还是全部 Provider Key，CMR 都会先显示 Kimi、DeepSeek、GLM Coding Plan 与 GLM API 的 `configured/missing` 状态并进入一次 setup：
 
 - `configured`：Key 已保存到本机 CMR Secret Store；不表示已联网验证有效、余额或模型权限。
 - `missing`：本机尚未保存该 Provider Key。
@@ -46,6 +46,8 @@ cmr kimi
 
 ```bash
 cmr deepseek
+cmr glm       # GLM Coding Plan
+cmr glm-api   # GLM standard API pay-as-you-go
 ```
 
 进入后所有操作与正常 Claude Code 相同。用户不需要先写 Brief，也不需要按 `plan`→`build` 顺序使用。
@@ -54,7 +56,7 @@ Kimi 启动时只显示一行高费用提示、价格摘要和核验日期，不
 
 无参数 `cmr` 的日常菜单会显示：
 
-- Kimi 与 DeepSeek Profile 及其实时 `configured/missing` 状态。
+- Kimi、DeepSeek、GLM Coding Plan 与 GLM API Profile 及其实时 `configured/missing` 状态。
 - `setup`：配置或更换 Key；结束后刷新菜单状态。
 - `doctor`：执行只读诊断。
 - `exit`：不启动 Claude Code，正常退出。
@@ -69,6 +71,8 @@ Kimi 启动时只显示一行高费用提示、价格摘要和核验日期，不
 cmr setup
 cmr setup kimi
 cmr setup deepseek
+cmr setup glm
+cmr setup glm-api
 ```
 
 已配置 Key 默认保留；只有明确确认替换后才会隐藏输入新值。空值、空白、换行、NUL、超长输入、EOF、Ctrl+C 或原子写入失败都保留旧 Key。只配置一家的情况下，另一家可稍后从 setup 或对应 Profile 启动进入就地配置。
@@ -82,6 +86,8 @@ Key 只存入仓库外 CMR Secret Store，向导不显示 Key 片段、长度、
 ```bash
 cmr kimi --continue
 cmr deepseek --continue
+cmr glm --continue
+cmr glm-api --continue
 ```
 
 含义是：使用当前选择的 Profile 环境，让 Claude Code 继续当前目录最近会话。CMR 不替用户核对旧会话原 Provider，也不阻止跨 Provider 使用。
@@ -91,6 +97,8 @@ cmr deepseek --continue
 ```bash
 cmr kimi --resume
 cmr deepseek --resume <session-id>
+cmr glm --resume <session-id>
+cmr glm-api --resume <session-id>
 ```
 
 `--resume` 是否打开选择器、session ID 格式和查找规则由当前 Claude Code 决定。
@@ -124,6 +132,8 @@ cmr plan --permission-mode plan
 ```bash
 cmr kimi -p "分析这个项目"
 cmr deepseek -p "修复测试"
+cmr glm -p "分析这个项目"
+cmr glm-api -p "分析这个项目"
 ```
 
 `-p/--print` 后的 prompt 原样交给 Claude Code，可能产生 Provider 用量；CMR 不记录或回显 prompt。
@@ -133,6 +143,8 @@ cmr deepseek -p "修复测试"
 ```bash
 cmr kimi --model <model>
 cmr deepseek --model <model>
+cmr glm --model <model>
+cmr glm-api --model <model>
 ```
 
 CMR 不拦截 `--model`。若 Provider 不支持该模型，错误由 Claude Code 或 Provider 返回。恢复 Profile 默认模型时，退出并不带 `--model` 重新启动。
@@ -162,9 +174,13 @@ cmr config path
 cmr setup
 cmr setup kimi
 cmr setup deepseek
+cmr setup glm
+cmr setup glm-api
 cmr secret status
 cmr secret set kimi
 cmr secret set deepseek
+cmr secret set glm
+cmr secret set glm-api
 cmr help
 ```
 
@@ -175,7 +191,7 @@ cmr help
 - `setup`：显示全部 Provider 状态并配置或更换 Key；带 Provider ID 时只处理一家。
 - `secret status`：只显示 `configured` 或 `missing`。
 - `secret set`：在本机 TTY 隐藏输入，不把 Key 放进参数或历史。
-- `help`：只显示 CMR 自己的帮助；查看 Claude Code 帮助请运行 `cmr kimi --help` 或 `cmr deepseek --help`。
+- `help`：只显示 CMR 自己的帮助；查看 Claude Code 帮助请运行 `cmr kimi --help`、`cmr deepseek --help`、`cmr glm --help` 或 `cmr glm-api --help`。
 
 在不含 `.gitignore` 的普通目录运行 `doctor` 时可能看到 `.gitignore is missing` 警告；这表示当前目录缺少该文件，不代表 CMR 安装失败。
 
@@ -193,7 +209,7 @@ macOS 默认位置：
 - `secrets.json`：Secret Store Schema v1，保存 Provider Key；不要手工打印、复制到仓库或编辑。
 - `state.json`：只保存 Schema 版本和已看过的 Provider ID，不含 Key、账号、时间、路径或使用记录。
 
-运行 `cmr config path` 可查看当前实际路径，但不会读取文件正文。Store 损坏或不可读时 CMR 会停止，避免覆盖现有 Key；不要自行删除文件，应先根据错误和备份方案确认恢复动作。
+运行 `cmr config path` 可查看当前实际路径，但不会读取文件正文。Store 损坏或不可读时 CMR 会停止，避免覆盖现有 Key；不要自行删除文件，应先根据错误和备份方案确认恢复动作。`1.4.0` 写入 `glm` 或 `glm-api` 后，手工降级到 `1.3.0` 可能使旧版拒绝四 Provider Store；不得为降级自动删除字段，应先制定脱敏备份与兼容方案。
 
 验收所用 Mac 的用户级 `cmr` 位于 `$HOME/.local/bin/cmr`，链接到本项目。移动、卸载或重新安装会改变本机命令环境，应先确认准确的安装位置和回退方式。
 
@@ -226,7 +242,7 @@ cmr secret status
 - `setup could not be completed`：运行 `cmr config path` 定位 Store，再检查文件权限或损坏情况；不要直接覆盖或删除现有 Secret Store。
 - setup 被取消：已成功保存的 Provider 保持 configured，未完成的 Provider 仍为 missing；重新运行 `cmr setup` 会从实时状态继续。
 - `/status` 显示错误 Provider 或模型：退出会话并运行 `cmr doctor` 检查 Settings、Shell 和环境冲突；是否使用 `/model` 由用户按 Claude Code 原生规则决定，CMR 不拦截。
-- 裸 `claude` 不再自动进入旧 Kimi 配置：使用 `cmr kimi` 或 `cmr deepseek` 选择本次 Provider。
+- 裸 `claude` 不再自动进入旧 Kimi 配置：使用 `cmr kimi`、`cmr deepseek`、`cmr glm` 或 `cmr glm-api` 显式选择本次 Provider。
 
 CMR 不做提示词分类、请求级动态路由、代理层、失败自动回退、精确计费或 Codex 管理，也不修改 Claude Code Settings、Shell、MCP、Skills、Hooks、插件、主题或权限。
 
@@ -242,3 +258,45 @@ cmr update
 旧版若位于自定义 npm prefix，一次性 bootstrap 必须加 `--prefix <current-prefix>` 并保持原 prefix；不要依赖当前 npm 默认 prefix 猜测安装位置。
 
 `--check` 只读检查固定 Release asset。`update` 只处理当前活动入口对应的实体 npm global package，使用临时 cache、exact prefix、`--ignore-scripts`、`--no-audit`、`--no-fund`，并执行 backup、install、verify、rollback。源码链接、checkout、junction、Homebrew、WinGet 或无法唯一识别来源的安装不自动替换；请按原来源手工维护。
+
+## 17. `1.4.0` GLM Coding Plan
+
+稳定版新增：
+
+```bash
+cmr glm [claude args...]
+cmr glm-5.2 [claude args...]
+cmr glm-plan [claude args...]
+```
+
+三种入口等价。`glm` 只代表智谱中国区 GLM Coding Plan：使用 `ANTHROPIC_AUTH_TOKEN`、`https://open.bigmodel.cn/api/anthropic` 和独立 `glm` Secret Store 槽位。它不是 `glm-api`、`glm-payg` 或标准按量 API；CMR 不识别 Key 类型、不查询余额，也不会在套餐额度耗尽、401、1113 或任何失败后自动切换到按量 API。
+
+`configured` 只表示 GLM Key 已保存到本机 Store，不表示 CMR 会持续联网验证有效性、套餐状态或费用通道。Provider 验收与发布证据见 `docs/16-v1.4-unified-glm-release.md`。
+
+## 18. `1.4.0` GLM 标准 API 按量付费
+
+稳定版新增：
+
+```bash
+cmr glm-api [claude args...]
+cmr glm-payg [claude args...]
+```
+
+`glm-api` 是规范入口，`glm-payg` 是唯一别名。它与 `glm`（GLM Coding Plan）共享 `https://open.bigmodel.cn/api/anthropic`，但它们不是同一费用或鉴权通道：
+
+| 入口 | 凭据变量 | Secret Store 槽位 | 费用语义 |
+|---|---|---|---|
+| `cmr glm` | `ANTHROPIC_AUTH_TOKEN` | `glm` | Coding Plan |
+| `cmr glm-api` / `cmr glm-payg` | `ANTHROPIC_API_KEY` | `glm-api` | 智谱标准 API 按量计费 |
+
+`glm-api` 启动前会显示一行标准 API 直接计费提示；其 GLM-5.2 cache hit、input、output 参考价从公开配置读取，不估算会话费用、不查询余额，也不要求 CMR 二次确认。Claude Code 自己首次检测到 API Key 时可能出现原生确认提示，CMR 不拦截或代答。
+
+不要把 Coding Plan Key 写入 `glm-api`，也不要把标准 API Key 写入 `glm`。CMR 不探测 Key 类型，不会同时注入两种鉴权变量；Plan 额度、401/403/429、欠费或任意 Provider 错误都不会触发 `glm` 与 `glm-api` 之间的自动 fallback。请通过命令显式选择费用通道。
+
+非 TTY 缺少 `glm-api` Key 会立即提示：
+
+```text
+missing GLM Standard API (Pay-as-you-go) secret; run cmr secret set glm-api
+```
+
+交互式终端可以执行 `cmr setup glm-api` 或直接运行 `cmr glm-api` 进行仅该槽位的隐藏输入配置；取消时不会启动 Claude Code。

@@ -1,0 +1,15 @@
+{
+  "id": "glm-5.2",
+  "displayName": "GLM-5.2 standard API reference",
+  "model": "glm-5.2",
+  "currency": "CNY",
+  "unit": "per_million_tokens",
+  "prices": {
+    "inputCacheHit": 2,
+    "inputCacheMiss": 8,
+    "output": 28
+  },
+  "contextWindowTokens": 1000000,
+  "verifiedOn": "2026-07-28",
+  "sourceUrl": "https://bigmodel.cn/pricing"
+}

@@ -175,8 +175,9 @@ export async function runDoctor(options = {}) {
     lines.push(line("WARN", "settings contain legacy/unverified CLAUDE_CODE_MAX_CONTEXT_TOKENS"));
   }
 
+  let config;
   try {
-    const config = await loadConfigSet({ configRoot: options.configRoot, now: options.now });
+    config = await loadConfigSet({ configRoot: options.configRoot, now: options.now });
     lines.push(line("PASS", `validated ${config.profiles.length} profiles and ${config.providers.length} providers`));
     details.config = {
       profiles: config.profiles.map((profile) => profile.id),
@@ -188,18 +189,25 @@ export async function runDoctor(options = {}) {
   }
 
   const secretPath = getSecretStorePath({ platform, env, homedir: homeDir });
-  const secretStore = new SecretStore({ filePath: secretPath });
-  try {
-    details.secrets = await secretStore.status();
-    for (const provider of ["kimi", "deepseek"]) {
-      lines.push(line("INFO", `${provider} secret: ${details.secrets[provider] ? "configured" : "missing"}`));
+  if (config) {
+    const secretStore = new SecretStore({
+      filePath: secretPath,
+      providerIds: config.providers.map((provider) => provider.secretId)
+    });
+    try {
+      details.secrets = await secretStore.status();
+      for (const provider of config.providers) {
+        lines.push(line("INFO", `${provider.id} secret: ${details.secrets[provider.secretId] ? "configured" : "missing"}`));
+      }
+      const mode = await getPermissions(secretPath);
+      if (mode !== null && platform !== "win32" && (mode & 0o077) !== 0) {
+        lines.push(line("WARN", `secret store permissions are ${mode.toString(8).padStart(3, "0")}; expected owner-only`));
+      }
+    } catch (error) {
+      lines.push(line("WARN", `secret store status unavailable: ${error.message}`));
     }
-    const mode = await getPermissions(secretPath);
-    if (mode !== null && platform !== "win32" && (mode & 0o077) !== 0) {
-      lines.push(line("WARN", `secret store permissions are ${mode.toString(8).padStart(3, "0")}; expected owner-only`));
-    }
-  } catch (error) {
-    lines.push(line("WARN", `secret store status unavailable: ${error.message}`));
+  } else {
+    lines.push(line("WARN", "secret store status skipped because configuration is invalid"));
   }
 
   const gitignorePath = path.join(cwd, ".gitignore");

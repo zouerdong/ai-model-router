@@ -27,6 +27,8 @@ test("doctor finds redacted settings, shell and environment conflicts without wr
     env: {
       ANTHROPIC_MODEL: "kimi-k3",
       ANTHROPIC_AUTH_TOKEN: "test-settings-secret",
+      API_TIMEOUT_MS: "3000000",
+      CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC: "1",
       TAVILY_API_KEY: "test-tavily-key"
     },
     statusLine: { type: "command", command: "keep-status" }
@@ -54,9 +56,14 @@ test("doctor finds redacted settings, shell and environment conflicts without wr
   assert.equal(beforeShell, afterShell);
   assert.match(result.text, /ANTHROPIC_MODEL/);
   assert.match(result.text, /ANTHROPIC_API_KEY/);
+  assert.match(result.text, /API_TIMEOUT_MS/);
+  assert.match(result.text, /CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC/);
   assert.match(result.text, /legacy\/unverified/);
   assert.doesNotMatch(result.text, /test-settings-secret|test-shell-secret|test-process-key|test-process-token/);
   assert.match(result.text, /deepseek secret: missing/);
+  assert.match(result.text, /glm secret: missing/);
+  assert.match(result.text, /glm-api secret: missing/);
+  assert.match(result.text, /validated 4 profiles and 4 providers/);
 });
 
 test("doctor invokes Windows cmd shims through cmd.exe without shell mode", async (t) => {

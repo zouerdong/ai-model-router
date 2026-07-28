@@ -75,27 +75,29 @@ function optionsFor(fixtureValue, prompter) {
   };
 }
 
-test("full dashboard shows all providers and configures both missing keys", async (t) => {
+test("full dashboard shows all providers and configures every missing key", async (t) => {
   const value = await fixture(t);
-  const prompter = fakePrompter({ choices: ["configure-all-missing"], hidden: ["test-kimi-key", "test-deepseek-key"] });
+  const prompter = fakePrompter({ choices: ["configure-all-missing"], hidden: ["test-kimi-key", "test-deepseek-key", "test-glm-key", "test-glm-api-key"] });
   const options = optionsFor(value, prompter);
   const result = await runSetup([], options);
   assert.equal(result.exitCode, 0);
   assert.equal(result.status, "configured");
-  assert.deepEqual(result.configuredProviders, ["kimi", "deepseek"]);
-  assert.deepEqual(result.changedProviders, ["kimi", "deepseek"]);
-  assert.deepEqual(result.displayedProviderIds, ["kimi", "deepseek"]);
+  assert.deepEqual(result.configuredProviders, ["kimi", "deepseek", "glm", "glm-api"]);
+  assert.deepEqual(result.changedProviders, ["kimi", "deepseek", "glm", "glm-api"]);
+  assert.deepEqual(result.displayedProviderIds, ["kimi", "deepseek", "glm", "glm-api"]);
   assert.equal(result.markedSeen, true);
-  assert.deepEqual((await value.setupStateStore.read()).seenProviderIds, ["deepseek", "kimi"]);
+  assert.deepEqual((await value.setupStateStore.read()).seenProviderIds, ["deepseek", "glm", "glm-api", "kimi"]);
   assert.match(options.outputCapture.value, /kimi: missing/);
   assert.match(options.outputCapture.value, /deepseek: missing/);
-  assert.doesNotMatch(`${options.outputCapture.value}${options.errorCapture.value}`, /test-kimi-key|test-deepseek-key/);
+  assert.match(options.outputCapture.value, /glm: missing/);
+  assert.match(options.outputCapture.value, /glm-api: missing/);
+  assert.doesNotMatch(`${options.outputCapture.value}${options.errorCapture.value}`, /test-kimi-key|test-deepseek-key|test-glm-key|test-glm-api-key/);
 });
 
 test("first dashboard still appears with one or all keys already configured", async (t) => {
   for (const configured of [
     [["kimi", "test-kimi-key"]],
-    [["kimi", "test-kimi-key"], ["deepseek", "test-deepseek-key"]]
+    [["kimi", "test-kimi-key"], ["deepseek", "test-deepseek-key"], ["glm", "test-glm-key"], ["glm-api", "test-glm-api-key"]]
   ]) {
     const value = await fixture(t, { configured });
     const prompter = fakePrompter({ choices: ["continue"] });
@@ -107,6 +109,8 @@ test("first dashboard still appears with one or all keys already configured", as
     assert.match(options.outputCapture.value, /Current API Key status/);
     assert.match(options.outputCapture.value, /kimi: configured/);
     assert.match(options.outputCapture.value, /deepseek: (?:missing|configured)/);
+    assert.match(options.outputCapture.value, /glm: (?:missing|configured)/);
+    assert.match(options.outputCapture.value, /glm-api: (?:missing|configured)/);
     assert.equal(prompter.calls.hidden, 0);
   }
 });
@@ -120,23 +124,25 @@ test("Not now marks seen without creating an empty Secret Store", async (t) => {
   assert.equal(result.status, "unchanged");
   assert.equal(result.markedSeen, true);
   await assert.rejects(() => readFile(path.join(value.directory, "secrets.json")), { code: "ENOENT" });
-  assert.deepEqual((await value.setupStateStore.read()).seenProviderIds, ["deepseek", "kimi"]);
+  assert.deepEqual((await value.setupStateStore.read()).seenProviderIds, ["deepseek", "glm", "glm-api", "kimi"]);
 });
 
 test("configure all missing only writes what is missing and preserves the existing key", async (t) => {
   const value = await fixture(t, { configured: [["kimi", "test-kimi-old"]] });
-  const prompter = fakePrompter({ choices: ["configure-all-missing"], hidden: ["test-deepseek-key"] });
+  const prompter = fakePrompter({ choices: ["configure-all-missing"], hidden: ["test-deepseek-key", "test-glm-key", "test-glm-api-key"] });
   const options = optionsFor(value, prompter);
   const result = await runSetup([], options);
   assert.equal(result.exitCode, 0);
-  assert.deepEqual(result.changedProviders, ["deepseek"]);
+  assert.deepEqual(result.changedProviders, ["deepseek", "glm", "glm-api"]);
   assert.equal(await value.secretStore.get("kimi"), "test-kimi-old");
   assert.equal(await value.secretStore.get("deepseek"), "test-deepseek-key");
-  assert.deepEqual(prompter.calls.hidden, 1);
+  assert.equal(await value.secretStore.get("glm"), "test-glm-key");
+  assert.equal(await value.secretStore.get("glm-api"), "test-glm-api-key");
+  assert.deepEqual(prompter.calls.hidden, 3);
 });
 
-test("full dashboard can configure only either selected Provider and leave the other missing", async (t) => {
-  for (const provider of ["kimi", "deepseek"]) {
+test("full dashboard can configure only one selected Provider and leave the others missing", async (t) => {
+  for (const provider of ["kimi", "deepseek", "glm", "glm-api"]) {
     const value = await fixture(t);
     const prompter = fakePrompter({
       choices: [`provider:${provider}`, "continue"],
@@ -146,8 +152,9 @@ test("full dashboard can configure only either selected Provider and leave the o
     assert.equal(result.exitCode, 0);
     assert.deepEqual(result.changedProviders, [provider]);
     assert.equal(await value.secretStore.get(provider), `test-${provider}-only`);
-    const other = provider === "kimi" ? "deepseek" : "kimi";
-    assert.equal(await value.secretStore.get(other), null);
+    for (const other of ["kimi", "deepseek", "glm", "glm-api"].filter((id) => id !== provider)) {
+      assert.equal(await value.secretStore.get(other), null);
+    }
   }
 });
 
@@ -164,6 +171,17 @@ test("targeted replacement defaults to keeping the old key and does not read hid
   assert.deepEqual(result.displayedProviderIds, ["kimi"]);
 });
 
+test("targeted GLM API replacement defaults to keeping its isolated key", async (t) => {
+  const value = await fixture(t, { configured: [["glm-api", "test-glm-api-old"]] });
+  const prompter = fakePrompter({ confirms: [false], hidden: ["test-glm-api-new"] });
+  const result = await runSetup(["glm-api"], optionsFor(value, prompter));
+  assert.equal(result.exitCode, 0);
+  assert.equal(result.status, "unchanged");
+  assert.equal(await value.secretStore.get("glm-api"), "test-glm-api-old");
+  assert.equal(await value.secretStore.get("glm"), null);
+  assert.equal(prompter.calls.hidden, 0);
+});
+
 test("targeted replacement writes only after explicit confirmation and preserves the old key on validation failure", async (t) => {
   const value = await fixture(t, { configured: [["kimi", "test-kimi-old"]] });
   const prompter = fakePrompter({ confirms: [true], hidden: [" "] });
@@ -175,8 +193,8 @@ test("targeted replacement writes only after explicit confirmation and preserves
   assert.doesNotMatch(`${options.outputCapture.value}${options.errorCapture.value}`, /test-kimi-old|test-kimi-new/);
 });
 
-test("targeted replacement supports both Providers after explicit confirmation", async (t) => {
-  for (const provider of ["kimi", "deepseek"]) {
+test("targeted replacement supports every formal Provider after explicit confirmation", async (t) => {
+  for (const provider of ["kimi", "deepseek", "glm", "glm-api"]) {
     const value = await fixture(t, { configured: [[provider, `test-${provider}-old`]] });
     const prompter = fakePrompter({ confirms: [true], hidden: [`test-${provider}-new`] });
     const result = await runSetup([provider], optionsFor(value, prompter));
@@ -184,6 +202,17 @@ test("targeted replacement supports both Providers after explicit confirmation",
     assert.deepEqual(result.changedProviders, [provider]);
     assert.equal(await value.secretStore.get(provider), `test-${provider}-new`);
   }
+});
+
+test("targeted GLM API setup leaves the existing three-provider onboarding state unchanged", async (t) => {
+  const value = await fixture(t);
+  await value.setupStateStore.markSeen(["deepseek", "glm", "kimi"]);
+  const result = await runSetup(["glm-api"], optionsFor(value, fakePrompter({ hidden: ["test-glm-api-key"] })));
+  assert.equal(result.exitCode, 0);
+  assert.deepEqual(result.displayedProviderIds, ["glm-api"]);
+  assert.equal(result.markedSeen, false);
+  assert.equal(await value.secretStore.get("glm-api"), "test-glm-api-key");
+  assert.deepEqual((await value.setupStateStore.read()).seenProviderIds, ["deepseek", "glm", "kimi"]);
 });
 
 test("targeted replacement preserves the old key for every hostile value class", async (t) => {
@@ -256,7 +285,7 @@ test("corrupt Secret Store fails closed and corrupt Setup State rebuilds only af
   assert.equal(stateResult.exitCode, 0);
   assert.equal(stateResult.markedSeen, true);
   assert.match(options.errorCapture.value, /Setup State was invalid/);
-  assert.deepEqual(JSON.parse(await readFile(statePath, "utf8")), { version: 1, seenProviderIds: ["deepseek", "kimi"] });
+  assert.deepEqual(JSON.parse(await readFile(statePath, "utf8")), { version: 1, seenProviderIds: ["deepseek", "glm", "glm-api", "kimi"] });
 });
 
 test("corrupt Setup State remains byte-for-byte unchanged when onboarding is cancelled", async (t) => {
@@ -294,8 +323,8 @@ test("Setup State permission errors stop before Secret Store status is read", as
   assert.equal(secretReads, 0);
 });
 
-test("dynamic third Provider is displayed and marked seen without a CLI-specific branch", async (t) => {
-  const value = await fixture(t, { providerIds: ["kimi", "deepseek", "third-provider"] });
+test("dynamic fifth Provider is displayed and marked seen without a CLI-specific branch", async (t) => {
+  const value = await fixture(t, { providerIds: ["kimi", "deepseek", "glm", "glm-api", "third-provider"] });
   value.config.providers.push({
     id: "third-provider",
     displayName: "Third Provider",
@@ -309,9 +338,9 @@ test("dynamic third Provider is displayed and marked seen without a CLI-specific
   const prompter = fakePrompter({ choices: ["continue"] });
   const options = optionsFor(value, prompter);
   const result = await runSetup([], options);
-  assert.deepEqual(result.displayedProviderIds, ["kimi", "deepseek", "third-provider"]);
+  assert.deepEqual(result.displayedProviderIds, ["kimi", "deepseek", "glm", "glm-api", "third-provider"]);
   assert.deepEqual(result.configuredProviders, []);
-  assert.deepEqual((await value.setupStateStore.read()).seenProviderIds, ["deepseek", "kimi", "third-provider"]);
+  assert.deepEqual((await value.setupStateStore.read()).seenProviderIds, ["deepseek", "glm", "glm-api", "kimi", "third-provider"]);
   assert.match(options.outputCapture.value, /third-provider: missing/);
 });
 
@@ -363,6 +392,30 @@ test("a provider write failure does not leak a secret from the thrown cause", as
   assert.equal(fakeStore.values.get("kimi"), "test-kimi-key");
 });
 
+test("a GLM write failure preserves existing Provider keys and redacts the cause", async (t) => {
+  const value = await fixture(t);
+  const sentinel = "test-glm-key-error-sentinel";
+  const fakeStore = {
+    values: new Map(),
+    async get(provider) { return this.values.get(provider) ?? null; },
+    async set(provider, secret) {
+      if (provider === "glm") throw new Error(`write failed ${sentinel}`);
+      this.values.set(provider, secret);
+    }
+  };
+  const prompter = fakePrompter({
+    choices: ["configure-all-missing"],
+    hidden: ["test-kimi-key", "test-deepseek-key", sentinel]
+  });
+  const options = optionsFor(value, prompter);
+  const result = await runSetup([], { ...options, secretStore: fakeStore });
+  assert.equal(result.exitCode, 1);
+  assert.equal(fakeStore.values.get("kimi"), "test-kimi-key");
+  assert.equal(fakeStore.values.get("deepseek"), "test-deepseek-key");
+  assert.equal(fakeStore.values.has("glm"), false);
+  assert.doesNotMatch(`${options.outputCapture.value}${options.errorCapture.value}`, new RegExp(sentinel));
+});
+
 test("after a second-provider failure, rerun starts from the remaining missing provider", async (t) => {
   const value = await fixture(t);
   const fakeStore = {
@@ -379,13 +432,13 @@ test("after a second-provider failure, rerun starts from the remaining missing p
   const first = await runSetup([], { ...firstOptions, secretStore: fakeStore });
   assert.equal(first.exitCode, 1);
   fakeStore.failDeepseek = false;
-  const secondPrompter = fakePrompter({ choices: ["configure-all-missing"], hidden: ["test-deepseek-key"] });
+  const secondPrompter = fakePrompter({ choices: ["configure-all-missing"], hidden: ["test-deepseek-key", "test-glm-key", "test-glm-api-key"] });
   const secondOptions = optionsFor(value, secondPrompter);
   const second = await runSetup([], { ...secondOptions, secretStore: fakeStore });
   assert.equal(second.exitCode, 0);
-  assert.deepEqual(second.changedProviders, ["deepseek"]);
-  assert.equal(secondPrompter.calls.hidden, 1);
-  assert.deepEqual((await value.setupStateStore.read()).seenProviderIds, ["deepseek", "kimi"]);
+  assert.deepEqual(second.changedProviders, ["deepseek", "glm", "glm-api"]);
+  assert.equal(secondPrompter.calls.hidden, 3);
+  assert.deepEqual((await value.setupStateStore.read()).seenProviderIds, ["deepseek", "glm", "glm-api", "kimi"]);
 });
 
 test("non-TTY setup fails without prompting or writing state", async (t) => {

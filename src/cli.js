@@ -15,7 +15,7 @@ import { readHiddenSecret, SecretStore } from "./secret-store.js";
 import { getSecretStorePath, getSetupStatePath } from "./platform.js";
 import { SetupStateStore, isSetupStateCorrupt } from "./setup-state.js";
 
-export const VERSION = "1.3.0";
+export const VERSION = "1.4.0";
 
 export function isMainModule(
   entryPath = process.argv[1],
@@ -39,6 +39,9 @@ function printUsage(output = stdout) {
   output.write("  cmr                                Show the profile menu\n");
   output.write("  cmr kimi [claude args...]          Start Claude Code with Kimi K3\n");
   output.write("  cmr deepseek [claude args...]      Start Claude Code with DeepSeek Auto\n");
+  output.write("  cmr glm [claude args...]           Start Claude Code with GLM-5.2 Coding Plan\n");
+  output.write("  cmr glm-api [claude args...]       Start Claude Code with GLM-5.2 API (Pay-as-you-go)\n");
+  output.write("  cmr glm-payg [claude args...]      Alias for glm-api\n");
   output.write("  cmr plan [claude args...]          Alias for kimi\n");
   output.write("  cmr build [claude args...]         Alias for deepseek\n");
   output.write("  cmr setup                          Configure or replace Provider API Keys\n");
@@ -137,20 +140,22 @@ async function interactiveMenu({
 
 async function commandSecret(args, options) {
   const [action, provider, ...extra] = args;
-  const store = options.secretStore ?? new SecretStore(options);
+  const config = options.config ?? await loadConfigSet(options);
+  const providerIds = config.providers.map((item) => item.secretId);
+  const store = options.secretStore ?? new SecretStore({ ...options, providerIds });
   if (action === "status" && provider === undefined && extra.length === 0) {
     const status = await store.status();
     const output = options.output ?? stdout;
     for (const [id, configured] of Object.entries(status)) output.write(`${id}: ${configured ? "configured" : "missing"}\n`);
     return 0;
   }
-  if (action === "set" && ["kimi", "deepseek"].includes(provider) && extra.length === 0) {
+  if (action === "set" && providerIds.includes(provider) && extra.length === 0) {
     const secret = await readHiddenSecret({ input: options.input ?? stdin, output: options.output ?? stderr, label: "Secret" });
     await store.set(provider, secret);
     (options.output ?? stdout).write(`${provider}: configured\n`);
     return 0;
   }
-  throw new Error("usage: cmr secret set <kimi|deepseek> or cmr secret status");
+  throw new Error("usage: cmr secret set <provider> or cmr secret status");
 }
 
 async function commandConfig(args, options) {

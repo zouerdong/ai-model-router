@@ -17,7 +17,9 @@ export const ROUTER_MANAGED_ENV_VARS = Object.freeze([
   "CLAUDE_CODE_SUBAGENT_MODEL",
   "ENABLE_TOOL_SEARCH",
   "CLAUDE_CODE_AUTO_COMPACT_WINDOW",
-  "CLAUDE_CODE_EFFORT_LEVEL"
+  "CLAUDE_CODE_EFFORT_LEVEL",
+  "CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC",
+  "API_TIMEOUT_MS"
 ]);
 
 export function buildChildEnvironment({ parentEnv = process.env, provider, profile, secret }) {

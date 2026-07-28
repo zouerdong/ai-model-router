@@ -1,7 +1,7 @@
 # 02 — 系统架构
 
-状态：`1.3.0` 已完成跨平台验收并正式发布
-更新时间：2026-07-24
+状态：`1.4.0` GLM 双模式统一发布架构
+更新时间：2026-07-28
 
 ## 1. 架构结论
 
@@ -471,3 +471,80 @@ npm 子进程的 stdout/stderr 捕获有固定上限，pack/install 有五分钟
 上述架构已落地为标准 JavaScript ESM 实现；`command-runner.js` 统一 argv、`shell: false`、Windows shim 与信号边界，`update-lock.js` 提供互斥，`commands/update.js` 预加载 backup/install/verify/rollback/cleanup 路径。实现不引入运行时第三方依赖，也不触碰 CMR Secret/State、Claude Settings、Shell 或 Provider 配置。
 
 原生 Windows self-update 已由 GitHub-hosted Windows Server 2025 的 PowerShell、CMD、Git Bash T4 验收；固定 Release asset、checksum、immutable 发布、exact/latest bootstrap 与公开 `cmr update --check` 已闭环。最终证据见 `docs/13-v1.3-self-update-implementation-brief.md` 第 19 节。
+
+## 17. `1.4.0` GLM-5.2 Coding Plan 架构
+
+绑定实施合同：`docs/14-v1.4-glm-5.2-coding-plan-implementation-brief.md`。
+
+运行图：
+
+```text
+用户所在项目目录
+       │
+       ├── cmr kimi [Claude args...] ───── Kimi Provider ─────┐
+       ├── cmr deepseek [Claude args...] ─ DeepSeek Provider ─┤
+       └── cmr glm [Claude args...] ─────── GLM Plan Provider ─┤
+                                                               ▼
+                                                    Claude Code 子进程
+                                args / cwd / TTY / signal / exit code
+```
+
+`glm` 是独立凭据边界：
+
+```text
+Provider/Profile ID=glm
+ANTHROPIC_BASE_URL=https://open.bigmodel.cn/api/anthropic
+authVariable=ANTHROPIC_AUTH_TOKEN
+secretId=glm
+```
+
+Profile 初始候选只注入当前智谱完整 Claude Code 指南明确列出的模型与运行变量：
+
+```text
+ANTHROPIC_DEFAULT_OPUS_MODEL=glm-5.2[1m]
+ANTHROPIC_DEFAULT_SONNET_MODEL=glm-5.2[1m]
+ANTHROPIC_DEFAULT_HAIKU_MODEL=glm-4.7
+CLAUDE_CODE_AUTO_COMPACT_WINDOW=1000000
+CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC=1
+API_TIMEOUT_MS=3000000
+```
+
+初始候选不得凭其他 Provider 经验增加 `ANTHROPIC_MODEL`、Fable、Subagent、Effort 或 Tool Search 映射。真实验收发现偏差时，必须先更新官方事实和规格，再调整实现。
+
+`API_TIMEOUT_MS` 与 `CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC` 加入 Router 管理变量集合。每次启动都先大小写不敏感地清理继承环境中的同名变体；选中 GLM 时再注入官方值，选中 Kimi/DeepSeek 时不回注。这与现有“先清理全部 Router 管理变量，再注入选中 Profile”的跨 Profile 隔离合同一致，父 `process.env` 仍保持不变。
+
+Secret Store 和 Setup State 都保持 Schema v1。旧 `seenProviderIds=["deepseek","kimi"]` 在三 Provider 配置下自然得到 unseen `glm`；完成或明确稍后后写入三家并集。CLI、Doctor、SecretStore 与测试必须从已校验 Provider 集合派生，不能把现有“两家硬编码”机械改成新的“三家硬编码”散落在业务逻辑中。
+
+标准按量 API 使用 `ANTHROPIC_API_KEY`/`X-Api-Key`，与 Coding Plan 的 Bearer 鉴权和套餐计费不同；它在同一 `1.4.0` 中作为用户显式选择的独立 `glm-api` Provider/Profile 提供，禁止隐藏 fallback。
+
+## 18. `1.4.0` GLM 标准 API 按量付费架构
+
+绑定实施合同：`docs/15-v1.5-glm-standard-api-payg-implementation-brief.md`。该文件名保留最初的独立版本规划；统一版本决策与发布证据见 `docs/16-v1.4-unified-glm-release.md`。
+
+```text
+用户所在项目目录
+       │
+       ├── cmr kimi [Claude args...] ───── Kimi Provider ──────────┐
+       ├── cmr deepseek [Claude args...] ─ DeepSeek Provider ──────┤
+       ├── cmr glm [Claude args...] ─────── GLM Coding Plan ───────┤
+       └── cmr glm-api [Claude args...] ── GLM standard API PAYG ──┤
+                                                                       ▼
+                                                            Claude Code 子进程
+                                         args / cwd / TTY / signal / exit code
+```
+
+两个 GLM 入口共享 Anthropic-compatible Base URL，却是不可合并的凭据与账单边界：
+
+| 维度 | `glm` Coding Plan | `glm-api` 标准 API 按量付费 |
+|---|---|---|
+| Provider/Profile/Secret ID | `glm` | `glm-api` |
+| Claude Code auth variable | `ANTHROPIC_AUTH_TOKEN` | `ANTHROPIC_API_KEY` |
+| 上游 Header | `Authorization: Bearer` | `X-Api-Key` |
+| Key 页面 | Coding Plan 入口 | 标准 API Keys 页面 |
+| 费用语义 | 套餐及账户规则 | 标准 API Token 按量计费 |
+
+两者的模型与运行环境映射暂时相同：Opus/Sonnet 为 `glm-5.2[1m]`，Haiku 为 `glm-4.7`，并设置 compact、disable nonessential traffic 与 timeout。这只复用公开的模型映射；`environment.js` 保持通用数据流，根据 `provider.authVariable` 注入唯一 secret，不增加 Provider 专用启动函数或代理。
+
+`ROUTER_MANAGED_ENV_VARS` 已包含两种 Anthropic 鉴权变量。构建子进程环境时必须先按大小写不敏感规则清除所有 Router 管理变量，再注入 Base URL、当前 Profile 环境和当前 Provider 的唯一鉴权变量。父环境对象不修改。由此保证 `glm → glm-api`、`glm-api → glm` 及 GLM 与既有 Provider 连续启动不会交叉污染。
+
+Secret Store 与 Setup State 保持 Schema v1 和动态集合机制：旧三 Provider Store 无迁移可读，第四 Provider 缺失即为 `missing`；旧三 Provider seen 状态自然得到 `glm-api` unseen。CMR 不复制 GLM Key、不检测 Key 类型、不中间代理请求，也不因任意错误在 Plan/PAYG 间切换。写入第四 Key 后旧版本可能无法读取整个 Store，这是手工降级风险，不是 updater rollback 要自动处理的数据迁移。

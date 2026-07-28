@@ -11,6 +11,8 @@ const output = {
   fable: process.env.ANTHROPIC_DEFAULT_FABLE_MODEL ?? null,
   subagent: process.env.CLAUDE_CODE_SUBAGENT_MODEL ?? null,
   compact: process.env.CLAUDE_CODE_AUTO_COMPACT_WINDOW ?? null,
+  apiTimeoutMs: process.env.API_TIMEOUT_MS ?? null,
+  disableNonessentialTraffic: process.env.CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC ?? null,
   effort: process.env.CLAUDE_CODE_EFFORT_LEVEL ?? null,
   toolSearch: process.env.ENABLE_TOOL_SEARCH ?? null,
   hasApiKey: Boolean(process.env.ANTHROPIC_API_KEY),

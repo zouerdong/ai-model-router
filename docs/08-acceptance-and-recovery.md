@@ -411,3 +411,127 @@ Windows T4 必须在实际 Windows 内核、Windows 文件系统与 Windows shel
 2026-07-24，T4 在 GitHub-hosted Windows Server 2025 x64 上完成独立验收：[run 30094641599](https://github.com/zouerdong/ai-model-router/actions/runs/30094641599)，commit `f8f68d301e54b1d2008c32c00378a27346091c1f`。Node `18.20.8` 与 `24.18.0` 两档均通过 PowerShell 全量回归，以及 PowerShell、CMD、Git Bash 下的 custom prefix 自替换、multi-prefix 不变、bad candidate、junction 拒绝、install failure rollback 与 Ctrl+C 子进程终止场景。英文 README 的最终 release commit `515d7160055c53ab76c10dc9967c5950e139ab82` 又由 [run 30095977923](https://github.com/zouerdong/ai-model-router/actions/runs/30095977923) 复跑两档矩阵并全绿。
 
 同日，`v1.3.0` immutable Release 从已验收 Draft 发布为 Latest。固定资产 `claude-model-router.tgz` 为 33,167 bytes，SHA-256 为 `593835bc3ee8297ee1533680e564037b517735083f18c9b538a510e712fa66f0`；GitHub digest、`SHA256SUMS`、exact/latest 下载三者一致。公开 exact URL 临时 prefix 安装输出 `1.3.0`，帮助文本正确，`cmr update --check` 输出已是最新稳定版。因此 P1–P7、Q1–Q7、R1–R10、S1–S8、T1–T9 全部 PASS，最终结论为 **PASS — `1.3.0` RELEASED**。
+
+## 14. `1.4.0` GLM-5.2 Coding Plan 验收矩阵
+
+本节与 `docs/14-v1.4-glm-5.2-coding-plan-implementation-brief.md` 共同构成绑定验收标准。仓库内候选实现和假 Key 自动化已完成；没有真实 GLM Coding Plan Key 与账单回读时，不得给 `1.4.0` PASS。
+
+### U — 配置与官方映射
+
+| ID | 级别 | 验收项 |
+|---|---|---|
+| U1 | Blocker | 正式集合精确为 Kimi、DeepSeek、GLM 三 Provider/Profile |
+| U2 | Blocker | `glm` Base URL、Bearer auth、secretId 与官方 URL 精确 |
+| U3 | Blocker | Sonnet/Opus=`glm-5.2[1m]`，Haiku=`glm-4.7` |
+| U4 | Blocker | compact=`1000000`、timeout=`3000000`、disable nonessential=`1` |
+| U5 | Blocker | 初始 GLM Profile 不含官方未列出的 main/Fable/Subagent/Effort/Tool Search 变量 |
+| U6 | Major | GLM Pricing 明确为标准 API 参考，不宣称 Plan 精确费用 |
+| U7 | Blocker | `glm-5.2`/`glm-plan` 是 `glm` 数据化别名 |
+| U8 | Major | 实施与发布前官方复核完成，Haiku 文档冲突已按 `docs/07` 处理 |
+
+### V — Secret、Setup 与升级
+
+| ID | 级别 | 验收项 |
+|---|---|---|
+| V1 | Blocker | 旧两家 Secret Store Schema v1 无迁移可读 |
+| V2 | Blocker | 原子加入 GLM 不改变旧 Key，失败保留完整旧 Store |
+| V3 | Blocker | 旧 seen 两家自动识别 GLM unseen；不按包版本特判 |
+| V4 | Blocker | Full dashboard 显示三家，完成/稍后后写 sorted union |
+| V5 | Blocker | targeted/inline GLM setup 不误标未显示 Provider |
+| V6 | Major | 动态第四 Provider 测试继续通过，不能硬编码三家 setup |
+| V7 | Major | `secret set/status`、Doctor、List 与菜单支持 GLM |
+| V8 | Major | 文档说明写入 GLM 后手工降级 `1.3.0` 的 Store 兼容风险 |
+
+### W — 启动与环境
+
+| ID | 级别 | 验收项 |
+|---|---|---|
+| W1 | Blocker | `cmr glm` fake Claude 环境与官方候选精确 |
+| W2 | Blocker | 只使用 `ANTHROPIC_AUTH_TOKEN`，清除旧 API key/token 冲突 |
+| W3 | Blocker | timeout/traffic 变量对所有 Profile 大小写安全清理；只在 GLM 回注官方值 |
+| W4 | Blocker | 父环境不变、跨 Profile 无 Router 残留 |
+| W5 | Blocker | opaque argv、cwd、TTY、signal、exit code 不退化 |
+| W6 | Blocker | 缺 GLM Key TTY setup 后继续；取消不 spawn；non-TTY 快速失败 |
+| W7 | Major | Windows `.cmd` 与混合大小写环境自动化通过 |
+| W8 | Blocker | 输出、错误、fake snapshot 不含 Key 或 prompt sentinel |
+
+### X — 分发与真实 Provider
+
+| ID | 级别 | 验收项 |
+|---|---|---|
+| X1 | Blocker | 全量 test/lint/diff/pack 与敏感扫描通过 |
+| X2 | Blocker | package/CLI 候选版本一致为 `1.4.0` |
+| X3 | Blocker | 包含三个 GLM JSON，排除 Secret/State/本机路径 |
+| X4 | Blocker | updater 与 Mac isolated prefix E2E 不退化 |
+| X5 | Major | Node 18 核心测试通过 |
+| X6 | Blocker | 实际 Windows OS 全回归在获批流程中通过 |
+| X7 | Blocker | 用户授权的真实 Plan 主请求、工具和子 Agent 通过 |
+| X8 | Blocker | 套餐用量/费用回读证明请求走 Coding Plan，未意外扣现金余额 |
+| X9 | Blocker | 未经批准没有真实 Key、API、全局安装、CI 修改、push 或发布 |
+| X10 | Blocker | 独立审阅 PASS 后才可准备 `1.4.0` Release |
+
+没有真实 Plan Key时可以给出“实现候选已完成、Provider 发布受阻”，不能用 skipped X7/X8 代替 PASS。
+
+## 15. `1.4.0` GLM 标准 API 按量付费验收矩阵
+
+本节与 `docs/15-v1.5-glm-standard-api-payg-implementation-brief.md` 共同构成绑定验收标准。该实施文件名保留最初的独立 `1.5.0` 规划；维护者已将两种 GLM 模式统一纳入 `1.4.0`，最终发布判定见 `docs/16`。
+
+### Y — 配置与身份边界
+
+| ID | 级别 | 验收项 |
+|---|---|---|
+| Y1 | Blocker | 正式集合精确为 4 Provider、4 Profile、3 Pricing |
+| Y2 | Blocker | `glm-api` Base URL、API Key URL、`ANTHROPIC_API_KEY`、secretId 精确 |
+| Y3 | Blocker | `glm` 保持 `ANTHROPIC_AUTH_TOKEN`/secretId `glm` |
+| Y4 | Blocker | `glm-api`/`glm-payg` 等价，`glm-5.2`/`glm-plan` 仍属于 `glm` |
+| Y5 | Blocker | 两个 GLM Profile 模型/运行环境精确相同，凭据边界不同 |
+| Y6 | Blocker | `glm-api` 不含 main/Fable/Subagent/Effort/Tool Search 自创变量 |
+| Y7 | Major | 两个 GLM Profile 合法共享 `glm-5.2` Pricing；没有重复价格文件 |
+| Y8 | Major | `costNotice=payg` 数据化驱动计费警告 |
+| Y9 | Major | 实施日官方事实复核完成；事实与推断分开记录 |
+
+### Z — Secret、Setup 与升级
+
+| ID | 级别 | 验收项 |
+|---|---|---|
+| Z1 | Blocker | 旧三 Provider Schema v1 无迁移可读 |
+| Z2 | Blocker | 原子加入 `glm-api` 不改变前三把 Key |
+| Z3 | Blocker | `glm-api` 写入/替换失败保留完整旧 Store |
+| Z4 | Blocker | `glm` 与 `glm-api` 不复制、不共享、不互相替换 |
+| Z5 | Blocker | 三家 seen 自动识别 `glm-api` unseen |
+| Z6 | Blocker | Full dashboard 显示四家；Not now 不强制配置 |
+| Z7 | Blocker | targeted/inline `glm-api` setup 不误标其他 Provider |
+| Z8 | Major | 动态第五 Provider 测试继续通过 |
+| Z9 | Major | 文档说明写入第四 Secret 后降级到 1.4/1.3 的兼容风险 |
+
+### AA — 启动、费用与隐私
+
+| ID | 级别 | 验收项 |
+|---|---|---|
+| AA1 | Blocker | `cmr glm-api` fake Claude 环境精确 |
+| AA2 | Blocker | `ANTHROPIC_API_KEY` only；Bearer token 和 mixed-case 残留不存在 |
+| AA3 | Blocker | `glm` ↔ `glm-api` 双向启动无 auth/model 残留 |
+| AA4 | Blocker | 父环境不变；Kimi/DeepSeek/GLM Plan 零退化 |
+| AA5 | Blocker | opaque argv、cwd、TTY、signal、exit code 不退化 |
+| AA6 | Blocker | 缺 Key TTY setup 后继续；取消不 spawn；non-TTY 快速失败 |
+| AA7 | Blocker | payg WARN 明确直接计费，值来自 Pricing，不计算会话费用 |
+| AA8 | Blocker | 输出、错误、WARN、snapshot 不含 Key 或 prompt sentinel |
+| AA9 | Major | Windows `.cmd` 与 mixed-case 环境模拟通过 |
+
+### AB — 分发与真实 Provider
+
+| ID | 级别 | 验收项 |
+|---|---|---|
+| AB1 | Blocker | 全量 test/lint/diff/pack/sensitive scan 通过 |
+| AB2 | Blocker | package/CLI 发布版本一致为 `1.4.0` |
+| AB3 | Blocker | package 包含两个新 JSON，排除 Secret/State/tests/`.env`/本机路径 |
+| AB4 | Blocker | updater 与 Mac isolated prefix E2E 不退化 |
+| AB5 | Major | Node 18 核心测试通过 |
+| AB6 | Blocker | 实际 Windows OS 全回归在获批流程中通过 |
+| AB7 | Blocker | 用户授权的真实标准 API 主请求、工具、子 Agent 通过 |
+| AB8 | Blocker | 费用明细回读证明 `glm-api` 走标准 API，未误耗 Coding Plan |
+| AB9 | Blocker | 用户授权的真实 Coding Plan 验收仍按 `docs/14` 闭环 |
+| AB10 | Blocker | 未经批准没有真实 Key/API、全局安装、CI、push 或发布 |
+| AB11 | Blocker | 独立审阅通过后才可准备 Release |
+
+Provider 真实验收由维护者确认；自动化、Node 18、Windows、打包、自更新与公开 Release 证据统一记录在 `docs/16`。

@@ -1,7 +1,7 @@
 # 07 — 官方参数与事实基线
 
-核验日期：2026-07-24
-实现状态：`1.3.0` 跨平台验收、immutable Release 与公开回读已完成
+核验日期：2026-07-28
+实现状态：`1.4.0` 发布前官方事实复核完成；统一发布证据见 `docs/16-v1.4-unified-glm-release.md`
 用途：实现者不得用历史对话或记忆替代本文件中的官方来源；开始实现与发布前必须重新核验。
 
 ## 1. Kimi K3 Profile
@@ -220,3 +220,117 @@ https://github.com/zouerdong/ai-model-router/releases/latest/download/claude-mod
 T4 的本质约束是测试必须运行在实际 Windows OS 中，而不是必须使用物理 Windows 电脑。有效证据包括物理机、本地 Windows VM 或 GitHub-hosted Windows VM；macOS 上仅注入 `platform: "win32"` 无效。
 
 2026-07-24 实施结果：GitHub Actions [run 30094641599](https://github.com/zouerdong/ai-model-router/actions/runs/30094641599) 在 `win25-vs2026` image `20260714.173.1`、Windows NT `10.0.26100.0`、AMD64 上通过；矩阵为 Node `18.20.8`/npm `10.8.2` 与 Node `24.18.0`/npm `11.16.0`，Git 均为 `2.55.0.windows.2`。两档均通过 PowerShell 全回归与 PowerShell/CMD/Git Bash T4 E2E。英文 README 的最终 release commit `515d7160055c53ab76c10dc9967c5950e139ab82` 又由 [run 30095977923](https://github.com/zouerdong/ai-model-router/actions/runs/30095977923) 复跑两档 Windows 矩阵并全绿。
+
+## 10. GLM-5.2 Coding Plan 事实（2026-07-28 发布复核）
+
+状态：**OFFICIAL FACTS RECHECKED FOR `1.4.0` RELEASE**。
+
+绑定实施合同：`docs/14-v1.4-glm-5.2-coding-plan-implementation-brief.md`。
+
+### 10.1 Coding Plan Claude Code 接入
+
+主来源：[智谱 Claude Code 接入](https://docs.bigmodel.cn/cn/guide/develop/claude)。
+
+当前中国区配置：
+
+```text
+ANTHROPIC_BASE_URL=https://open.bigmodel.cn/api/anthropic
+ANTHROPIC_AUTH_TOKEN=<GLM Coding Plan Key>
+ANTHROPIC_DEFAULT_OPUS_MODEL=glm-5.2[1m]
+ANTHROPIC_DEFAULT_SONNET_MODEL=glm-5.2[1m]
+ANTHROPIC_DEFAULT_HAIKU_MODEL=glm-4.7
+CLAUDE_CODE_AUTO_COMPACT_WINDOW=1000000
+CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC=1
+API_TIMEOUT_MS=3000000
+```
+
+Key 与套餐来源：
+
+- [Coding Plan 快速开始](https://docs.bigmodel.cn/cn/coding-plan/quick-start)
+- [Coding Plan FAQ](https://docs.bigmodel.cn/cn/coding-plan/faq)
+
+个人版从个人编程套餐概览创建 Key；团队成员使用团队套餐 Key，且官方明确团队套餐 Key 与平台其他 API Key 不通用。Coding Plan 只允许官方支持的工具/产品。2026-07-28 复核标准 API 错误码后发现，1316–1321 已列出与余额、子账号或企业消费上限有关的“无法使用超额按量付费”情形；具体套餐是否允许超额及其费用规则以用户账户和官方当日规则为准。CMR 不探测、配置或自动切换该机制。
+
+### 10.2 标准 API 与 Coding Plan 不能合并
+
+标准 API 来源：
+
+- [智谱 Claude API 兼容](https://docs.bigmodel.cn/cn/guide/develop/claude/introduction)
+- [智谱标准 API 快速开始](https://docs.bigmodel.cn/cn/api/introduction)
+- [Claude Code Authentication](https://code.claude.com/docs/en/team)
+- [Claude Code Environment Variables](https://code.claude.com/docs/en/env-vars)
+
+标准 Claude 兼容 API 也给出 `https://open.bigmodel.cn/api/anthropic`，但建议 `ANTHROPIC_API_KEY`。Claude Code 当前语义为：
+
+```text
+ANTHROPIC_AUTH_TOKEN -> Authorization: Bearer
+ANTHROPIC_API_KEY    -> X-Api-Key
+```
+
+相同 Base URL 不证明凭据、账单或额度通道相同。`1.4.0` 候选只实现 Coding Plan `glm`；标准按量 API 不得作为隐藏 fallback，后续若实现必须使用独立显式 Profile。
+
+### 10.3 模型与价格
+
+来源：
+
+- [GLM-5.2 模型页](https://docs.bigmodel.cn/cn/guide/models/text/glm-5.2)
+- [智谱产品价格](https://bigmodel.cn/pricing)
+- [Claude Code Model Configuration](https://code.claude.com/docs/en/model-config)
+
+当前事实：
+
+```text
+Provider 原生模型 ID=glm-5.2
+上下文=1000000 tokens
+最大输出=128K tokens
+标准 API 缓存命中=2 CNY/M tokens
+标准 API 普通输入=8 CNY/M tokens
+标准 API 输出=28 CNY/M tokens
+```
+
+`glm-5.2[1m]` 是 Claude Code 选择层值，标准 API 原生模型仍为 `glm-5.2`。Pricing 配置只能标为标准 API 参考，不能用于估算 Coding Plan 的精确费用或剩余额度。
+
+### 10.4 已知文档冲突
+
+智谱完整 Claude Code 指南当前使用 `glm-4.7` 作为 Haiku 映射；另一个“如何切换模型”页面仍出现 `GLM-4.5-Air`/`glm-4.5-air`。本候选以完整 Claude Code 指南的小写 `glm-4.7` 为主基线。实施与发布前必须重查；若主指南变化则先更新本文与实施合同，若冲突无法从官方来源消解则阻断真实 Provider PASS。
+
+当前完整配置未列出 `ANTHROPIC_MODEL`、Fable、Subagent、Effort 或 Tool Search 变量。候选实现未凭 Kimi/DeepSeek 经验补齐；真实验收发现问题时先更新事实与规格。
+
+## 11. GLM 标准 API 按量付费事实（2026-07-28 发布复核）
+
+状态：**OFFICIAL FACTS RECHECKED FOR `1.4.0` RELEASE**。
+
+绑定实施合同：`docs/15-v1.5-glm-standard-api-payg-implementation-brief.md`。以下为官方事实；`glm-api` 复用 Coding Plan 模型/运行映射是本合同的受约束设计推断，不是官方单独发布的一份完整 Profile。
+
+### 11.1 标准 Anthropic 兼容鉴权
+
+主来源：[智谱 Claude API 兼容](https://docs.bigmodel.cn/cn/guide/develop/claude/introduction) 与 [Claude Code Environment variables](https://code.claude.com/docs/en/env-vars)。2026-07-28 重新打开后，二者共同支持：
+
+```text
+Anthropic-compatible Base URL=https://open.bigmodel.cn/api/anthropic
+智谱标准 API Key 环境变量=ANTHROPIC_API_KEY
+智谱兼容 Messages 请求 Header=x-api-key
+Claude Code ANTHROPIC_API_KEY -> X-Api-Key
+Claude Code ANTHROPIC_AUTH_TOKEN -> Authorization: Bearer <value>
+```
+
+因此标准 API 必须拥有独立的 `glm-api` Provider、Profile 和 Secret Store 槽位；共享 Base URL 不允许把标准 API Key 与 Coding Plan Key 放进同一槽位或同一子进程鉴权集合。标准 API Key 页面为 [智谱标准 API Keys](https://bigmodel.cn/usercenter/proj-mgmt/apikeys)。
+
+### 11.2 模型、选择层与费用
+
+来源：[GLM-5.2 模型页](https://docs.bigmodel.cn/cn/guide/models/text/glm-5.2)、[GLM-4.7 模型页](https://docs.bigmodel.cn/cn/guide/models/text/glm-4.7)、[Claude Code Model configuration](https://code.claude.com/docs/en/model-config) 与 [智谱产品价格](https://bigmodel.cn/pricing)。实施日复核结果：
+
+```text
+GLM-5.2 native ID=glm-5.2; context=1,000,000; maximum output=128K
+GLM-4.7 native ID=glm-4.7; context=200,000; maximum output=128K
+GLM-5.2 standard API input=8 CNY/M; output=28 CNY/M; cache hit=2 CNY/M
+GLM-5.2 cache storage=限时免费（活动事实，不能作为长期承诺）
+```
+
+Claude Code 将 `[1m]` 用于 Opus/Sonnet 的 1M 选择层，并在向 Provider 发送 model ID 前剥离该后缀。故候选环境使用 `glm-5.2[1m]`，而上游标准 API model 仍为 `glm-5.2`。
+
+### 11.3 受约束推断与非目标
+
+智谱标准 Claude API 兼容页明确提供标准 API 的 Base URL、Key 与 native model；完整 Claude Code 指南明确现有 Opus/Sonnet/Haiku、compact、traffic 和 timeout 映射。本候选仅据此复用相同映射，并将鉴权边界替换为标准 API Key。真实标准 API 验收必须在用户逐项授权后，验证直连、`cmr glm-api` 主请求、工具、子 Agent 与费用明细；结果不符合时先更新本文件与 `docs/15`，再改实现。
+
+CMR 不发起 Key 类型检测、余额/用量查询、费用估算、Plan 超额按量设置、自动 fallback 或认证重试。标准 API 的 401/403/429 与 Coding Plan 的 1316–1321 等错误都按 Claude Code/Provider 原样失败；用户通过 `cmr glm` 或 `cmr glm-api` 显式决定费用通道。

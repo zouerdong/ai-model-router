@@ -4,7 +4,10 @@ import { fileURLToPath } from "node:url";
 import { validateConfigSet, validatePricing, validateProfile, validateProvider } from "./validator.js";
 
 const DEFAULT_CONFIG_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../config");
-const ID_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
+const ID_PATTERN = /^[a-z0-9]+(?:[.-][a-z0-9]+)*$/;
+export const PROVIDER_IDS = Object.freeze(["kimi", "deepseek", "glm", "glm-api"]);
+export const PROFILE_IDS = Object.freeze(["kimi", "deepseek", "glm", "glm-api"]);
+export const PRICING_IDS = Object.freeze(["kimi-k3", "deepseek-v4", "glm-5.2"]);
 
 function assertKnownId(id, label) {
   if (typeof id !== "string" || !ID_PATTERN.test(id)) throw new Error(`${label} is invalid`);
@@ -39,7 +42,7 @@ export async function loadProvider(id, options = {}) {
 }
 
 export async function loadProfile(id, options = {}) {
-  const providerIds = new Set(options.providerIds ?? ["kimi", "deepseek"]);
+  const providerIds = new Set(options.providerIds ?? PROVIDER_IDS);
   const profile = await readJson(options.configRoot ?? DEFAULT_CONFIG_ROOT, "profiles", id);
   return validateProfile(profile, providerIds);
 }
@@ -57,9 +60,9 @@ export async function loadPricing(id, options = {}) {
 
 export async function loadConfigSet(options = {}) {
   const configRoot = options.configRoot ?? DEFAULT_CONFIG_ROOT;
-  const providerIds = ["kimi", "deepseek"];
-  const profileIds = ["kimi", "deepseek"];
-  const pricingIds = ["kimi-k3", "deepseek-v4"];
+  const providerIds = PROVIDER_IDS;
+  const profileIds = PROFILE_IDS;
+  const pricingIds = PRICING_IDS;
   const [providers, profiles, pricing] = await Promise.all([
     Promise.all(providerIds.map((id) => loadProvider(id, { ...options, configRoot }))),
     Promise.all(profileIds.map((id) => loadProfile(id, { ...options, configRoot, providerIds }))),
