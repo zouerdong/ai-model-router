@@ -64,15 +64,15 @@ jobs:
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           git diff --check
 
-      - name: CMD T4 E2E
+      - name: CMD T4 + Kimi Code fake-key E2E
         shell: cmd
-        timeout-minutes: 10
-        run: node --test tests\update-e2e.test.js
+        timeout-minutes: 15
+        run: node --test tests\update-e2e.test.js tests\launch.test.js
 
-      - name: Git Bash T4 E2E
+      - name: Git Bash T4 + Kimi Code fake-key E2E
         shell: bash
-        timeout-minutes: 10
-        run: node --test tests/update-e2e.test.js
+        timeout-minutes: 15
+        run: node --test tests/update-e2e.test.js tests/launch.test.js
 
       - name: Pack and record candidate metadata
         shell: pwsh
