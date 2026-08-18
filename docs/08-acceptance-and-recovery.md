@@ -600,6 +600,19 @@ Provider 真实验收由维护者确认；自动化、Node 18、Windows、打包
 
 本节结论格式仍使用第 8 节的 `PASS` / `CONDITIONAL PASS` / `FAIL`。任务卡 1 的“规格完成”不等于任何 AF 真实 Provider 门禁通过。
 
+### 任务卡 8 真实 Provider 证据结论（2026-08-18）
+
+用户授权（Allegretto+ 档、Extra Usage 全程关闭、脱敏回读）下以最小请求完成真实验收；治理模式为项目负责人 2026-08-18 指令确立的单一执行者 + 自动化验证（撤销 Luna/Sol 双角色，见 `docs/17` 页首）。
+
+- **AF1 `PASS`**：三个首批 Profile 各自通过环境变量无头直启、最小主请求、只读/写读工具、子 Agent 与 `--model` 显式切换（合计 14 次最小请求）；`/status` 于真实配置 k3 会话验证 Base URL=`https://api.kimi.com/coding/`、鉴权通道为 `ANTHROPIC_API_KEY`、Auth token 为 none；模型选择层与上游 ID 经 Claude Code sdk 层遥测（各档模型 ID 精确到达请求层）与运行进程环境核验（`ps`，脱敏）证明。
+- **AF2 `PASS`**：Allegretto+ 实测 `k3[1m]` 1M 窗口与 `k3-256k`；`CLAUDE_CODE_EFFORT_LEVEL=high` 注入生效且优先于会话内 `/effort`（Claude Code 官方提示原文为证）；`/compact` 行为正常（最小会话未达压缩阈值，已记录限度）。
+- **AF3 `PASS`**：Kimi Code Console weekly `0% → 1%`、5 小时滚动窗 `7%`、Usage History 含本轮全部模型 ID；Moonshot 开放平台当日 API 请求为零、余额无变化——会员通道为唯一消耗通道。
+- **AF4 `PASS`**：Extra Usage 全程关闭，无现金扣费；CMR 未开启、未修改支出上限。
+- **AF5 `PASS`（决策 2）**：HighSpeed 按三选一中的“只文档化显式模型切换”处理——`--model kimi-for-coding-highspeed` 真实验证可用（`FAST-OK` + sdk 层遥测），四个模型 ID 共用同一 Provider/Secret/Base URL；`/fast` 交互行为（H2/H3）未实测、3 倍消耗对比（H5）样本不足，故不新增 `kimi-code-fast`，`/fast` 不作为入口。
+- **AF6 `PASS`**：全程无 fallback、自动重试或 Key 类型检测行为；失败按原样透传的边界未因新增通道改变。
+
+附则（AG 之外的首跑事实，已写入用户文档）：全新 Claude 配置首跑顺序为主题 → 环境键确认（默认推荐 `No`，须主动选 `1. Yes`）→（仅当键被拒后）登录方式选择（该界面无 Esc 出口，误选 Console 会进入浏览器 OAuth）；首跑对 `api.anthropic.com` 存在连通性门检，代理瞬断会直接退出、重试即可；无头 `-p` 模式不受首跑影响。
+
 ## 17. GLM-5.3 Coding Plan 升级验收矩阵
 
 绑定实施合同：`docs/18-v1.5-glm-5.3-upgrade-implementation-guide.md`。本节只覆盖 GLM53-1 至 GLM53-4 的仓库候选，不改变第 14、15 节对 `1.4.0` 历史 GLM-5.2 的验收记录。

@@ -423,7 +423,16 @@ Kimi Code 官方会员页给出以下事实：
 | Kimi Code 跳过登录脚本与 CMR 无持久修改边界不同 | 当前 [Kimi Code Claude Code](https://www.kimi.com/code/docs/en/third-party-tools/claude-code.html) 要求直接接入前写入 `~/.claude.json` 标记并清理 `~/.claude/settings.json` 的旧模型项；Claude Code [Authentication](https://code.claude.com/docs/en/team) 说明设置 `ANTHROPIC_API_KEY` 会跳过登录并提示批准 | CMR 不执行脚本、不写用户配置；任务卡 3 先做隔离配置验证，任务卡 8 再做真实环境变量直启。若仍必须写持久配置，阻断候选并回到产品决策 | Blocker |
 | 会员额度的刷新周期与会员月度总额度同时存在 | Kimi Code [Membership Benefits](https://www.kimi.com/code/docs/en/kimi-code/membership.html) 同时说明每 7 天刷新、滚动 5 小时窗口和月度总额度冻结 | 视为不同维度，不折算为单一“每周额度”或精确费用；实现只显示脱敏提示 | Blocker（若被错误合并） |
 
-结论：当前 Kimi Code 官方页面足以支持 `1.5.0` 的候选规格与仓库实现，但旧/开放平台页面冲突禁止运行时自行猜测。当前未发布候选已按独立 Provider、Secret、鉴权和账单边界实现并通过任务卡 7 总体验收；真实 Provider、HighSpeed 与发布门禁继续保持未通过。
+结论：当前 Kimi Code 官方页面足以支持 `1.5.0` 的候选规格与仓库实现，但旧/开放平台页面冲突禁止运行时自行猜测。当前未发布候选已按独立 Provider、Secret、鉴权和账单边界实现并通过任务卡 7 总体验收。
+
+### 12.6 真实验证补充（2026-08-18，任务卡 8）
+
+以下为真实请求证据（非官方页面事实；用户授权，Allegretto+ 档，Extra Usage 关闭，全部脱敏）：
+
+- `kimi-for-coding`、`k3-256k`、`k3[1m]`（上游 `k3`）与 `kimi-for-coding-highspeed` 四个模型 ID 均经 `https://api.kimi.com/coding/` + `ANTHROPIC_API_KEY` 通道真实调用成功；Claude Code sdk 层遥测证实各选择值原样到达请求层，CMR 不剥离 `[1m]` 的设计得到实测确认。
+- `/status` 在真实会话中显示 Base URL `https://api.kimi.com/coding/`、API Key 通道、Auth token 为 none；模型栏显示 `k3[1m]`（与"允许显示 Claude 名称"的官方说明一致层级的客户端呈现）。
+- 用量归属：Kimi Code Console weekly 0%→1%、5 小时滚动窗 7%；Moonshot 开放平台当日 API 请求为零。跳过登录脚本经实测不必要（无头直启与 TUI 首跑均不依赖它，见 `docs/06` §19）。
+- HighSpeed 冲突行按"只文档化经验证的显式模型 ID 切换"结案（决策 2）：`--model kimi-for-coding-highspeed` 可用并已文档化；`/fast` 行为未实测，仍不得作为入口。
 
 ## 13. GLM-5.3 Coding Plan 与标准 API 分界（2026-08-16）
 

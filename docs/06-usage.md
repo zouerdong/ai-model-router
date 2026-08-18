@@ -350,12 +350,23 @@ Kimi Code 会员 Key 与 Kimi 开放平台 Key、Secret、端点、鉴权变量�
 
 不要交叉填入 Key；CMR 不识别 Key 类型、不复制 Key、不查询余额，也不在失败后自动切换 Provider。
 
-HighSpeed 尚未进入稳定范围：候选不提供 `kimi-code-fast`，也不把 Claude Code `/fast` 当作 Kimi HighSpeed 入口。真实 Provider 尚未验收，模型权限、额度归属、Extra Usage、工具调用和子 Agent 仍是后续门禁。
+真实 Provider 验收已于 2026-08-18 完成（用户授权，Allegretto+ 档，Extra Usage 全程关闭，脱敏回读）：三个 Profile 均判 `PROVIDER PASS`——无头环境直启、最小主请求、工具调用、子 Agent、`--model` 显式切换全部通过；`/status` 证实 Base URL 与 API Key 通道；`k3[1m]` 1M 窗口实测可用；`CLAUDE_CODE_EFFORT_LEVEL=high` 注入生效且优先于会话内 `/effort`。归属闭环：Kimi Code Console weekly 0%→1%、5 小时窗 7%，Moonshot 开放平台当日零请求。详见 `docs/17` §14 与 `docs/08` §16。
+
+HighSpeed 决策（2026-08-18，决策 2 —— 仅文档化显式切换）：`--model kimi-for-coding-highspeed` 已真实验证可用，可作为经 CMR 透传的显式切换方式；不新增 `kimi-code-fast` Profile，Claude Code `/fast` 不作为 Kimi HighSpeed 入口（其交互行为与持久化本轮未实测）。交互式 `/model` 与 `/effort` 会写入新会话默认（Claude Code 原生行为）；`--model` 与 CMR 环境映射只作用于本次启动。
+
+### 首次交互启动（全新 Claude 配置）
+
+以下界面每个 Claude 配置目录只出现一次；日常已初始化的 `~/.claude` 不会出现，无头 `-p` 模式完全不出现：
+
+1. 主题选择——任选后回车。
+2. `Detected a custom API key in your environment — Do you want to use this API key?`——**选 `1. Yes`**。默认推荐是 `2. No`；一旦拒绝，Claude Code 会记住该拒绝并进入登录方式选择界面（该界面没有 Esc 出口）。若已误入：Ctrl+C 退出后用 `/config` 的 "Use custom API key" 开关恢复，或换一个全新配置目录重来。
+3. 信任目录——回车。
+4. 首跑还会对 `api.anthropic.com` 做一次性连通性检查；代理瞬断会直接退出（`Unable to connect to Anthropic services`），链路恢复后重试即可。日常 Kimi Code 流量走 `api.kimi.com`，不依赖该检查。
 
 候选阻断声明：
 
 ```text
 Kimi Code repository implementation candidate is complete.
-Real membership Provider validation is pending.
-The current public Latest stable release remains v1.4.0.
+Real membership Provider validation passed on 2026-08-18 (all three profiles).
+The current public Latest stable release remains v1.4.0 until the release gates close.
 ```

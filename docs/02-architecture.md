@@ -612,6 +612,8 @@ Kimi Code 官方 Claude Code 页要求直接接入用户先运行脚本，写入
 
 CMR 不执行该脚本，不写用户 Claude 配置，也不依赖未公开的持久状态字段。任务卡 3–7 已在隔离 Claude 配置与假 Claude 中证明候选只使用临时子进程环境且不创建 Claude 配置文件；真实 Kimi Code 直启仍须在任务卡 8 的用户授权门禁中复核。若真实环境变量直启失败且只能依赖持久修改，本候选必须停止并回到产品决策，不能在实现卡中顺手越过红线。
 
+**2026-08-18 复核结论：直启成立。** 真实验收（无头与 TUI 双路径）证明仅凭 CMR 注入的子进程环境即可完成全部请求：无头模式在全新配置直接可用；TUI 全新配置首跑仅需 Claude Code 自身的一次性初始化（环境键确认须主动选 `1. Yes`，默认推荐 `No`；误拒后的登录选择界面无 Esc 出口；首跑含对 `api.anthropic.com` 的一次性连通性检查，代理瞬断重试即可），全程无官方脚本、无 CMR 持久写入。运行中子进程环境经 `ps` 核验（脱敏）：仅 `ANTHROPIC_API_KEY`、无 `ANTHROPIC_AUTH_TOKEN`、模型与窗口变量与 Profile 精确一致。HighSpeed 按决策 2 文档化显式切换，运行时零改动。
+
 ## 20. GLM-5.3 Coding Plan 升级架构
 
 绑定实施合同：`docs/18-v1.5-glm-5.3-upgrade-implementation-guide.md`。

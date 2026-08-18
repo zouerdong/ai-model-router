@@ -6,7 +6,7 @@
 
 当前稳定版为 `1.4.0`：它在 `1.3.0` GitHub Release 自更新基线上，一次发布 GLM Coding Plan 与 GLM 标准 API 按量付费两个显式 Profile，并保持独立的凭据、鉴权和费用边界。`1.1.0` 的 Mac 独立验收见 `docs/11-v1.1-first-run-setup-implementation-brief.md` 第 17 节；`1.2.1` 发布证据见 `docs/12-v1.2.1-windows-compatibility-patch.md`；`1.3.0` 发布与公开回读证据见 `docs/13-v1.3-self-update-implementation-brief.md` 第 19 节；`1.4.0` 统一发布证据见 `docs/16-v1.4-unified-glm-release.md`。
 
-下一候选阶段为 `1.5.0` Kimi Code 会员 Provider。其逐卡开发、Luna → Sol 审阅循环、真实会员 Key 门禁、HighSpeed 延后决策与发布条件以 `docs/17-v1.5-kimi-code-membership-implementation-guide.md` 为绑定执行指导；当前任务卡 1–7 已完成，仓库实现候选已接受，但真实 Kimi Code Provider、HighSpeed、Windows 实机、GitHub 与发布门禁均未通过，不改变 `1.4.0` 的公开 Latest 稳定发布结论。
+下一候选阶段为 `1.5.0` Kimi Code 会员 Provider 与 GLM-5.3 Coding Plan 升级。`docs/17-v1.5-kimi-code-membership-implementation-guide.md` 为 Kimi Code 绑定执行指导，`docs/18-v1.5-glm-5.3-upgrade-implementation-guide.md` 为 GLM-5.3 绑定执行指导。当前任务卡 1–8 已完成：2026-08-18 在用户授权（Allegretto+ 档、Extra Usage 关闭、脱敏回读）下完成三个首批 Profile 的真实 Provider 验收（均判 `PROVIDER PASS`，归属闭环：会员 Console 0%→1%，开放平台当日零请求），HighSpeed 按决策 2 处理（仅文档化显式 `--model` 切换，不新增 Profile，`/fast` 不是入口）。治理变更：项目负责人于 2026-08-18 指令撤销 Luna/Sol 双角色审阅循环，改为单一执行者 + 自动化验证（全量 `npm test`/`npm run lint` + 脱敏证据记录）+ 项目负责人门禁（commit/push/tag/Release 逐项授权）模式。Windows 实机、GitHub 与发布门禁（任务卡 9）未开始，不改变 `1.4.0` 的公开 Latest 稳定发布结论。
 
 `1.3.0` 引入的 GitHub Release 自更新继续作为 `1.4.0` 的稳定更新通道。PowerShell、CMD、Git Bash 的隔离 prefix、自替换、回滚、junction 与中断场景均已通过；固定 Release 资产、checksum、tag、immutable 发布、exact/latest 下载、临时 prefix bootstrap 与公开 `cmr update --check` 已闭环。
 

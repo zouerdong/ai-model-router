@@ -4,12 +4,12 @@ Current public Latest stable version: **`1.4.0`**.
 This checkout is an **unreleased `1.5.0` repository candidate**.
 
 Kimi Code repository implementation candidate is complete.
-Real membership Provider validation is pending.
-The current public Latest stable release remains v1.4.0.
+Real membership Provider validation passed on 2026-08-18 (all three profiles).
+The current public Latest stable release remains v1.4.0 until the release gates close.
 
 Version `1.4.0` added two explicit GLM profiles in one release: GLM-5.2 Coding Plan and the GLM standard API pay-as-you-go channel. They remain separate Provider, authentication, billing, and Secret Store boundaries. This checkout also contains the unreleased GLM-5.3 Coding Plan upgrade candidate; `glm-api` intentionally remains GLM-5.2.
 
-The `1.5.0` candidate adds three Kimi Code membership profiles. They are repository-candidate functionality only until real membership Provider validation is completed; they are not part of the public `1.4.0` Latest release.
+The `1.5.0` candidate adds three Kimi Code membership profiles. Their real membership Provider validation passed on 2026-08-18 (redacted evidence in `docs/17` §14 and `docs/08` §16); the Windows, GitHub, and release gates are still open, so they are not part of the public `1.4.0` Latest release yet.
 
 Claude Model Router (`cmr`) is a cross-platform profile launcher for Claude Code. Before Claude Code starts, it lets you choose the public Kimi, DeepSeek, GLM Coding Plan, or GLM standard API pay-as-you-go profiles; this checkout also contains the unreleased Kimi Code candidate profiles. It injects the selected provider's environment for the child process and forwards every remaining Claude Code argument unchanged.
 
@@ -146,7 +146,20 @@ Kimi Code and Kimi Open Platform are separate products and their Keys, Secret St
 
 Do not put an open-platform Key into the Kimi Code slot or the reverse. CMR does not detect Key types, copy Keys, query balances, or fall back between the channels.
 
-Kimi Code is not a stable-release claim in this candidate. The `kimi-for-coding-highspeed` model and Claude Code `/fast` are both outside the stable scope; HighSpeed has not been added as a profile and `/fast` must not be treated as its entry point. Real membership validation, including model permissions, quota attribution, Extra Usage behavior, tools, and sub-agents, remains pending.
+Real membership validation was completed on 2026-08-18 under owner authorization (Allegretto+ tier, Extra Usage kept off, redacted usage readback). All three profiles passed environment-only direct start, minimal main requests, tool calls, sub-agents, and explicit `--model` switching; `/status` confirmed the `https://api.kimi.com/coding/` endpoint with the API-Key channel and no auth token. Quota attribution is closed-loop: Kimi Code Console weekly usage moved 0% → 1% with the rolling five-hour window at 7%, while the Moonshot open platform recorded zero API requests that day. Extra Usage stayed off and no cash charges occurred.
+
+HighSpeed decision (2026-08-18): option 2 — document-only explicit switching. `--model kimi-for-coding-highspeed` was really verified to work (including at the Claude Code request layer), so it is a documented explicit switch users may pass through CMR's opaque arguments. No `kimi-code-fast` profile is added, and Claude Code `/fast` must not be treated as the Kimi HighSpeed entry point (its interactive behavior and persistence were not tested this round).
+
+### First interactive launch on a fresh Claude Code configuration
+
+These screens appear once per Claude Code configuration directory (they do not appear when your usual `~/.claude` already finished onboarding, and headless `-p` mode never shows them):
+
+1. Theme selection — pick any theme and press Enter.
+2. `Detected a custom API key in your environment — Do you want to use this API key?` — choose **`1. Yes`**. The highlighted default is `2. No (recommended)`; declining it makes Claude Code remember the rejection and drop you to the login-method picker, which has no Escape exit. If you land there, cancel with Ctrl+C and use the "Use custom API key" toggle in `/config` to recover, or start again with a fresh configuration directory.
+3. Folder trust — press Enter.
+4. The first run also performs a one-time connectivity check against `api.anthropic.com`. If your proxy to that host is flaky you may see `Unable to connect to Anthropic services` and exit; simply retry once the link is up. Regular Kimi Code traffic goes to `api.kimi.com` and does not depend on it.
+
+Interactive `/model` and `/effort` selections persist as your default for new sessions (Claude Code behavior); `--model` and CMR's environment mapping only affect the current launch. `CLAUDE_CODE_EFFORT_LEVEL` injected by the K3 profiles overrides in-session `/effort`.
 
 After the fifth `kimi-code` Secret is written, manually downgrading to public `1.4.0` may cause that version to reject the entire Secret Store because it knows only the original four Provider IDs. Do not silently delete the new Key; preserve a redacted backup/recovery plan and choose the version transition deliberately.
 

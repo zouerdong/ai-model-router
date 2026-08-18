@@ -374,6 +374,8 @@ Kimi Code 是订阅权益通道，不得复用 `kimi-k3` 的开放平台 Pricing
 
 Kimi Code 官方 Claude Code 页还给出一段会写入 `~/.claude.json` 并清理 `~/.claude/settings.json` 模型项的跳过登录脚本；Claude Code 官方认证页则说明设置 `ANTHROPIC_API_KEY` 会跳过登录并提示用户批准。CMR 不执行该脚本，也不修改用户 Claude 配置。环境变量直启是否足够必须在隔离配置和真实 Provider 门禁中证明；若仍依赖该脚本，则停止并重新做产品决策。
 
+**2026-08-18 门禁结论：环境变量直启足够，跳过登录脚本不必要。** 无头 `-p` 模式在全新配置上直接可用；交互式首跑在全新配置上需完成 Claude Code 自身的一次性初始化（主题 → 环境键确认选 `1. Yes` → 信任目录，见 `docs/06` §19 首次交互启动），不需要官方脚本，也不需要 CMR 写任何持久状态。误拒环境键会落入登录方式选择界面（无 Esc 出口），恢复路径与代理瞬断重试等边界已写入用户文档。HighSpeed 决策：选项 2（仅文档化 `--model kimi-for-coding-highspeed` 显式切换），不新增第四 Profile。
+
 ## 15. GLM-5.3 Coding Plan 升级候选（GLM53-1 至 GLM53-4）
 
 本节绑定 `docs/18-v1.5-glm-5.3-upgrade-implementation-guide.md`，只描述当前未发布候选的增量，不改写 `1.4.0` 的历史发布证据。
