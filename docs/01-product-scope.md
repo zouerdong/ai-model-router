@@ -360,6 +360,10 @@ K3-256K 与 K3-1M 的完整环境映射来自 Kimi Code 官方 Claude Code 示�
 
 Kimi Code 官方当前还提供独立模型 ID `kimi-for-coding-highspeed`，需要 Allegretto 及以上，且与普通 K2.7 Code 的编码能力相同但速度和额度消耗不同。它是本候选的明确非目标：Claude Code 官方 `/fast` 是 Anthropic Opus 的独立快速配置，默认会持久化并可能切换到 Opus，不是 Kimi HighSpeed 的入口。任务卡 8 才能在真实会员环境中决定新增显式 Profile、只文档化显式模型切换，或继续延后。
 
+**2026-08-18 混合档位映射评估结论：暂缓，不新增第四 Profile。** 评估对象为「`k3-256k` 主力四槽（主模型/Opus/Sonnet/Fable）+ `kimi-for-coding` Haiku/Subagent 槽」的混合映射 Profile：两模型同为 256K 上下文，全局 compact/max-context 可一致收口，无 1M/256K 错配风险；仓库内 deepseek/GLM Profile 已有混合映射先例，技术可行。暂缓理由：①增量节省仅覆盖 Subagent+后台流量份额（按 subagent 份额 10–25% 与开放平台 API 比价推断的约 2–3 倍单价差估算，约 5–15%，属推断而非官方数字），而日常默认使用 `k3-256k` 相对 1M 会话的约 2 倍额度差（官方口径，见 `docs/07` §12.2 回读增量）不依赖混合映射；②`kimi-for-coding` 相对 K3 的会员额度倍率官方未公布；③Subagent 槽换 K2.7 Code 存在探索/归纳任务质量折损风险；④Console 无分模型消耗明细，无法直接归因验证。重启条件：官方提供分模型消耗明细，或额度压力持续且用户接受 Subagent 质量折损。
+
+三入口档位定位（使用建议，非配置变更）：`kimi-code-k3`（1M 旗舰，重活/长上下文）、`kimi-code-k3-256k`（日常默认）、`kimi-code`（全档 K2.7 Code 经济档，Andante 起可用的保底档）。`kimi-code` 保留而非移除：已随 `1.5.0` 公开发布，删除属破坏性变更；其全程低速率定位与最低档可用性有独立价值。
+
 ### 14.3 会员额度与使用边界
 
 Kimi Code 官方事实包括：额度按订阅日每 7 天刷新、未使用额度不结转；另有独立的滚动 5 小时限流窗口；所有设备和 API Key 共用相关额度；Kimi 会员月度总额度耗尽时，Kimi Code 可能被冻结。官方还允许订阅用户显式启用 Extra Usage：订阅额度耗尽后从共享余额按实际用量扣除，Extra Usage 默认不应被 CMR 代为开启，且官方提供月度支出上限设置。

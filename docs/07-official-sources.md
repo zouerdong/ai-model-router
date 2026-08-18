@@ -388,6 +388,12 @@ Kimi Code 官方页没有要求为这条接入默认增加 `ENABLE_TOOL_SEARCH=f
 
 K3/K3-256K 的完整映射是官方接入页的直接事实：主模型、Opus、Sonnet、Haiku、Fable 和 Subagent 都使用同一个候选模型，并设置 `CLAUDE_CODE_EFFORT_LEVEL=high`。Kimi 官方还说明 K3 支持 `low/high/max`，K2.7 Code 系列保持 Thinking 开启。`CLAUDE_CODE_MAX_CONTEXT_TOKENS` 在官方 256K 与 1M 示例中与 `CLAUDE_CODE_AUTO_COMPACT_WINDOW` 同值出现，故 `1.5.0` 候选将其纳入 Router 管理变量；`kimi-for-coding` 的完整映射则按上一段明确标为受约束推断。任务卡 2 已实现该变量的清理与回注，任务卡 3–7 已完成隔离回归。
 
+2026-08-18 回读增量（[Model Configuration](https://www.kimi.com/code/docs/en/kimi-code/models.html)，其中 k3-256k 推荐说明晚于 2026-08-12 事实快照）：
+
+- 官方在 k3-256k 推荐说明中标注 `k3`（1M）消耗额度约为 `k3-256k` 的 2 倍；同一说明建议切换模型前先 compact 并开新会话，且 256K→1M 方向切换不影响缓存。
+- 官方使用说明明确：K3/K2.7 Code 关闭 Thinking 时请求会被路由到 K2.6；K2.6 没有独立模型 ID，会员通道无法显式选择。
+- `kimi-for-coding` 相对 K3/K3-256K 的会员额度倍率未在官方页面公布；官方已公布的分模型速率仅 HighSpeed 的 3 倍额度（见 §12.5 冲突表）。
+
 ### 12.3 会员额度、滚动窗口和 Extra Usage
 
 Kimi Code 官方会员页给出以下事实：
