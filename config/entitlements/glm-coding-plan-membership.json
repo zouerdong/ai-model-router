@@ -1,0 +1,8 @@
+{
+  "id": "glm-coding-plan-membership",
+  "displayName": "GLM Coding Plan",
+  "billingType": "subscription-quota",
+  "quotaNotice": "Consumes GLM Coding Plan subscription quota; quota availability and any additional usage charges follow the active subscription and official policy.",
+  "verifiedOn": "2026-08-16",
+  "sourceUrl": "https://docs.bigmodel.cn/cn/guide/models/text/glm-5.3"
+}

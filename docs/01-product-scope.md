@@ -1,7 +1,7 @@
 # 01 — 产品范围
 
-状态：`1.4.0` 统一发布 GLM Coding Plan 与 GLM 标准 API 按量 Profile
-更新时间：2026-07-28
+状态：`1.4.0` 公开 Latest 稳定发布；`1.5.0` Kimi Code 会员 Provider 为已接受的未发布仓库实现候选，真实 Provider 与发布仍阻断
+更新时间：2026-08-16
 
 ## 1. 一句话定义
 
@@ -319,3 +319,67 @@ cmr glm-payg [claude args...]
 新增第四个正式 Provider 后，动态 Setup State 差集会使已有三家均已 seen 的用户看到一次全量四家 onboarding；用户可选择 Not now，`cmr setup glm-api` 与缺 Key 的 TTY inline setup 只处理该独立槽位。Schema 仍为 v1，旧三 Provider Store 可读，但写入 `glm-api` 后手工降级到不识别第四槽位的旧版本可能拒绝整个 Store；不得为降级自动删除或静默忽略该字段。
 
 两种 GLM 模式共享一次版本发布，但 CMR 仍不合并 Secret、不检测 Key 类型、不查询账单，也不在任意错误后自动切换费用通道。
+
+## 14. `1.5.0` Kimi Code 会员 Provider 范围（未发布仓库实现候选）
+
+> 本节源自 `docs/17-v1.5-kimi-code-membership-implementation-guide.md` 任务卡 1 的产品合同。任务卡 1–7 已完成，当前仓库运行时已形成未发布的 Kimi Code 实现候选；这不表示真实 Provider 已验收或公开稳定版已经包含 Kimi Code，当前公开 Latest 仍为 `v1.4.0`。
+
+### 14.1 独立产品与凭据边界
+
+现有 `kimi` 继续表示 Kimi/Moonshot 开放平台按量 API：
+
+```text
+Base URL=https://api.moonshot.cn/anthropic
+Claude Code auth=ANTHROPIC_AUTH_TOKEN → Authorization: Bearer
+Secret ID=kimi
+Billing=开放平台按 Token 付费
+```
+
+候选 `kimi-code` 表示 Kimi Code 会员权益通道：
+
+```text
+Base URL=https://api.kimi.com/coding/
+Claude Code auth=ANTHROPIC_API_KEY → X-Api-Key
+Secret ID=kimi-code
+Billing=会员额度；用户显式启用 Extra Usage 后才可能产生额外按量扣费
+```
+
+两者是两个独立 Provider，不共享 Secret、Key 创建入口、Base URL、鉴权变量、额度或错误后的 fallback。CMR 不识别 Key 类型、不复制 Key、不自动开启 Extra Usage，也不把任何一条通道改绑到另一条通道。官方 Kimi Code 页面还要求保留客户端真实身份标识；CMR 不伪造或覆盖该身份。
+
+### 14.2 首批三个 Profile
+
+| 规范 Profile | 兼容别名 | Claude Code 选择值 | 上游原生模型 | 上下文 | 最低已知会员权益 |
+|---|---|---|---|---:|---|
+| `kimi-code` | `kimi-membership` | `kimi-for-coding` | `kimi-for-coding` | `262144` | 所有 Kimi 会员 |
+| `kimi-code-k3-256k` | `kimi-membership-k3-256k` | `k3-256k` | `k3-256k` | `262144` | Moderato 及以上 |
+| `kimi-code-k3` | `kimi-membership-k3` | `k3[1m]` | `k3` | `1048576` | Allegretto 及以上 |
+
+三个 Profile 共用 `kimi-code` Provider 和 Secret，但每个 Profile 都必须完整映射主模型、Opus、Sonnet、Haiku、Fable 与子 Agent，避免 Claude Code 后台任务落回其他模型。`k3[1m]` 只属于 Claude Code 选择层；发送给 Kimi Code API 的原生模型 ID 是 `k3`。CMR 不自行剥离 `[1m]`。
+
+K3-256K 与 K3-1M 的完整环境映射来自 Kimi Code 官方 Claude Code 示例。`kimi-for-coding` 的模型 ID、256K 上下文和会员可用性是官方事实；其完整档位映射与 compact/max-context 值是为了保持 Claude Code 前后台一致而采用的受约束设计推断，必须在后续真实 Provider 验收中验证，不能写成官方已给出的第三套完整示例。
+
+Kimi Code 官方当前还提供独立模型 ID `kimi-for-coding-highspeed`，需要 Allegretto 及以上，且与普通 K2.7 Code 的编码能力相同但速度和额度消耗不同。它是本候选的明确非目标：Claude Code 官方 `/fast` 是 Anthropic Opus 的独立快速配置，默认会持久化并可能切换到 Opus，不是 Kimi HighSpeed 的入口。任务卡 8 才能在真实会员环境中决定新增显式 Profile、只文档化显式模型切换，或继续延后。
+
+### 14.3 会员额度与使用边界
+
+Kimi Code 官方事实包括：额度按订阅日每 7 天刷新、未使用额度不结转；另有独立的滚动 5 小时限流窗口；所有设备和 API Key 共用相关额度；Kimi 会员月度总额度耗尽时，Kimi Code 可能被冻结。官方还允许订阅用户显式启用 Extra Usage：订阅额度耗尽后从共享余额按实际用量扣除，Extra Usage 默认不应被 CMR 代为开启，且官方提供月度支出上限设置。
+
+候选产品只显示“会员额度 / Extra Usage 风险”提示，不显示开放平台 Token 单价，不估算会话费用，不查询余额或用量，不承诺“无限额度”或“绝不额外扣费”。Kimi Code 订阅按官方规则仅用于个人交互式使用；企业集成、商业服务和非交互式批处理不属于本候选的授权范围，应转向 Kimi Platform 或按官方政策另行评估。
+
+### 14.4 商业元数据与发布边界
+
+Kimi Code 是订阅权益通道，不得复用 `kimi-k3` 的开放平台 Pricing 记录。三个新 Profile 必须引用独立 `entitlementRef`，与既有按量 Profile 的 `pricingRef` 互斥；权益元数据至少记录 `subscription-quota`、官方说明、核验日期和来源链接。
+
+任务卡 1 当时只更新事实、规格和验收矩阵；后续任务卡已在仓库内新增 Provider/Profile、Secret/Setup 支持和未发布 `1.5.0` 候选版本，但没有修改用户配置、CI、Git 远端或 Release。没有真实会员 Key 时，最高结论仍只能是实现候选，不能写成 Kimi Code Provider 已真实验收或 `1.5.0` 已发布。
+
+Kimi Code 官方 Claude Code 页还给出一段会写入 `~/.claude.json` 并清理 `~/.claude/settings.json` 模型项的跳过登录脚本；Claude Code 官方认证页则说明设置 `ANTHROPIC_API_KEY` 会跳过登录并提示用户批准。CMR 不执行该脚本，也不修改用户 Claude 配置。环境变量直启是否足够必须在隔离配置和真实 Provider 门禁中证明；若仍依赖该脚本，则停止并重新做产品决策。
+
+## 15. GLM-5.3 Coding Plan 升级候选（GLM53-1 至 GLM53-4）
+
+本节绑定 `docs/18-v1.5-glm-5.3-upgrade-implementation-guide.md`，只描述当前未发布候选的增量，不改写 `1.4.0` 的历史发布证据。
+
+`cmr glm`、`cmr glm-5.3`、`cmr glm-5.2` 和 `cmr glm-plan` 都解析到同一个 GLM Coding Plan Profile。该 Profile 使用独立 `glm-coding-plan-membership` subscription-quota entitlement，不再引用 `glm-5.2` 标准 API Pricing；Opus/Sonnet 为 `glm-5.3[1m]`，Haiku 为 `glm-4.7`，compact 为 `1000000`，timeout 为 `3000000`，并设置 `CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC=1`。它只注入 `ANTHROPIC_AUTH_TOKEN`。
+
+`cmr glm-api` 与 `cmr glm-payg` 保持独立的 GLM-5.2 标准 API Profile：只使用 `ANTHROPIC_API_KEY`、`glm-5.2[1m]`/`glm-4.7` 和现有 2/8/28 CNY/M Pricing。智谱截至 2026-08-16 仍将 GLM-5.3 模型 API 标为近期上线；Coding Plan 已支持 GLM-5.3 不构成标准 API 已支持的证据。CMR 不自动切换两种费用通道。
+
+GLM Coding Plan 的启动提示只使用通用 subscription quota 话术，不显示标准 API 单价、不估算会话费用、不查询额度。真实 GLM 请求、真实标准 API 请求、费用回读、Windows 实机、发布与 Git 远端操作均不属于本轮。

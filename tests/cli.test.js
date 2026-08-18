@@ -32,19 +32,25 @@ function isolatedEnvironment(home) {
 test("version and list are non-interactive and do not expose secrets", async () => {
   const version = capture();
   assert.equal(await runCli(["version"], { output: version.output }), 0);
-  assert.equal(version.value, "1.4.0\n");
+  assert.equal(version.value, "1.5.0\n");
   const list = capture();
   assert.equal(await runCli(["list"], { output: list.output }), 0);
   assert.match(list.value, /kimi: Kimi K3/);
   assert.match(list.value, /aliases: plan, kimi-k3/);
   assert.match(list.value, /deepseek: DeepSeek Auto/);
   assert.match(list.value, /aliases: build, deepseek-auto/);
-  assert.match(list.value, /glm: GLM-5\.2 Coding Plan/);
-  assert.match(list.value, /aliases: glm-5\.2, glm-plan/);
+  assert.match(list.value, /glm: GLM-5\.3 Coding Plan/);
+  assert.match(list.value, /aliases: glm-5\.3, glm-5\.2, glm-plan/);
   assert.match(list.value, /glm-api: GLM-5\.2 API \(Pay-as-you-go\)/);
   assert.match(list.value, /aliases: glm-payg/);
   assert.match(list.value, /provider: GLM Standard API \(Pay-as-you-go\)/);
   assert.match(list.value, /cost notice: payg/);
+  assert.match(list.value, /kimi-code: Kimi Code Membership/);
+  assert.match(list.value, /commercial model: subscription\/quota/);
+  assert.match(list.value, /entitlement verified: 2026-08-12/);
+  assert.match(list.value, /Extra Usage may incur additional charges when enabled/);
+  assert.match(list.value, /API Key source: https:\/\/www\.kimi\.com\/code\/console/);
+  assert.doesNotMatch(list.value, /(?:CNY\/M|per_million_tokens).*kimi-code/);
   assert.doesNotMatch(list.value, /test-|ANTHROPIC_API_KEY=|ANTHROPIC_AUTH_TOKEN=/);
 });
 
@@ -59,6 +65,10 @@ test("help shows CMR usage without starting Claude Code", async () => {
   assert.match(help.value, /Alias for kimi/);
   assert.match(help.value, /cmr setup <provider>/);
   assert.match(help.value, /first interactive cmr run shows all Provider API Key status/);
+  assert.match(help.value, /cmr kimi-code \[claude args\.\.\.\].*Kimi Code Membership/);
+  assert.match(help.value, /Kimi Code Membership API Keys and Kimi Open Platform API Keys are separate and not interchangeable/);
+  assert.match(help.value, /membership quota; Extra Usage may incur additional charges when enabled/);
+  assert.match(help.value, /Kimi Code membership validation is pending; this 1\.5\.0 checkout is an unreleased repository candidate/);
   assert.match(help.value, /passed through unchanged/);
   assert.match(help.value, /entity npm global packages only/);
   assert.match(help.value, /never updates Claude Code, Node\.js, or Provider API Keys/);
@@ -164,17 +174,18 @@ test("first interactive bare cmr shows the full dashboard, marks seen, then retu
   assert.match(output.value, /glm-api: missing/);
   assert.match(prompter.calls[1].choices[0].label, /kimi — Kimi K3 \[missing\]/);
   assert.match(prompter.calls[1].choices[3].label, /glm-api — GLM-5\.2 API \(Pay-as-you-go\) \[missing\]/);
-  assert.match(prompter.calls[1].choices[4].label, /setup — Configure or replace API Keys/);
+  assert.match(prompter.calls[1].choices[4].label, /kimi-code — Kimi Code Membership \[missing\]/);
+  assert.match(prompter.calls[1].choices[7].label, /setup — Configure or replace API Keys/);
   assert.deepEqual((await new SetupStateStore({
     filePath: getSetupStatePath({ platform: process.platform, env, homedir: home })
-  }).read()).seenProviderIds, ["deepseek", "glm", "glm-api", "kimi"]);
+  }).read()).seenProviderIds, ["deepseek", "glm", "glm-api", "kimi", "kimi-code"]);
 });
 
 test("first interactive bare cmr is independent of whether zero, one, or all keys already exist", async (t) => {
   const scenarios = [
     [],
     [["kimi", "test-kimi-existing"]],
-    [["kimi", "test-kimi-existing"], ["deepseek", "test-deepseek-existing"], ["glm", "test-glm-existing"], ["glm-api", "test-glm-api-existing"]]
+    [["kimi", "test-kimi-existing"], ["deepseek", "test-deepseek-existing"], ["glm", "test-glm-existing"], ["glm-api", "test-glm-api-existing"], ["kimi-code", "test-kimi-code-existing"]]
   ];
   for (const configured of scenarios) {
     const home = await mkdtemp(path.join(tmpdir(), "cmr-cli-key-state-home-"));
@@ -217,7 +228,7 @@ test("seen state enters the daily status menu even when keys later become missin
   const env = isolatedEnvironment(home);
   const stateFile = getSetupStatePath({ platform: process.platform, env, homedir: home });
   const stateStore = new SetupStateStore({ filePath: stateFile });
-  await stateStore.markSeen(["kimi", "deepseek", "glm", "glm-api"]);
+  await stateStore.markSeen(["kimi", "deepseek", "glm", "glm-api", "kimi-code"]);
   const output = capture(true);
   const prompter = fakeMenuPrompter(["exit"]);
   const code = await runCli([], {
@@ -261,7 +272,41 @@ test("a three-provider seen state triggers a full GLM API onboarding dashboard",
   assert.equal(code, 0);
   assert.match(output.value, /Claude Model Router setup/);
   assert.match(output.value, /glm-api: missing/);
-  assert.deepEqual((await setupStateStore.read()).seenProviderIds, ["deepseek", "glm", "glm-api", "kimi"]);
+  assert.deepEqual((await setupStateStore.read()).seenProviderIds, ["deepseek", "glm", "glm-api", "kimi", "kimi-code"]);
+});
+
+test("an old four-provider seen state naturally triggers the full fifth-provider dashboard", async (t) => {
+  const home = await mkdtemp(path.join(tmpdir(), "cmr-cli-kimi-code-unseen-home-"));
+  t.after(async () => {
+    const { rm } = await import("node:fs/promises");
+    await rm(home, { recursive: true, force: true });
+  });
+  const env = isolatedEnvironment(home);
+  const setupStateStore = new SetupStateStore({
+    filePath: getSetupStatePath({ platform: process.platform, env, homedir: home })
+  });
+  await setupStateStore.markSeen(["deepseek", "glm", "glm-api", "kimi"]);
+  const output = capture(true);
+  const prompter = fakeMenuPrompter(["continue", "exit"]);
+  const code = await runCli([], {
+    env,
+    homedir: home,
+    input: { isTTY: true },
+    output: output.output,
+    errorOutput: capture(true).output,
+    interactive: true,
+    prompter,
+    claudeExecutable: null
+  });
+  assert.equal(code, 0);
+  assert.match(output.value, /Claude Model Router setup/);
+  assert.match(output.value, /kimi-code: missing/);
+  assert.match(output.value, /glm-api: missing/);
+  assert.deepEqual((await setupStateStore.read()).seenProviderIds, ["deepseek", "glm", "glm-api", "kimi", "kimi-code"]);
+  await assert.rejects(
+    () => stat(getSecretStorePath({ platform: process.platform, env, homedir: home })),
+    { code: "ENOENT" }
+  );
 });
 
 test("an unseen dynamic fifth Provider triggers a full dashboard and is merged into seen state", async (t) => {
@@ -282,7 +327,7 @@ test("an unseen dynamic fifth Provider triggers a full dashboard and is merged i
     sourceUrl: "https://third.example.com/docs"
   });
   const setupStateStore = new SetupStateStore({ filePath: path.join(home, "state.json") });
-  await setupStateStore.markSeen(["kimi", "deepseek", "glm", "glm-api"]);
+  await setupStateStore.markSeen(["kimi", "deepseek", "glm", "glm-api", "kimi-code"]);
   const secretStore = new SecretStore({
     filePath: path.join(home, "secrets.json"),
     providerIds: config.providers.map((provider) => provider.secretId)
@@ -302,7 +347,7 @@ test("an unseen dynamic fifth Provider triggers a full dashboard and is merged i
   });
   assert.equal(code, 0);
   assert.match(output.value, /third-provider: missing/);
-  assert.deepEqual((await setupStateStore.read()).seenProviderIds, ["deepseek", "glm", "glm-api", "kimi", "third-provider"]);
+  assert.deepEqual((await setupStateStore.read()).seenProviderIds, ["deepseek", "glm", "glm-api", "kimi", "kimi-code", "third-provider"]);
 });
 
 test("read-only management commands do not create Secret or Setup State files", async (t) => {
@@ -355,6 +400,61 @@ test("secret set and status derive the GLM API provider from validated config", 
   const status = capture();
   assert.equal(await runCli(["secret", "status"], { output: status.output, secretStore: store }), 0);
   assert.match(status.value, /glm-api: configured/);
+});
+
+test("secret set and status support the independent Kimi Code membership Secret", async (t) => {
+  const root = await mkdtemp(path.join(tmpdir(), "cmr-cli-secret-kimi-code-"));
+  t.after(async () => {
+    const { rm } = await import("node:fs/promises");
+    await rm(root, { recursive: true, force: true });
+  });
+  const store = new SecretStore({ filePath: path.join(root, "secrets.json") });
+  const input = new EventEmitter();
+  input.isTTY = true;
+  input.setEncoding = () => {};
+  input.setRawMode = () => {};
+  input.pause = () => {};
+  input.resume = () => setImmediate(() => input.emit("data", "test-kimi-code-key\n"));
+  const output = capture();
+  assert.equal(await runCli(["secret", "set", "kimi-code"], { input, output: output.output, secretStore: store }), 0);
+  assert.equal(await store.get("kimi-code"), "test-kimi-code-key");
+  assert.doesNotMatch(output.value, /test-kimi-code-key/);
+  const status = capture();
+  assert.equal(await runCli(["secret", "status"], { output: status.output, secretStore: store }), 0);
+  assert.match(status.value, /kimi-code: configured/);
+  assert.doesNotMatch(status.value, /test-kimi-code-key|masked|\*{2,}|length|hash/i);
+});
+
+test("cmr setup kimi-code is a targeted membership setup and does not mark onboarding seen", async (t) => {
+  const home = await mkdtemp(path.join(tmpdir(), "cmr-cli-setup-kimi-code-"));
+  t.after(async () => {
+    const { rm } = await import("node:fs/promises");
+    await rm(home, { recursive: true, force: true });
+  });
+  const env = isolatedEnvironment(home);
+  const store = new SecretStore({ filePath: path.join(home, "secrets.json") });
+  const state = new SetupStateStore({ filePath: path.join(home, "state.json") });
+  const output = capture(true);
+  const code = await runCli(["setup", "kimi-code"], {
+    config: await loadConfigSet(),
+    env,
+    homedir: home,
+    secretStore: store,
+    setupStateStore: state,
+    input: { isTTY: true },
+    output: output.output,
+    errorOutput: capture(true).output,
+    interactive: true,
+    prompter: {
+      confirm: async () => false,
+      hidden: async () => "test-kimi-code-key"
+    }
+  });
+  assert.equal(code, 0);
+  assert.equal(await store.get("kimi-code"), "test-kimi-code-key");
+  assert.equal((await state.read()).exists, false);
+  assert.match(output.value, /kimi-code: configured/);
+  assert.doesNotMatch(output.value, /test-kimi-code-key/);
 });
 
 test("bare cmr with mismatched TTY streams prints help and never enters setup", async () => {

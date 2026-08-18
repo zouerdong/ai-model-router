@@ -3,7 +3,7 @@ import { access, readFile, readdir, stat } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { loadConfigSet } from "../config/loader.js";
-import { ROUTER_MANAGED_ENV_VARS } from "../environment.js";
+import { isRouterManagedEnvironmentVariable } from "../environment.js";
 import { SecretStore } from "../secret-store.js";
 import {
   findClaudeExecutable,
@@ -14,8 +14,6 @@ import {
   getShellProfilePaths,
   getUserSettingsPath
 } from "../platform.js";
-
-export const LEGACY_ENV_VARS = Object.freeze(["CLAUDE_CODE_MAX_CONTEXT_TOKENS"]);
 
 function line(status, message) {
   return `${status.padEnd(5)} ${message}`;
@@ -50,7 +48,7 @@ async function readSettingsSummary(file, source) {
   const keys = [];
   if (data.env && typeof data.env === "object" && !Array.isArray(data.env)) {
     for (const key of Object.keys(data.env)) {
-      if (ROUTER_MANAGED_ENV_VARS.includes(key) || LEGACY_ENV_VARS.includes(key)) keys.push(key);
+      if (isRouterManagedEnvironmentVariable(key)) keys.push(key);
     }
   }
   if (Object.hasOwn(data, "model")) keys.push("model");
@@ -65,13 +63,13 @@ async function readShellSummary(file, source) {
   if (!(await fileExists(file))) return { lines: [], keys: [] };
   const text = await readFile(file, "utf8");
   const keys = [];
-  const pattern = /(?:export\s+)?([A-Z][A-Z0-9_]+)\s*=/g;
+  const pattern = /(?:export\s+)?([A-Za-z][A-Za-z0-9_]+)\s*=/g;
   for (const [index, rawLine] of text.split(/\r?\n/).entries()) {
     if (/^\s*#/.test(rawLine)) continue;
     let match;
     while ((match = pattern.exec(rawLine)) !== null) {
       const key = match[1];
-      if (ROUTER_MANAGED_ENV_VARS.includes(key) || LEGACY_ENV_VARS.includes(key)) keys.push(`${key}@${index + 1}`);
+      if (isRouterManagedEnvironmentVariable(key)) keys.push(`${key}@${index + 1}`);
     }
     pattern.lastIndex = 0;
   }
@@ -133,14 +131,15 @@ export async function runDoctor(options = {}) {
     lines.push(line("WARN", "Claude Code executable not found on PATH"));
   }
 
-  const currentKeys = Object.keys(env).filter((key) => ROUTER_MANAGED_ENV_VARS.includes(key) || LEGACY_ENV_VARS.includes(key)).sort();
+  const currentKeys = Object.keys(env).filter(isRouterManagedEnvironmentVariable).sort();
   details.environment = currentKeys;
   if (currentKeys.length > 0) {
     const states = currentKeys.map((key) => `${key}=${env[key] ? "set" : "unset"}`);
     lines.push(line("WARN", `current process has router-related keys: ${states.join(", ")}`));
   }
   else lines.push(line("PASS", "current process has no router-related keys"));
-  const authKeys = ["ANTHROPIC_API_KEY", "ANTHROPIC_AUTH_TOKEN"].filter((key) => Object.hasOwn(env, key) && env[key]);
+  const authenticationNames = new Set(["anthropic_api_key", "anthropic_auth_token"]);
+  const authKeys = Object.keys(env).filter((key) => authenticationNames.has(key.toLowerCase()) && env[key]);
   if (authKeys.length > 1) lines.push(line("WARN", "multiple non-empty Anthropic authentication variables are present"));
 
   const settingsFiles = [
@@ -168,22 +167,21 @@ export async function runDoctor(options = {}) {
   }
   if (details.shell.some((item) => item.keys.length > 0)) lines.push(line("WARN", "shell profiles contain persistent Anthropic-related exports"));
 
-  if (Object.hasOwn(env, "CLAUDE_CODE_MAX_CONTEXT_TOKENS")) {
-    lines.push(line("WARN", "CLAUDE_CODE_MAX_CONTEXT_TOKENS is legacy/unverified"));
-  }
-  if (settingsWithRouterKeys.some((item) => item.keys.includes("CLAUDE_CODE_MAX_CONTEXT_TOKENS"))) {
-    lines.push(line("WARN", "settings contain legacy/unverified CLAUDE_CODE_MAX_CONTEXT_TOKENS"));
-  }
-
   let config;
   try {
-    config = await loadConfigSet({ configRoot: options.configRoot, now: options.now });
+    config = options.config ?? await loadConfigSet({ configRoot: options.configRoot, now: options.now });
     lines.push(line("PASS", `validated ${config.profiles.length} profiles and ${config.providers.length} providers`));
     details.config = {
       profiles: config.profiles.map((profile) => profile.id),
       providers: config.providers.map((provider) => provider.id),
-      verifiedOn: [...config.providers, ...config.pricing].map((item) => item.verifiedOn)
+      verifiedOn: [...config.providers, ...config.pricing, ...config.entitlements].map((item) => item.verifiedOn)
     };
+    const subscriptionRefs = new Set(
+      config.profiles.filter((profile) => profile.costNotice === "subscription").map((profile) => profile.entitlementRef)
+    );
+    for (const entitlement of config.entitlements.filter((item) => subscriptionRefs.has(item.id))) {
+      lines.push(line("INFO", `${entitlement.displayName}: subscription/quota; verified ${entitlement.verifiedOn}; ${entitlement.quotaNotice}`));
+    }
   } catch (error) {
     lines.push(line("FAIL", `configuration validation failed: ${error.message}`));
   }

@@ -27,6 +27,7 @@ export async function launchProfile(profileSelector, claudeArgs = [], options = 
   if (!profile) throw new Error(`unknown profile: ${profileSelector}`);
   const provider = config.providers.find((item) => item.id === profile.provider);
   const pricing = config.pricing.find((item) => item.id === profile.pricingRef);
+  const entitlement = config.entitlements.find((item) => item.id === profile.entitlementRef);
   const input = options.input ?? process.stdin;
   const output = options.output ?? stderr;
   const errorOutput = options.errorOutput ?? stderr;
@@ -56,6 +57,8 @@ export async function launchProfile(profileSelector, claudeArgs = [], options = 
     output.write(`WARN  ${profile.displayName} is a high-cost profile; ${formatPricing(pricing)}; verified ${pricing.verifiedOn}.\n`);
   } else if (profile.costNotice === "payg") {
     output.write(`WARN  ${profile.displayName} uses direct standard API billing; ${formatPricing(pricing)}; other mapped models may have different rates; verified ${pricing.verifiedOn}.\n`);
+  } else if (profile.costNotice === "subscription") {
+    output.write(`WARN  ${profile.displayName} uses subscription quota; ${entitlement.quotaNotice}; verified ${entitlement.verifiedOn}.\n`);
   }
   const environment = buildChildEnvironment({ parentEnv: options.parentEnv ?? process.env, provider, profile, secret });
   return runClaude({

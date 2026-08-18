@@ -1,10 +1,11 @@
 import assert from "node:assert/strict";
 import { EventEmitter } from "node:events";
-import { chmod, mkdtemp, readFile, readdir, rename, stat, unlink, writeFile } from "node:fs/promises";
+import { chmod, cp, mkdtemp, readFile, readdir, rename, stat, unlink, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import test from "node:test";
 import { readHiddenSecret, SecretStore } from "../src/secret-store.js";
+import { getDefaultConfigRoot } from "../src/config/loader.js";
 
 test("secret store writes owner-only JSON atomically and exposes status only", async (t) => {
   const directory = await mkdtemp(path.join(tmpdir(), "cmr-secret-test-"));
@@ -16,7 +17,7 @@ test("secret store writes owner-only JSON atomically and exposes status only", a
   const store = new SecretStore({ filePath });
   await store.set("deepseek", "test-deepseek-key");
   await store.set("kimi", "test-kimi-key");
-  assert.deepEqual(await store.status(), { deepseek: true, glm: false, "glm-api": false, kimi: true });
+  assert.deepEqual(await store.status(), { deepseek: true, glm: false, "glm-api": false, "kimi-code": false, kimi: true });
   assert.equal(await store.get("deepseek"), "test-deepseek-key");
   const details = await stat(filePath);
   if (process.platform !== "win32") assert.equal(details.mode & 0o777, 0o600);
@@ -25,7 +26,7 @@ test("secret store writes owner-only JSON atomically and exposes status only", a
   assert.equal((await readdir(path.dirname(filePath))).some((name) => name.endsWith(".tmp")), false);
 });
 
-test("secret store reads the old three-provider v1 schema and atomically adds GLM API", async (t) => {
+test("secret store reads the old four-provider 1.4.0 v1 schema and atomically adds the Kimi Code secret", async (t) => {
   const directory = await mkdtemp(path.join(tmpdir(), "cmr-secret-glm-upgrade-"));
   t.after(async () => {
     const { rm } = await import("node:fs/promises");
@@ -34,11 +35,15 @@ test("secret store reads the old three-provider v1 schema and atomically adds GL
   const filePath = path.join(directory, "secrets.json");
   await writeFile(filePath, JSON.stringify({
     version: 1,
-    providers: { kimi: "test-kimi-key", deepseek: "test-deepseek-key", glm: "test-glm-key" }
+    providers: {
+      kimi: "test-kimi-key",
+      deepseek: "test-deepseek-key",
+      glm: "test-glm-key",
+      "glm-api": "test-glm-api-key"
+    }
   }, null, 2));
   const store = new SecretStore({ filePath });
-  assert.deepEqual(await store.status(), { deepseek: true, glm: true, "glm-api": false, kimi: true });
-  await store.set("glm-api", "test-glm-api-key");
+  assert.deepEqual(await store.status(), { deepseek: true, glm: true, "glm-api": true, "kimi-code": false, kimi: true });
   assert.deepEqual(await store.readAll(), {
     version: 1,
     providers: {
@@ -50,6 +55,18 @@ test("secret store reads the old three-provider v1 schema and atomically adds GL
   });
   assert.equal(await store.get("glm"), "test-glm-key");
   assert.equal(await store.get("glm-api"), "test-glm-api-key");
+
+  await store.set("kimi-code", "test-kimi-code-key");
+  assert.deepEqual(await store.readAll(), {
+    version: 1,
+    providers: {
+      kimi: "test-kimi-key",
+      deepseek: "test-deepseek-key",
+      glm: "test-glm-key",
+      "glm-api": "test-glm-api-key",
+      "kimi-code": "test-kimi-code-key"
+    }
+  });
 
   const beforeFailure = await readFile(filePath, "utf8");
   const failingStore = new SecretStore({
@@ -63,8 +80,35 @@ test("secret store reads the old three-provider v1 schema and atomically adds GL
       unlink
     }
   });
-  await assert.rejects(() => failingStore.set("glm-api", "test-glm-api-replacement"), /cannot write secret store/);
+  await assert.rejects(() => failingStore.set("kimi-code", "test-kimi-code-replacement"), /cannot write secret store/);
   assert.equal(await readFile(filePath, "utf8"), beforeFailure);
+});
+
+test("SecretStore derives accepted Provider IDs from the loaded configuration when not injected", async (t) => {
+  const root = await mkdtemp(path.join(tmpdir(), "cmr-secret-dynamic-config-"));
+  await cp(getDefaultConfigRoot(), root, { recursive: true });
+  await writeFile(path.join(root, "providers", "third-provider.json"), JSON.stringify({
+    id: "third-provider",
+    displayName: "Third Provider",
+    baseUrl: "https://third.example.com/anthropic",
+    apiKeyUrl: "https://third.example.com/api-keys",
+    authVariable: "ANTHROPIC_AUTH_TOKEN",
+    secretId: "third-provider",
+    verifiedOn: "2026-08-12",
+    sourceUrl: "https://third.example.com/docs"
+  }));
+  t.after(async () => {
+    const { rm } = await import("node:fs/promises");
+    await rm(root, { recursive: true, force: true });
+  });
+  const store = new SecretStore({
+    filePath: path.join(root, "secrets.json"),
+    configRoot: root
+  });
+  await store.set("third-provider", "test-third-provider-key");
+  const status = await store.status();
+  assert.equal(status["third-provider"], true);
+  assert.equal(await store.get("third-provider"), "test-third-provider-key");
 });
 
 test("secret store rejects blank and multiline values", async () => {
@@ -195,7 +239,7 @@ test("hidden secret input cleans up when setEncoding or setRawMode initializatio
   assert.deepEqual(longInput.listenerCount("data"), 0);
 });
 
-test("secret replacement keeps the old file when chmod or rename fails", async (t) => {
+test("secret replacement keeps the old file when write, chmod or rename fails", async (t) => {
   const directory = await mkdtemp(path.join(tmpdir(), "cmr-secret-replace-fail-"));
   t.after(async () => {
     const { rm } = await import("node:fs/promises");
@@ -205,6 +249,12 @@ test("secret replacement keeps the old file when chmod or rename fails", async (
   const stableFs = { readFile: (target, encoding) => import("node:fs/promises").then((fs) => fs.readFile(target, encoding)), mkdir: (target, options) => import("node:fs/promises").then((fs) => fs.mkdir(target, options)), writeFile: (target, content, options) => import("node:fs/promises").then((fs) => fs.writeFile(target, content, options)), rename, chmod, unlink };
   const initial = new SecretStore({ filePath, fs: stableFs });
   await initial.set("kimi", "test-kimi-old");
+  const failWrite = new SecretStore({
+    filePath,
+    fs: { ...stableFs, writeFile: async () => { const error = new Error("write failed"); error.code = "EIO"; throw error; } }
+  });
+  await assert.rejects(() => failWrite.set("kimi", "test-kimi-new"), /cannot write secret store/);
+  assert.equal(await initial.get("kimi"), "test-kimi-old");
   const failRename = new SecretStore({
     filePath,
     fs: { ...stableFs, rename: async () => { const error = new Error("rename failed"); error.code = "EIO"; throw error; } }

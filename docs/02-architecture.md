@@ -1,7 +1,7 @@
 # 02 — 系统架构
 
-状态：`1.4.0` GLM 双模式统一发布架构
-更新时间：2026-07-28
+状态：`1.4.0` GLM 双模式公开 Latest 稳定架构；`1.5.0` Kimi Code 会员 Provider 为已接受的未发布仓库实现候选，真实 Provider 与发布仍阻断
+更新时间：2026-08-16
 
 ## 1. 架构结论
 
@@ -183,7 +183,7 @@ CLAUDE_CODE_AUTO_COMPACT_WINDOW
 CLAUDE_CODE_EFFORT_LEVEL
 ```
 
-本机现有 `CLAUDE_CODE_MAX_CONTEXT_TOKENS` 不在当前 Kimi 官方推荐清单中，但可能影响上下文。`doctor` 必须单独标记为 legacy/unverified；迁移时经用户确认一并处理。
+在 `1.4.0` 基线中，本机现有 `CLAUDE_CODE_MAX_CONTEXT_TOKENS` 不属于既有四个 Profile 的 Router 管理变量，因此 `doctor` 仍按 legacy/unverified 处理；它不应被既有 Profile 静默继承。任务卡 1 复核确认 Kimi Code 官方 Claude Code 指南明确使用该变量；任务卡 2 已将它纳入 `1.5.0` 候选的 Router 管理集合，后续任务卡已验证大小写不敏感清理和按 Profile 回注。
 
 不属于 Router 的变量不得清除，例如代理、Tavily、MCP、终端与编辑器设置。
 
@@ -548,3 +548,86 @@ Secret Store 和 Setup State 都保持 Schema v1。旧 `seenProviderIds=["deepse
 `ROUTER_MANAGED_ENV_VARS` 已包含两种 Anthropic 鉴权变量。构建子进程环境时必须先按大小写不敏感规则清除所有 Router 管理变量，再注入 Base URL、当前 Profile 环境和当前 Provider 的唯一鉴权变量。父环境对象不修改。由此保证 `glm → glm-api`、`glm-api → glm` 及 GLM 与既有 Provider 连续启动不会交叉污染。
 
 Secret Store 与 Setup State 保持 Schema v1 和动态集合机制：旧三 Provider Store 无迁移可读，第四 Provider 缺失即为 `missing`；旧三 Provider seen 状态自然得到 `glm-api` unseen。CMR 不复制 GLM Key、不检测 Key 类型、不中间代理请求，也不因任意错误在 Plan/PAYG 间切换。写入第四 Key 后旧版本可能无法读取整个 Store，这是手工降级风险，不是 updater rollback 要自动处理的数据迁移。
+
+## 19. `1.5.0` Kimi Code 会员 Provider 候选架构（未发布仓库实现候选）
+
+绑定执行指导：`docs/17-v1.5-kimi-code-membership-implementation-guide.md`。任务卡 1–7 已按本节架构形成并接受未发布仓库实现候选；它不改变公开 Latest `v1.4.0`，也不替代真实 Provider、Windows 实机、GitHub 与发布门禁。
+
+### 19.1 双通道边界
+
+```text
+用户所在项目目录
+       │
+       ├── cmr kimi [Claude args...] ───────── Kimi Open Platform ───────┐
+       ├── cmr deepseek [Claude args...] ──── DeepSeek ──────────────────┤
+       ├── cmr glm [Claude args...] ───────── GLM Coding Plan ───────────┤
+       ├── cmr glm-api [Claude args...] ───── GLM standard API ──────────┤
+       └── cmr kimi-code* [Claude args...] ── Kimi Code Membership ──────┤
+                                                                           ▼
+                                                                Claude Code 子进程
+                                           args / cwd / TTY / signal / exit code
+```
+
+`kimi` 与 `kimi-code*` 即使都由 Kimi 提供，也必须被视为不同 Provider：
+
+| 维度 | `kimi` | `kimi-code*` 候选 |
+|---|---|---|
+| 产品通道 | Kimi/Moonshot 开放平台 | Kimi Code 会员权益 |
+| Base URL | `https://api.moonshot.cn/anthropic` | `https://api.kimi.com/coding/` |
+| Claude Code 鉴权变量 | `ANTHROPIC_AUTH_TOKEN` | `ANTHROPIC_API_KEY` |
+| 上游鉴权 | `Authorization: Bearer` | `X-Api-Key` |
+| Secret ID | `kimi` | `kimi-code` |
+| 商业元数据 | `pricingRef` | `entitlementRef` |
+| 失败处理 | 原样失败 | 原样失败；不切回 `kimi` |
+
+构建 Kimi Code 子进程环境时，必须先按大小写不敏感规则清除继承环境中的 `ANTHROPIC_AUTH_TOKEN`、`ANTHROPIC_API_KEY`、所有 Router 管理模型变量及候选新增的 `CLAUDE_CODE_MAX_CONTEXT_TOKENS`，再只注入当前 Profile 的 `ANTHROPIC_API_KEY` 和模型映射。反向启动 `kimi` 时也只能注入 `ANTHROPIC_AUTH_TOKEN`；父 `process.env` 不修改。
+
+### 19.2 候选 Profile 与环境层
+
+三个候选 Profile 共用一个 Provider/Secret，但各自完整注入以下 Claude Code 选择层映射：
+
+| Profile | 主 / Opus / Sonnet / Haiku / Fable / Subagent | `CLAUDE_CODE_AUTO_COMPACT_WINDOW` | `CLAUDE_CODE_MAX_CONTEXT_TOKENS` | Effort |
+|---|---|---:|---:|---|
+| `kimi-code` | `kimi-for-coding` | `262144` | `262144` | 不额外注入 |
+| `kimi-code-k3-256k` | `k3-256k` | `262144` | `262144` | `high` |
+| `kimi-code-k3` | `k3[1m]` | `1048576` | `1048576` | `high` |
+
+K3-256K 与 K3-1M 的 Fable、Opus、Sonnet、Haiku、Subagent、compact、max-context 和 effort 映射来自 Kimi Code 官方 Claude Code 示例。官方没有单独给出 `kimi-for-coding` 的第三套完整 Claude Code 示例；该 Profile 以官方模型 ID、256K 上下文和会员矩阵为事实基础，受约束地复用完整档位映射并不额外注入 effort，后续真实 Provider 验收仍是 Blocker。`k3[1m]` 只在 Claude Code 选择层出现；CMR 不实现上游模型 ID 转换。`CLAUDE_CODE_MAX_CONTEXT_TOKENS` 已作为任务卡 2 的地基变更进入 Router 管理集合，并在任务卡 3–7 的隔离与回归证据中通过。
+
+### 19.3 Opaque argv、模型切换与 HighSpeed 边界
+
+`--model`、`--continue`、`--resume`、`--fork-session`、`--effort` 和未来参数继续属于 Claude Code 的 opaque argv。Claude Code 官方当前优先级为会话内 `/model`、启动 `--model`、`ANTHROPIC_MODEL`、Settings。`--model` 与环境变量只作用于本次启动；交互式 `/model <name>` 或 picker 的 Enter 当前会把选择写为后续新会话的用户默认，picker 的 `s` 才只切换当前会话。CMR 不拦截这些原生命令，但文档和真实验收必须把持久化风险算入跨 Profile 隔离，不能把 `/model` 描述为无副作用的临时切换。
+
+Claude Code 官方 `/fast` 当前是 Anthropic Opus 5/4.8 的研究预览快速配置，不是单独模型；启用时若当前不是受支持的 Opus，会自动切换到 Opus，且交互式启用默认跨会话持久化。网关/代理场景还会直接请求 `api.anthropic.com` 检查资格，Kimi Code Key 可能使检查失败；跳过客户端检查也不证明 Kimi 上游支持该模式。Kimi Code 的 `kimi-for-coding-highspeed` 则是独立 Provider 模型 ID。因此不能把 `/fast` 当作 Kimi HighSpeed 入口。HighSpeed 保持候选非目标，必须由任务卡 8 的显式模型、持久设置、额度消耗和归属回读共同决定。
+
+### 19.4 Setup、权益和降级
+
+新增 `kimi-code` Provider 后，动态 Setup State 应从当前四家 seen 集合计算出 unseen；Full setup 显示五家，三个 Profile 只引导一次 `kimi-code` Key，targeted/inline setup 不能误标其他 Provider。订阅权益使用独立 `entitlementRef`，不虚构 Token 单价；Extra Usage 仅由用户在 Kimi 侧显式开启，CMR 不探测、不修改、不自动切换。
+
+写入第五个 Secret 后，旧版 `1.4.0` 可能因不认识 `kimi-code` 而拒绝读取整个 Store。这是用户可见的手工降级风险；CMR 不为降级自动删除新 Key，也不在启动失败后静默改用开放平台。
+
+### 19.5 官方跳过登录脚本的未决边界
+
+Kimi Code 官方 Claude Code 页要求直接接入用户先运行脚本，写入 `~/.claude.json` 的第三方支持/onboarding 标记并清理 `~/.claude/settings.json` 的旧模型项；Claude Code 官方认证页同时说明设置 `ANTHROPIC_API_KEY` 会跳过登录并提示批准。两者是否对当前 Claude Code 版本等价，静态资料无法消解。
+
+CMR 不执行该脚本，不写用户 Claude 配置，也不依赖未公开的持久状态字段。任务卡 3–7 已在隔离 Claude 配置与假 Claude 中证明候选只使用临时子进程环境且不创建 Claude 配置文件；真实 Kimi Code 直启仍须在任务卡 8 的用户授权门禁中复核。若真实环境变量直启失败且只能依赖持久修改，本候选必须停止并回到产品决策，不能在实现卡中顺手越过红线。
+
+## 20. GLM-5.3 Coding Plan 升级架构
+
+绑定实施合同：`docs/18-v1.5-glm-5.3-upgrade-implementation-guide.md`。
+
+本轮只升级现有 `glm` Profile 的模型选择层和商业元数据，不新增 Provider，不改变 `glm` Secret，不改变 `glm-api` 的标准 API 数据流：
+
+```text
+cmr glm / glm-5.3 / glm-5.2 / glm-plan
+  └── GLM Coding Plan ── AUTH_TOKEN ── glm-coding-plan-membership entitlement
+                               ├── Opus/Sonnet: glm-5.3[1m]
+                               └── Haiku: glm-4.7
+
+cmr glm-api / glm-payg
+  └── GLM standard API ── API_KEY ── glm-5.2 pricing
+                               ├── Opus/Sonnet: glm-5.2[1m]
+                               └── Haiku: glm-4.7
+```
+
+两条通道仍共享 Anthropic-compatible Base URL，但鉴权变量、Secret 槽位和商业元数据保持独立。`glm` 的 subscription-quota 提示来自 entitlement JSON；`glm-api` 的 pay-as-you-go 提示继续来自 `glm-5.2` Pricing。因标准 API 页面截至 2026-08-16 仍将 GLM-5.3 API 标为近期上线，不能从 Coding Plan 5.3 支持推导出标准 API 迁移。

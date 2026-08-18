@@ -6,6 +6,7 @@ import { fileURLToPath } from "node:url";
 import test from "node:test";
 import { launchProfile } from "../src/commands/launch.js";
 import { SecretStore } from "../src/secret-store.js";
+import { SetupStateStore } from "../src/setup-state.js";
 
 const fixture = fileURLToPath(new URL("./fixtures/fake-claude.js", import.meta.url));
 
@@ -37,14 +38,14 @@ function fakePrompter({ secret = "test-kimi-key", cancel = false } = {}) {
   };
 }
 
-async function runFake(root, selector, claudeArgs, file, secret) {
+async function runFake(root, selector, claudeArgs, file, secret, extraParentEnv = {}) {
   const outputFile = path.join(root, file);
   const output = outputCapture();
   const inputArgs = claudeArgs.slice();
   const code = await launchProfile(selector, inputArgs, {
     secret,
     output: output.stream,
-    parentEnv: { PATH: process.env.PATH, FAKE_OUTPUT_FILE: outputFile },
+    parentEnv: { PATH: process.env.PATH, FAKE_OUTPUT_FILE: outputFile, ...extraParentEnv },
     cwd: root,
     executable: process.execPath,
     executableArgs: [fixture],
@@ -113,8 +114,8 @@ test("launchProfile injects the selected profile and passes Claude args unchange
   assert.equal(glm.snapshot.hasAuthToken, true);
   assert.equal(glm.snapshot.hasApiKey, false);
   assert.equal(glm.snapshot.model, null);
-  assert.equal(glm.snapshot.opus, "glm-5.2[1m]");
-  assert.equal(glm.snapshot.sonnet, "glm-5.2[1m]");
+  assert.equal(glm.snapshot.opus, "glm-5.3[1m]");
+  assert.equal(glm.snapshot.sonnet, "glm-5.3[1m]");
   assert.equal(glm.snapshot.haiku, "glm-4.7");
   assert.equal(glm.snapshot.compact, "1000000");
   assert.equal(glm.snapshot.apiTimeoutMs, "3000000");
@@ -123,6 +124,8 @@ test("launchProfile injects the selected profile and passes Claude args unchange
   assert.equal(glm.snapshot.subagent, null);
   assert.equal(glm.snapshot.effort, null);
   assert.equal(glm.snapshot.toolSearch, null);
+  assert.match(glm.output, /uses subscription quota/);
+  assert.doesNotMatch(glm.output, /cache hit 2|input 8|output 28|standard API billing/);
   assert.doesNotMatch(glm.output, /test-glm-key|CMR_GLM_PRIVATE_PROMPT_SENTINEL/);
 
   const glmApi = await runFake(root, "glm-api", ["--help", "-p", "CMR_GLM_API_PRIVATE_PROMPT_SENTINEL"], "glm-api.json", "test-glm-api-key");
@@ -144,9 +147,106 @@ test("launchProfile injects the selected profile and passes Claude args unchange
   assert.equal(glmApi.snapshot.toolSearch, null);
   assert.match(glmApi.output, /GLM-5\.2 API \(Pay-as-you-go\) uses direct standard API billing/);
   assert.match(glmApi.output, /cache hit 2, input 8, output 28/);
-  assert.match(glmApi.output, /verified 2026-07-28/);
+  assert.match(glmApi.output, /verified 2026-08-16/);
   assert.doesNotMatch(glmApi.output, /test-glm-api-key|CMR_GLM_API_PRIVATE_PROMPT_SENTINEL/);
   assert.doesNotMatch(glm.output, /direct standard API billing/);
+});
+
+test("Kimi Code profiles launch through the isolated API key path with exact argv and quota warning", async (t) => {
+  const root = await mkdtemp(path.join(tmpdir(), "cmr-launch-kimi-code-"));
+  t.after(async () => {
+    const { rm } = await import("node:fs/promises");
+    await rm(root, { recursive: true, force: true });
+  });
+  const cases = [
+    ["kimi-code", "kimi-for-coding", "262144", null],
+    ["kimi-code-k3-256k", "k3-256k", "262144", "high"],
+    ["kimi-code-k3", "k3[1m]", "1048576", "high"]
+  ];
+  for (const [index, [selector, model, context, effort]] of cases.entries()) {
+    const args = ["--continue", "--model", "opaque-kimi-code-model", "-p", `prompt-${index}`];
+    const result = await runFake(root, selector, args, `kimi-code-${index}.json`, "test-kimi-code-key", {
+      ANTHROPIC_AUTH_TOKEN: "stale-token",
+      aNtHrOpIc_AuTh_ToKeN: "stale-mixed-token",
+      Anthropic_Api_Key: "stale-mixed-api-key"
+    });
+    assert.equal(result.code, 0);
+    assert.deepEqual(result.snapshot.args, args);
+    assert.equal(result.snapshot.baseUrl, "https://api.kimi.com/coding/");
+    for (const key of ["model", "opus", "sonnet", "haiku", "fable", "subagent"]) {
+      assert.equal(result.snapshot[key], model, `${selector}.${key}`);
+    }
+    assert.equal(result.snapshot.compact, context);
+    assert.equal(result.snapshot.maxContext, context);
+    assert.equal(result.snapshot.effort, effort);
+    assert.equal(result.snapshot.hasApiKey, true);
+    assert.equal(result.snapshot.hasAuthToken, false);
+    assert.deepEqual(result.snapshot.anthropicAuthVariables, ["ANTHROPIC_API_KEY"]);
+    assert.match(result.output, /uses subscription quota/);
+    assert.match(result.output, /Extra Usage may incur additional charges when enabled/);
+    assert.doesNotMatch(result.output, /CNY\/M|cache hit|cache miss|unlimited|never charged/i);
+    assert.doesNotMatch(result.output, /test-kimi-code-key|opaque-kimi-code-model|prompt-/);
+  }
+});
+
+test("all three Kimi Code profiles share one inline-configured secret without marking onboarding seen", async (t) => {
+  const root = await mkdtemp(path.join(tmpdir(), "cmr-launch-kimi-code-shared-secret-"));
+  t.after(async () => {
+    const { rm } = await import("node:fs/promises");
+    await rm(root, { recursive: true, force: true });
+  });
+  const secretStore = new SecretStore({ filePath: path.join(root, "secrets.json") });
+  const setupStateStore = new SetupStateStore({ filePath: path.join(root, "state.json") });
+  await setupStateStore.markSeen(["deepseek", "glm", "glm-api", "kimi"]);
+  const prompter = fakePrompter({ secret: "test-kimi-code-key" });
+  const output = outputCapture();
+  output.stream.isTTY = true;
+
+  for (const selector of ["kimi-code", "kimi-code-k3-256k", "kimi-code-k3"]) {
+    const outputFile = path.join(root, `${selector}.json`);
+    const code = await launchProfile(selector, [], {
+      secretStore,
+      setupStateStore,
+      prompter,
+      input: { isTTY: true },
+      output: output.stream,
+      errorOutput: output.stream,
+      interactive: true,
+      parentEnv: { PATH: process.env.PATH, FAKE_OUTPUT_FILE: outputFile },
+      cwd: root,
+      executable: process.execPath,
+      executableArgs: [fixture],
+      stdio: "ignore"
+    });
+    assert.equal(code, 0, selector);
+    assert.equal(JSON.parse(await readFile(outputFile, "utf8")).hasApiKey, true, selector);
+  }
+
+  assert.equal(prompter.hiddenCalls, 1);
+  assert.equal(await secretStore.get("kimi-code"), "test-kimi-code-key");
+  assert.deepEqual((await setupStateStore.read()).seenProviderIds, ["deepseek", "glm", "glm-api", "kimi"]);
+  assert.doesNotMatch(output.text, /test-kimi-code-key/);
+});
+
+test("Kimi Code fake launch uses only temporary environment and does not create Claude config files", async (t) => {
+  const root = await mkdtemp(path.join(tmpdir(), "cmr-launch-kimi-code-isolated-config-"));
+  t.after(async () => {
+    const { rm } = await import("node:fs/promises");
+    await rm(root, { recursive: true, force: true });
+  });
+  const isolatedHome = path.join(root, "isolated-home");
+  const configDir = path.join(isolatedHome, ".claude");
+  await runFake(root, "kimi-code", ["--help"], "isolated.json", "test-kimi-code-key", {
+    HOME: isolatedHome,
+    USERPROFILE: isolatedHome,
+    CLAUDE_CONFIG_DIR: configDir
+  });
+  for (const file of [
+    path.join(isolatedHome, ".claude.json"),
+    path.join(isolatedHome, ".claude", "settings.json")
+  ]) {
+    await assert.rejects(readFile(file), { code: "ENOENT" });
+  }
 });
 
 test("hostile Claude argv vectors remain exact and private", async (t) => {
@@ -170,7 +270,10 @@ test("hostile Claude argv vectors remain exact and private", async (t) => {
     ["glm", ["--resume", "glm-session-123", "-p", `glm prompt ${sentinel}`], "test-glm-key"],
     ["glm-plan", ["--model", "provider-supported-model"], "test-glm-key"],
     ["glm-api", ["--model", "provider-supported-model"], "test-glm-api-key"],
-    ["glm-payg", ["--help"], "test-glm-api-key"]
+    ["glm-payg", ["--help"], "test-glm-api-key"],
+    ["kimi-code", ["--continue"], "test-kimi-code-key"],
+    ["kimi-membership-k3-256k", ["--model", "k3-256k"], "test-kimi-code-key"],
+    ["kimi-membership-k3", ["-p", `kimi code ${sentinel}`], "test-kimi-code-key"]
   ];
   for (const [index, [selector, claudeArgs, secret]] of vectors.entries()) {
     const result = await runFake(root, selector, claudeArgs, `vector-${index}.json`, secret);
@@ -178,6 +281,7 @@ test("hostile Claude argv vectors remain exact and private", async (t) => {
     assert.deepEqual(result.snapshot.args, claudeArgs);
     assert.deepEqual(result.inputArgs, claudeArgs);
     assert.doesNotMatch(result.output, new RegExp(sentinel));
+    assert.doesNotMatch(result.output, /test-kimi-code-key/);
   }
 });
 
@@ -243,12 +347,13 @@ test("canonical IDs and aliases have identical environments and argv", async (t)
   const build = await runFake(root, "build", deepseekArgs, "build.json", "test-deepseek-key");
   const glmArgs = ["--resume", "glm-session-123"];
   const glm = await runFake(root, "glm", glmArgs, "glm.json", "test-glm-key");
+  const glm53 = await runFake(root, "glm-5.3", glmArgs, "glm-5.3.json", "test-glm-key");
   const glm52 = await runFake(root, "glm-5.2", glmArgs, "glm-5.2.json", "test-glm-key");
   const glmPlan = await runFake(root, "glm-plan", glmArgs, "glm-plan.json", "test-glm-key");
   const glmApiArgs = ["--help"];
   const glmApi = await runFake(root, "glm-api", glmApiArgs, "glm-api.json", "test-glm-api-key");
   const glmPayg = await runFake(root, "glm-payg", glmApiArgs, "glm-payg.json", "test-glm-api-key");
-  for (const pair of [[kimi, plan], [deepseek, build], [glm, glm52], [glm, glmPlan], [glmApi, glmPayg]]) {
+  for (const pair of [[kimi, plan], [deepseek, build], [glm, glm53], [glm, glm52], [glm, glmPlan], [glmApi, glmPayg]]) {
     assert.equal(pair[0].code, pair[1].code);
     assert.deepEqual(pair[0].snapshot, pair[1].snapshot);
     assert.deepEqual(pair[0].inputArgs, pair[1].inputArgs);
@@ -534,6 +639,23 @@ test("GLM standard API missing Key in a non-TTY returns a fast stable error with
   );
 });
 
+test("Kimi Code missing Key in a non-TTY returns a fast stable error without reading input", async (t) => {
+  const root = await mkdtemp(path.join(tmpdir(), "cmr-launch-kimi-code-nontty-"));
+  t.after(async () => {
+    const { rm } = await import("node:fs/promises");
+    await rm(root, { recursive: true, force: true });
+  });
+  await assert.rejects(
+    () => launchProfile("kimi-code", [], {
+      secretStore: new SecretStore({ filePath: path.join(root, "secrets.json") }),
+      input: { isTTY: false },
+      output: outputCapture().stream,
+      interactive: false
+    }),
+    /missing Kimi Code Membership secret; run cmr secret set kimi-code/
+  );
+});
+
 test("TTY input with non-TTY output does not downgrade to visible or hidden input", async (t) => {
   const root = await mkdtemp(path.join(tmpdir(), "cmr-launch-inline-mismatch-"));
   t.after(async () => {
@@ -583,7 +705,10 @@ test("compatibility aliases configure the correct Provider in place", async (t) 
     ["plan", "kimi", "test-kimi-key"],
     ["build", "deepseek", "test-deepseek-key"],
     ["glm-5.2", "glm", "test-glm-key"],
-    ["glm-plan", "glm", "test-glm-key"]
+    ["glm-plan", "glm", "test-glm-key"],
+    ["kimi-membership", "kimi-code", "test-kimi-code-key"],
+    ["kimi-membership-k3-256k", "kimi-code", "test-kimi-code-key"],
+    ["kimi-membership-k3", "kimi-code", "test-kimi-code-key"]
   ]) {
     const output = outputCapture();
     output.stream.isTTY = true;

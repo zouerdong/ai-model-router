@@ -7,6 +7,7 @@ export const PROFILE_ENV_KEYS = Object.freeze([
   "CLAUDE_CODE_SUBAGENT_MODEL",
   "ENABLE_TOOL_SEARCH",
   "CLAUDE_CODE_AUTO_COMPACT_WINDOW",
+  "CLAUDE_CODE_MAX_CONTEXT_TOKENS",
   "CLAUDE_CODE_EFFORT_LEVEL",
   "CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC",
   "API_TIMEOUT_MS"
@@ -31,6 +32,7 @@ export const PROFILE_KEYS = Object.freeze([
   "purpose",
   "costNotice",
   "pricingRef",
+  "entitlementRef",
   "requiredEnvironment",
   "environment"
 ]);
@@ -43,6 +45,15 @@ export const PRICING_KEYS = Object.freeze([
   "unit",
   "prices",
   "contextWindowTokens",
+  "verifiedOn",
+  "sourceUrl"
+]);
+
+export const ENTITLEMENT_KEYS = Object.freeze([
+  "id",
+  "displayName",
+  "billingType",
+  "quotaNotice",
   "verifiedOn",
   "sourceUrl"
 ]);
@@ -162,6 +173,10 @@ function assertExactPriceKeys(value, expected, label) {
   }
 }
 
+function assertExactValue(actual, expected, label) {
+  if (JSON.stringify(actual) !== JSON.stringify(expected)) fail(`${label} is invalid`);
+}
+
 export function validateProvider(provider, { now = new Date() } = {}) {
   assertObject(provider, "provider");
   assertExactKeys(provider, PROVIDER_KEYS, "provider");
@@ -181,10 +196,10 @@ export function validateProvider(provider, { now = new Date() } = {}) {
   return provider;
 }
 
-export function validateProfile(profile, providerIds) {
+export function validateProfile(profile, providerIds, { pricingIds, entitlementIds } = {}) {
   assertObject(profile, "profile");
   assertExactKeys(profile, PROFILE_KEYS, "profile");
-  assertRequiredKeys(profile, PROFILE_KEYS, "profile");
+  assertRequiredKeys(profile, PROFILE_KEYS.filter((key) => key !== "pricingRef" && key !== "entitlementRef"), "profile");
   assertString(profile.id, "profile.id");
   if (!Array.isArray(profile.aliases) || profile.aliases.length === 0) fail("profile.aliases must be a non-empty array");
   const aliases = new Set();
@@ -197,8 +212,30 @@ export function validateProfile(profile, providerIds) {
   assertString(profile.provider, "profile.provider");
   if (!providerIds.has(profile.provider)) fail(`profile.provider is unknown: ${profile.provider}`);
   assertString(profile.purpose, "profile.purpose");
-  if (!["high", "standard", "payg"].includes(profile.costNotice)) fail("profile.costNotice must be high, standard or payg");
-  assertString(profile.pricingRef, "profile.pricingRef");
+  if (!["high", "standard", "payg", "subscription"].includes(profile.costNotice)) {
+    fail("profile.costNotice must be high, standard, payg or subscription");
+  }
+  const hasPricingRef = Object.hasOwn(profile, "pricingRef");
+  const hasEntitlementRef = Object.hasOwn(profile, "entitlementRef");
+  if (hasPricingRef === hasEntitlementRef) {
+    fail("profile must contain exactly one of pricingRef or entitlementRef");
+  }
+  if (hasPricingRef) {
+    assertString(profile.pricingRef, "profile.pricingRef");
+    if (pricingIds && !pricingIds.has(profile.pricingRef)) fail(`profile.pricingRef is unknown: ${profile.pricingRef}`);
+  }
+  if (hasEntitlementRef) {
+    assertString(profile.entitlementRef, "profile.entitlementRef");
+    if (entitlementIds && !entitlementIds.has(profile.entitlementRef)) {
+      fail(`profile.entitlementRef is unknown: ${profile.entitlementRef}`);
+    }
+  }
+  if (profile.costNotice === "subscription" && !hasEntitlementRef) {
+    fail("subscription profile must use entitlementRef");
+  }
+  if (hasEntitlementRef && profile.costNotice !== "subscription") {
+    fail("profile with entitlementRef must use subscription cost notice");
+  }
   if (!Array.isArray(profile.requiredEnvironment) || profile.requiredEnvironment.length === 0) {
     fail("profile.requiredEnvironment must be a non-empty array");
   }
@@ -262,8 +299,25 @@ export function validatePricing(pricing, { now = new Date() } = {}) {
   return pricing;
 }
 
-export function validateConfigSet({ providers, profiles, pricing, now = new Date() }) {
-  if (!Array.isArray(providers) || !Array.isArray(profiles) || !Array.isArray(pricing)) {
+export function validateEntitlement(entitlement, { now = new Date() } = {}) {
+  assertObject(entitlement, "entitlement");
+  assertExactKeys(entitlement, ENTITLEMENT_KEYS, "entitlement");
+  assertRequiredKeys(entitlement, ENTITLEMENT_KEYS, "entitlement");
+  assertString(entitlement.id, "entitlement.id");
+  assertString(entitlement.displayName, "entitlement.displayName");
+  if (entitlement.billingType !== "subscription-quota") {
+    fail("entitlement.billingType must be subscription-quota");
+  }
+  if (typeof entitlement.quotaNotice !== "string" || entitlement.quotaNotice.trim().length === 0) {
+    fail("entitlement.quotaNotice must be a non-empty string");
+  }
+  assertDate(entitlement.verifiedOn, "entitlement.verifiedOn", now);
+  assertUrl(entitlement.sourceUrl, "entitlement.sourceUrl");
+  return entitlement;
+}
+
+export function validateConfigSet({ providers, profiles, pricing, entitlements = [], now = new Date() }) {
+  if (!Array.isArray(providers) || !Array.isArray(profiles) || !Array.isArray(pricing) || !Array.isArray(entitlements)) {
     fail("configuration collections must be arrays");
   }
   const providerIds = new Set();
@@ -272,10 +326,22 @@ export function validateConfigSet({ providers, profiles, pricing, now = new Date
     if (providerIds.has(provider.id)) fail(`duplicate provider id: ${provider.id}`);
     providerIds.add(provider.id);
   }
+  const pricingIds = new Set();
+  for (const item of pricing) {
+    validatePricing(item, { now });
+    if (pricingIds.has(item.id)) fail(`duplicate pricing id: ${item.id}`);
+    pricingIds.add(item.id);
+  }
+  const entitlementIds = new Set();
+  for (const item of entitlements) {
+    validateEntitlement(item, { now });
+    if (entitlementIds.has(item.id)) fail(`duplicate entitlement id: ${item.id}`);
+    entitlementIds.add(item.id);
+  }
   const profileIds = new Set();
   const aliases = new Set();
   for (const profile of profiles) {
-    validateProfile(profile, providerIds);
+    validateProfile(profile, providerIds, { pricingIds, entitlementIds });
     if (profileIds.has(profile.id)) fail(`duplicate profile id: ${profile.id}`);
     if (CMR_RESERVED_COMMANDS.includes(profile.id)) fail(`profile id collides with reserved command: ${profile.id}`);
     profileIds.add(profile.id);
@@ -285,20 +351,21 @@ export function validateConfigSet({ providers, profiles, pricing, now = new Date
       aliases.add(alias);
     }
   }
-  const pricingIds = new Set();
-  for (const item of pricing) {
-    validatePricing(item, { now });
-    if (pricingIds.has(item.id)) fail(`duplicate pricing id: ${item.id}`);
-    pricingIds.add(item.id);
+  const requiredProfiles = ["kimi", "deepseek", "glm", "glm-api", "kimi-code", "kimi-code-k3-256k", "kimi-code-k3"];
+  const requiredProviders = ["kimi", "deepseek", "glm", "glm-api", "kimi-code"];
+  const requiredPricing = ["kimi-k3", "deepseek-v4", "glm-5.2"];
+  const requiredEntitlements = ["kimi-code-membership", "glm-coding-plan-membership"];
+  if (!requiredProfiles.every((id) => profileIds.has(id))) {
+    fail("configuration is missing one or more formal profiles");
   }
-  if (profileIds.size !== 4 || !profileIds.has("kimi") || !profileIds.has("deepseek") || !profileIds.has("glm") || !profileIds.has("glm-api")) {
-    fail("configuration must contain exactly the kimi, deepseek, glm and glm-api profiles");
+  if (!requiredProviders.every((id) => providerIds.has(id))) {
+    fail("configuration is missing one or more formal providers");
   }
-  if (providerIds.size !== 4 || !providerIds.has("kimi") || !providerIds.has("deepseek") || !providerIds.has("glm") || !providerIds.has("glm-api")) {
-    fail("configuration must contain exactly the kimi, deepseek, glm and glm-api providers");
+  if (!requiredPricing.every((id) => pricingIds.has(id))) {
+    fail("configuration is missing one or more formal pricing records");
   }
-  if (pricingIds.size !== 3 || !pricingIds.has("kimi-k3") || !pricingIds.has("deepseek-v4") || !pricingIds.has("glm-5.2")) {
-    fail("configuration must contain exactly the kimi-k3, deepseek-v4 and glm-5.2 pricing records");
+  if (!requiredEntitlements.every((id) => entitlementIds.has(id))) {
+    fail("configuration is missing one or more formal entitlement records");
   }
   for (const alias of aliases) {
     if (profileIds.has(alias)) fail(`profile alias collides with profile id: ${alias}`);
@@ -307,8 +374,15 @@ export function validateConfigSet({ providers, profiles, pricing, now = new Date
   const deepseek = profiles.find((profile) => profile.id === "deepseek");
   const glm = profiles.find((profile) => profile.id === "glm");
   const glmApi = profiles.find((profile) => profile.id === "glm-api");
+  const kimiCode = profiles.find((profile) => profile.id === "kimi-code");
+  const kimiCodeK3_256k = profiles.find((profile) => profile.id === "kimi-code-k3-256k");
+  const kimiCodeK3 = profiles.find((profile) => profile.id === "kimi-code-k3");
+  const kimiProvider = providers.find((provider) => provider.id === "kimi");
   const glmProvider = providers.find((provider) => provider.id === "glm");
   const glmApiProvider = providers.find((provider) => provider.id === "glm-api");
+  const kimiCodeProvider = providers.find((provider) => provider.id === "kimi-code");
+  const kimiCodeEntitlement = entitlements.find((item) => item.id === "kimi-code-membership");
+  const glmEntitlement = entitlements.find((item) => item.id === "glm-coding-plan-membership");
   if (!kimi.aliases.includes("plan") || !kimi.aliases.includes("kimi-k3")) {
     fail("kimi profile must include plan and kimi-k3 aliases");
   }
@@ -321,11 +395,24 @@ export function validateConfigSet({ providers, profiles, pricing, now = new Date
   if (deepseek.provider !== "deepseek" || deepseek.pricingRef !== "deepseek-v4") {
     fail("deepseek profile must reference the deepseek provider and deepseek-v4 pricing");
   }
-  if (!glm.aliases.includes("glm-5.2") || !glm.aliases.includes("glm-plan")) {
-    fail("glm profile must include glm-5.2 and glm-plan aliases");
+  if (kimiProvider.displayName !== "Kimi"
+    || kimiProvider.baseUrl !== "https://api.moonshot.cn/anthropic"
+    || kimiProvider.apiKeyUrl !== "https://platform.kimi.com/console/api-keys"
+    || kimiProvider.authVariable !== "ANTHROPIC_AUTH_TOKEN"
+    || kimiProvider.secretId !== "kimi"
+    || kimiProvider.sourceUrl !== "https://platform.kimi.com/docs/guide/claude-code-kimi") {
+    fail("kimi open-platform provider contract is invalid");
   }
-  if (glm.provider !== "glm" || glm.pricingRef !== "glm-5.2") {
-    fail("glm profile must reference the glm provider and glm-5.2 pricing");
+  if (glm.aliases.length !== 3
+    || !glm.aliases.includes("glm-5.3")
+    || !glm.aliases.includes("glm-5.2")
+    || !glm.aliases.includes("glm-plan")) {
+    fail("glm profile must include exactly glm-5.3, glm-5.2 and glm-plan aliases");
+  }
+  if (glm.provider !== "glm"
+    || glm.costNotice !== "subscription"
+    || glm.entitlementRef !== "glm-coding-plan-membership") {
+    fail("glm profile must reference the glm provider and Coding Plan subscription entitlement");
   }
   if (glmProvider.authVariable !== "ANTHROPIC_AUTH_TOKEN" || glmProvider.secretId !== "glm") {
     fail("glm provider authentication boundary is invalid");
@@ -346,24 +433,105 @@ export function validateConfigSet({ providers, profiles, pricing, now = new Date
   if (glmProvider.secretId === glmApiProvider.secretId) {
     fail("glm and glm-api providers must use distinct secret IDs");
   }
+  if (glmEntitlement.displayName !== "GLM Coding Plan"
+    || glmEntitlement.billingType !== "subscription-quota"
+    || glmEntitlement.quotaNotice !== "Consumes GLM Coding Plan subscription quota; quota availability and any additional usage charges follow the active subscription and official policy."
+    || glmEntitlement.sourceUrl !== "https://docs.bigmodel.cn/cn/guide/models/text/glm-5.3") {
+    fail("glm Coding Plan entitlement contract is invalid");
+  }
+  if (kimiCodeProvider.displayName !== "Kimi Code Membership"
+    || kimiCodeProvider.baseUrl !== "https://api.kimi.com/coding/"
+    || kimiCodeProvider.apiKeyUrl !== "https://www.kimi.com/code/console"
+    || kimiCodeProvider.authVariable !== "ANTHROPIC_API_KEY"
+    || kimiCodeProvider.secretId !== "kimi-code"
+    || kimiCodeProvider.sourceUrl !== "https://www.kimi.com/code/docs/en/third-party-tools/claude-code.html") {
+    fail("kimi-code provider contract is invalid");
+  }
+  if (kimiProvider.secretId === kimiCodeProvider.secretId) {
+    fail("kimi and kimi-code providers must use distinct secret IDs");
+  }
+  if (kimiCodeEntitlement.displayName !== "Kimi Code Membership"
+    || kimiCodeEntitlement.billingType !== "subscription-quota"
+    || kimiCodeEntitlement.quotaNotice !== "Consumes Kimi Code membership quota; Extra Usage may incur additional charges when enabled."
+    || kimiCodeEntitlement.sourceUrl !== "https://www.kimi.com/code/docs/en/kimi-code/membership.html") {
+    fail("kimi-code membership entitlement contract is invalid");
+  }
   const expectedGlmEnvironment = {
-    ANTHROPIC_DEFAULT_OPUS_MODEL: "glm-5.2[1m]",
-    ANTHROPIC_DEFAULT_SONNET_MODEL: "glm-5.2[1m]",
+    ANTHROPIC_DEFAULT_OPUS_MODEL: "glm-5.3[1m]",
+    ANTHROPIC_DEFAULT_SONNET_MODEL: "glm-5.3[1m]",
     ANTHROPIC_DEFAULT_HAIKU_MODEL: "glm-4.7",
     CLAUDE_CODE_AUTO_COMPACT_WINDOW: "1000000",
     CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC: "1",
     API_TIMEOUT_MS: "3000000"
   };
+  const expectedGlmApiEnvironment = {
+    ...expectedGlmEnvironment,
+    ANTHROPIC_DEFAULT_OPUS_MODEL: "glm-5.2[1m]",
+    ANTHROPIC_DEFAULT_SONNET_MODEL: "glm-5.2[1m]"
+  };
   if (JSON.stringify(glm.environment) !== JSON.stringify(expectedGlmEnvironment)
     || JSON.stringify(glm.requiredEnvironment) !== JSON.stringify(Object.keys(expectedGlmEnvironment))) {
     fail("glm profile environment mapping is invalid");
   }
-  if (JSON.stringify(glmApi.environment) !== JSON.stringify(expectedGlmEnvironment)
-    || JSON.stringify(glmApi.requiredEnvironment) !== JSON.stringify(Object.keys(expectedGlmEnvironment))) {
+  if (JSON.stringify(glmApi.environment) !== JSON.stringify(expectedGlmApiEnvironment)
+    || JSON.stringify(glmApi.requiredEnvironment) !== JSON.stringify(Object.keys(expectedGlmApiEnvironment))) {
     fail("glm-api profile environment mapping is invalid");
   }
-  for (const profile of profiles) {
-    if (!pricingIds.has(profile.pricingRef)) fail(`profile.pricingRef is unknown: ${profile.pricingRef}`);
+  const expectedKimiCodeProfiles = [
+    {
+      profile: kimiCode,
+      aliases: ["kimi-membership"],
+      environment: {
+        ANTHROPIC_MODEL: "kimi-for-coding",
+        ANTHROPIC_DEFAULT_OPUS_MODEL: "kimi-for-coding",
+        ANTHROPIC_DEFAULT_SONNET_MODEL: "kimi-for-coding",
+        ANTHROPIC_DEFAULT_HAIKU_MODEL: "kimi-for-coding",
+        ANTHROPIC_DEFAULT_FABLE_MODEL: "kimi-for-coding",
+        CLAUDE_CODE_SUBAGENT_MODEL: "kimi-for-coding",
+        CLAUDE_CODE_AUTO_COMPACT_WINDOW: "262144",
+        CLAUDE_CODE_MAX_CONTEXT_TOKENS: "262144"
+      }
+    },
+    {
+      profile: kimiCodeK3_256k,
+      aliases: ["kimi-membership-k3-256k"],
+      environment: {
+        ANTHROPIC_MODEL: "k3-256k",
+        ANTHROPIC_DEFAULT_OPUS_MODEL: "k3-256k",
+        ANTHROPIC_DEFAULT_SONNET_MODEL: "k3-256k",
+        ANTHROPIC_DEFAULT_HAIKU_MODEL: "k3-256k",
+        ANTHROPIC_DEFAULT_FABLE_MODEL: "k3-256k",
+        CLAUDE_CODE_SUBAGENT_MODEL: "k3-256k",
+        CLAUDE_CODE_EFFORT_LEVEL: "high",
+        CLAUDE_CODE_AUTO_COMPACT_WINDOW: "262144",
+        CLAUDE_CODE_MAX_CONTEXT_TOKENS: "262144"
+      }
+    },
+    {
+      profile: kimiCodeK3,
+      aliases: ["kimi-membership-k3"],
+      environment: {
+        ANTHROPIC_MODEL: "k3[1m]",
+        ANTHROPIC_DEFAULT_OPUS_MODEL: "k3[1m]",
+        ANTHROPIC_DEFAULT_SONNET_MODEL: "k3[1m]",
+        ANTHROPIC_DEFAULT_HAIKU_MODEL: "k3[1m]",
+        ANTHROPIC_DEFAULT_FABLE_MODEL: "k3[1m]",
+        CLAUDE_CODE_SUBAGENT_MODEL: "k3[1m]",
+        CLAUDE_CODE_EFFORT_LEVEL: "high",
+        CLAUDE_CODE_AUTO_COMPACT_WINDOW: "1048576",
+        CLAUDE_CODE_MAX_CONTEXT_TOKENS: "1048576"
+      }
+    }
+  ];
+  for (const { profile, aliases, environment } of expectedKimiCodeProfiles) {
+    if (profile.provider !== "kimi-code"
+      || profile.costNotice !== "subscription"
+      || profile.entitlementRef !== "kimi-code-membership") {
+      fail(`${profile.id} profile contract is invalid`);
+    }
+    assertExactValue(profile.aliases, aliases, `${profile.id} aliases`);
+    assertExactValue(profile.environment, environment, `${profile.id} environment`);
+    assertExactValue(profile.requiredEnvironment, Object.keys(environment), `${profile.id} required environment`);
   }
-  return { providers, profiles, pricing };
+  return { providers, profiles, pricing, entitlements };
 }

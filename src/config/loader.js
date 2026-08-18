@@ -1,13 +1,18 @@
-import { readFile } from "node:fs/promises";
+import { readFile, readdir } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { validateConfigSet, validatePricing, validateProfile, validateProvider } from "./validator.js";
+import {
+  validateConfigSet,
+  validateEntitlement,
+  validatePricing,
+  validateProfile,
+  validateProvider
+} from "./validator.js";
 
 const DEFAULT_CONFIG_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../config");
 const ID_PATTERN = /^[a-z0-9]+(?:[.-][a-z0-9]+)*$/;
-export const PROVIDER_IDS = Object.freeze(["kimi", "deepseek", "glm", "glm-api"]);
-export const PROFILE_IDS = Object.freeze(["kimi", "deepseek", "glm", "glm-api"]);
-export const PRICING_IDS = Object.freeze(["kimi-k3", "deepseek-v4", "glm-5.2"]);
+
+const CATALOG_FILE = "catalog.json";
 
 function assertKnownId(id, label) {
   if (typeof id !== "string" || !ID_PATTERN.test(id)) throw new Error(`${label} is invalid`);
@@ -36,15 +41,86 @@ async function readJson(configRoot, category, id) {
   }
 }
 
+async function readCatalog(configRoot) {
+  let raw;
+  try {
+    raw = await readFile(path.join(configRoot, CATALOG_FILE), "utf8");
+  } catch (error) {
+    if (error.code === "ENOENT") return {};
+    throw new Error(`cannot read configuration catalog: ${error.code ?? error.message}`);
+  }
+  let catalog;
+  try {
+    catalog = JSON.parse(raw);
+  } catch {
+    throw new Error("configuration catalog is not valid JSON");
+  }
+  if (!catalog || typeof catalog !== "object" || Array.isArray(catalog)) {
+    throw new Error("configuration catalog has an invalid schema");
+  }
+  for (const [category, ids] of Object.entries(catalog)) {
+    if (!["providers", "profiles", "pricing", "entitlements"].includes(category)
+      || !Array.isArray(ids)
+      || ids.some((id) => typeof id !== "string" || !ID_PATTERN.test(id))
+      || new Set(ids).size !== ids.length) {
+      throw new Error("configuration catalog has an invalid schema");
+    }
+  }
+  return catalog;
+}
+
+async function discoverConfigIds(configRoot, category) {
+  let entries;
+  try {
+    entries = await readdir(path.join(configRoot, category), { withFileTypes: true });
+  } catch (error) {
+    if (error.code === "ENOENT" && category === "entitlements") return [];
+    throw new Error(`cannot read ${category} configuration directory: ${error.code ?? error.message}`);
+  }
+  const ids = entries
+    .filter((entry) => entry.isFile() && entry.name.endsWith(".json"))
+    .map((entry) => entry.name.slice(0, -5));
+  for (const id of ids) assertKnownId(id, `${category} id`);
+  if (new Set(ids).size !== ids.length) throw new Error(`duplicate ${category} configuration ID`);
+  return ids;
+}
+
+function orderConfigIds(ids, preferredIds = []) {
+  const available = new Set(ids);
+  for (const id of preferredIds) {
+    if (!available.has(id)) throw new Error(`configuration catalog references missing item: ${id}`);
+  }
+  return [
+    ...preferredIds,
+    ...ids.filter((id) => !preferredIds.includes(id)).sort()
+  ];
+}
+
+async function discoverOrderedConfigIds(configRoot, category) {
+  const [ids, catalog] = await Promise.all([
+    discoverConfigIds(configRoot, category),
+    readCatalog(configRoot)
+  ]);
+  return orderConfigIds(ids, catalog[category] ?? []);
+}
+
 export async function loadProvider(id, options = {}) {
   const provider = await readJson(options.configRoot ?? DEFAULT_CONFIG_ROOT, "providers", id);
   return validateProvider(provider, options);
 }
 
 export async function loadProfile(id, options = {}) {
-  const providerIds = new Set(options.providerIds ?? PROVIDER_IDS);
-  const profile = await readJson(options.configRoot ?? DEFAULT_CONFIG_ROOT, "profiles", id);
-  return validateProfile(profile, providerIds);
+  const configRoot = options.configRoot ?? DEFAULT_CONFIG_ROOT;
+  const [providerIds, pricingIds, entitlementIds] = await Promise.all([
+    options.providerIds ?? discoverOrderedConfigIds(configRoot, "providers"),
+    options.pricingIds ?? discoverOrderedConfigIds(configRoot, "pricing"),
+    options.entitlementIds ?? discoverOrderedConfigIds(configRoot, "entitlements")
+  ]);
+  const profile = await readJson(configRoot, "profiles", id);
+  return validateProfile(profile, new Set(providerIds), {
+    pricingIds: new Set(pricingIds),
+    entitlementIds: new Set(entitlementIds)
+  });
 }
 
 export function resolveProfile(profiles, selector) {
@@ -58,18 +134,33 @@ export async function loadPricing(id, options = {}) {
   return validatePricing(pricing, options);
 }
 
+export async function loadEntitlement(id, options = {}) {
+  const entitlement = await readJson(options.configRoot ?? DEFAULT_CONFIG_ROOT, "entitlements", id);
+  return validateEntitlement(entitlement, options);
+}
+
 export async function loadConfigSet(options = {}) {
   const configRoot = options.configRoot ?? DEFAULT_CONFIG_ROOT;
-  const providerIds = PROVIDER_IDS;
-  const profileIds = PROFILE_IDS;
-  const pricingIds = PRICING_IDS;
-  const [providers, profiles, pricing] = await Promise.all([
-    Promise.all(providerIds.map((id) => loadProvider(id, { ...options, configRoot }))),
-    Promise.all(profileIds.map((id) => loadProfile(id, { ...options, configRoot, providerIds }))),
-    Promise.all(pricingIds.map((id) => loadPricing(id, { ...options, configRoot })))
+  const [providerIds, profileIds, pricingIds, entitlementIds] = await Promise.all([
+    options.providerIds ?? discoverOrderedConfigIds(configRoot, "providers"),
+    options.profileIds ?? discoverOrderedConfigIds(configRoot, "profiles"),
+    options.pricingIds ?? discoverOrderedConfigIds(configRoot, "pricing"),
+    options.entitlementIds ?? discoverOrderedConfigIds(configRoot, "entitlements")
   ]);
-  validateConfigSet({ providers, profiles, pricing, now: options.now });
-  return { providers, profiles, pricing };
+  const [providers, profiles, pricing, entitlements] = await Promise.all([
+    Promise.all(providerIds.map((id) => loadProvider(id, { ...options, configRoot }))),
+    Promise.all(profileIds.map((id) => loadProfile(id, {
+      ...options,
+      configRoot,
+      providerIds,
+      pricingIds,
+      entitlementIds
+    }))),
+    Promise.all(pricingIds.map((id) => loadPricing(id, { ...options, configRoot }))),
+    Promise.all(entitlementIds.map((id) => loadEntitlement(id, { ...options, configRoot })))
+  ]);
+  validateConfigSet({ providers, profiles, pricing, entitlements, now: options.now });
+  return { providers, profiles, pricing, entitlements };
 }
 
 export function getDefaultConfigRoot() {

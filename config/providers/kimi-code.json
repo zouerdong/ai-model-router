@@ -1,0 +1,10 @@
+{
+  "id": "kimi-code",
+  "displayName": "Kimi Code Membership",
+  "baseUrl": "https://api.kimi.com/coding/",
+  "apiKeyUrl": "https://www.kimi.com/code/console",
+  "authVariable": "ANTHROPIC_API_KEY",
+  "secretId": "kimi-code",
+  "verifiedOn": "2026-08-12",
+  "sourceUrl": "https://www.kimi.com/code/docs/en/third-party-tools/claude-code.html"
+}

@@ -1,0 +1,31 @@
+{
+  "id": "kimi-code-k3",
+  "aliases": ["kimi-membership-k3"],
+  "displayName": "Kimi Code K3 1M",
+  "provider": "kimi-code",
+  "purpose": "通过 Kimi Code 会员权益运行 Claude Code；使用 K3 1M 模型",
+  "costNotice": "subscription",
+  "entitlementRef": "kimi-code-membership",
+  "requiredEnvironment": [
+    "ANTHROPIC_MODEL",
+    "ANTHROPIC_DEFAULT_OPUS_MODEL",
+    "ANTHROPIC_DEFAULT_SONNET_MODEL",
+    "ANTHROPIC_DEFAULT_HAIKU_MODEL",
+    "ANTHROPIC_DEFAULT_FABLE_MODEL",
+    "CLAUDE_CODE_SUBAGENT_MODEL",
+    "CLAUDE_CODE_EFFORT_LEVEL",
+    "CLAUDE_CODE_AUTO_COMPACT_WINDOW",
+    "CLAUDE_CODE_MAX_CONTEXT_TOKENS"
+  ],
+  "environment": {
+    "ANTHROPIC_MODEL": "k3[1m]",
+    "ANTHROPIC_DEFAULT_OPUS_MODEL": "k3[1m]",
+    "ANTHROPIC_DEFAULT_SONNET_MODEL": "k3[1m]",
+    "ANTHROPIC_DEFAULT_HAIKU_MODEL": "k3[1m]",
+    "ANTHROPIC_DEFAULT_FABLE_MODEL": "k3[1m]",
+    "CLAUDE_CODE_SUBAGENT_MODEL": "k3[1m]",
+    "CLAUDE_CODE_EFFORT_LEVEL": "high",
+    "CLAUDE_CODE_AUTO_COMPACT_WINDOW": "1048576",
+    "CLAUDE_CODE_MAX_CONTEXT_TOKENS": "1048576"
+  }
+}

@@ -1,0 +1,8 @@
+{
+  "id": "kimi-code-membership",
+  "displayName": "Kimi Code Membership",
+  "billingType": "subscription-quota",
+  "quotaNotice": "Consumes Kimi Code membership quota; Extra Usage may incur additional charges when enabled.",
+  "verifiedOn": "2026-08-12",
+  "sourceUrl": "https://www.kimi.com/code/docs/en/kimi-code/membership.html"
+}

@@ -1,0 +1,29 @@
+{
+  "id": "kimi-code",
+  "aliases": ["kimi-membership"],
+  "displayName": "Kimi Code Membership",
+  "provider": "kimi-code",
+  "purpose": "通过 Kimi Code 会员权益运行 Claude Code；使用标准 Kimi Code 模型",
+  "costNotice": "subscription",
+  "entitlementRef": "kimi-code-membership",
+  "requiredEnvironment": [
+    "ANTHROPIC_MODEL",
+    "ANTHROPIC_DEFAULT_OPUS_MODEL",
+    "ANTHROPIC_DEFAULT_SONNET_MODEL",
+    "ANTHROPIC_DEFAULT_HAIKU_MODEL",
+    "ANTHROPIC_DEFAULT_FABLE_MODEL",
+    "CLAUDE_CODE_SUBAGENT_MODEL",
+    "CLAUDE_CODE_AUTO_COMPACT_WINDOW",
+    "CLAUDE_CODE_MAX_CONTEXT_TOKENS"
+  ],
+  "environment": {
+    "ANTHROPIC_MODEL": "kimi-for-coding",
+    "ANTHROPIC_DEFAULT_OPUS_MODEL": "kimi-for-coding",
+    "ANTHROPIC_DEFAULT_SONNET_MODEL": "kimi-for-coding",
+    "ANTHROPIC_DEFAULT_HAIKU_MODEL": "kimi-for-coding",
+    "ANTHROPIC_DEFAULT_FABLE_MODEL": "kimi-for-coding",
+    "CLAUDE_CODE_SUBAGENT_MODEL": "kimi-for-coding",
+    "CLAUDE_CODE_AUTO_COMPACT_WINDOW": "262144",
+    "CLAUDE_CODE_MAX_CONTEXT_TOKENS": "262144"
+  }
+}

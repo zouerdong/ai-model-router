@@ -5,6 +5,6 @@
   "apiKeyUrl": "https://docs.bigmodel.cn/cn/coding-plan/quick-start",
   "authVariable": "ANTHROPIC_AUTH_TOKEN",
   "secretId": "glm",
-  "verifiedOn": "2026-07-28",
+  "verifiedOn": "2026-08-16",
   "sourceUrl": "https://docs.bigmodel.cn/cn/guide/develop/claude"
 }

@@ -17,18 +17,24 @@ export const ROUTER_MANAGED_ENV_VARS = Object.freeze([
   "CLAUDE_CODE_SUBAGENT_MODEL",
   "ENABLE_TOOL_SEARCH",
   "CLAUDE_CODE_AUTO_COMPACT_WINDOW",
+  "CLAUDE_CODE_MAX_CONTEXT_TOKENS",
   "CLAUDE_CODE_EFFORT_LEVEL",
   "CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC",
   "API_TIMEOUT_MS"
 ]);
 
+const ROUTER_MANAGED_ENV_VAR_NAMES = new Set(ROUTER_MANAGED_ENV_VARS.map((key) => key.toLowerCase()));
+
+export function isRouterManagedEnvironmentVariable(key) {
+  return typeof key === "string" && ROUTER_MANAGED_ENV_VAR_NAMES.has(key.toLowerCase());
+}
+
 export function buildChildEnvironment({ parentEnv = process.env, provider, profile, secret }) {
   if (!provider || !profile) throw new Error("provider and profile are required to build a child environment");
   if (typeof secret !== "string" || secret.length === 0) throw new Error("a configured provider secret is required");
   const environment = { ...parentEnv };
-  const managedKeys = new Set(ROUTER_MANAGED_ENV_VARS.map((key) => key.toLowerCase()));
   for (const key of Object.keys(environment)) {
-    if (managedKeys.has(key.toLowerCase())) delete environment[key];
+    if (isRouterManagedEnvironmentVariable(key)) delete environment[key];
   }
   environment.ANTHROPIC_BASE_URL = provider.baseUrl;
   environment[provider.authVariable] = secret;

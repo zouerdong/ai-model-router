@@ -1,0 +1,6 @@
+{
+  "providers": ["kimi", "deepseek", "glm", "glm-api", "kimi-code"],
+  "profiles": ["kimi", "deepseek", "glm", "glm-api", "kimi-code", "kimi-code-k3-256k", "kimi-code-k3"],
+  "pricing": ["kimi-k3", "deepseek-v4", "glm-5.2"],
+  "entitlements": ["kimi-code-membership", "glm-coding-plan-membership"]
+}

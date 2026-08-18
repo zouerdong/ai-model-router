@@ -15,7 +15,7 @@ import { readHiddenSecret, SecretStore } from "./secret-store.js";
 import { getSecretStorePath, getSetupStatePath } from "./platform.js";
 import { SetupStateStore, isSetupStateCorrupt } from "./setup-state.js";
 
-export const VERSION = "1.4.0";
+export const VERSION = "1.5.0";
 
 export function isMainModule(
   entryPath = process.argv[1],
@@ -33,17 +33,16 @@ export function isMainModule(
   return canonicalPath(entryPath) === canonicalPath(modulePath);
 }
 
-function printUsage(output = stdout) {
+function printUsage(output = stdout, config) {
   output.write(`Claude Model Router ${VERSION}\n\n`);
   output.write("Usage:\n");
   output.write("  cmr                                Show the profile menu\n");
-  output.write("  cmr kimi [claude args...]          Start Claude Code with Kimi K3\n");
-  output.write("  cmr deepseek [claude args...]      Start Claude Code with DeepSeek Auto\n");
-  output.write("  cmr glm [claude args...]           Start Claude Code with GLM-5.2 Coding Plan\n");
-  output.write("  cmr glm-api [claude args...]       Start Claude Code with GLM-5.2 API (Pay-as-you-go)\n");
-  output.write("  cmr glm-payg [claude args...]      Alias for glm-api\n");
-  output.write("  cmr plan [claude args...]          Alias for kimi\n");
-  output.write("  cmr build [claude args...]         Alias for deepseek\n");
+  for (const profile of config?.profiles ?? []) {
+    output.write(`  cmr ${profile.id} [claude args...]          Start Claude Code with ${profile.displayName}\n`);
+    for (const alias of profile.aliases) {
+      output.write(`  cmr ${alias} [claude args...]          Alias for ${profile.id}\n`);
+    }
+  }
   output.write("  cmr setup                          Configure or replace Provider API Keys\n");
   output.write("  cmr setup <provider>               Configure or replace one Provider API Key\n");
   output.write("  cmr list             Show profiles and model mappings\n");
@@ -56,6 +55,9 @@ function printUsage(output = stdout) {
   output.write("  cmr version          Show the version\n");
   output.write("\nThe first interactive cmr run shows all Provider API Key status; new unseen Providers do the same.\n");
   output.write("Keys are entered only through hidden TTY input, never as command arguments.\n");
+  output.write("Kimi Code Membership API Keys and Kimi Open Platform API Keys are separate and not interchangeable.\n");
+  output.write("Kimi Code profiles use membership quota; Extra Usage may incur additional charges when enabled.\n");
+  output.write("Kimi Code membership validation is pending; this 1.5.0 checkout is an unreleased repository candidate.\n");
   output.write("Claude Code arguments after the profile are passed through unchanged.\n");
   output.write("Self-update supports entity npm global packages only; source-linked checkouts must be maintained manually.\n");
   output.write("Self-update never updates Claude Code, Node.js, or Provider API Keys.\n");
@@ -90,7 +92,8 @@ async function interactiveMenu({
       const provider = currentConfig.providers.find((item) => item.id === profile.provider);
       const configured = statuses.get(provider.id) ? "configured" : "missing";
       const id = `profile:${profile.id}`;
-      choices.push({ id, label: `${profile.id} — ${profile.displayName} [${configured}]` });
+      const semantic = profile.costNotice === "subscription" ? " (subscription quota)" : "";
+      choices.push({ id, label: `${profile.id} — ${profile.displayName} [${configured}]${semantic}` });
     }
     choices.push({ id: "setup", label: "setup — Configure or replace API Keys" });
     choices.push({ id: "doctor", label: "doctor" });
@@ -179,7 +182,7 @@ export async function runCli(argv = process.argv.slice(2), options = {}) {
   let args = argv.slice(1);
   if (!command) {
     if (!interactive) {
-      printUsage(output);
+      printUsage(output, sharedOptions.config ?? await loadConfigSet(sharedOptions));
       return 0;
     }
     const config = sharedOptions.config ?? await loadConfigSet(sharedOptions);
@@ -221,7 +224,7 @@ export async function runCli(argv = process.argv.slice(2), options = {}) {
   }
   if (command === "help" || command === "--help") {
     if (args.length > 0) throw new Error("usage: cmr help");
-    printUsage(output);
+    printUsage(output, sharedOptions.config ?? await loadConfigSet(sharedOptions));
     return 0;
   }
   if (command === "list") {

@@ -1,9 +1,9 @@
 import { chmod, mkdir, readFile, rename, unlink, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { randomUUID } from "node:crypto";
+import { loadConfigSet } from "./config/loader.js";
 import { getSecretStorePath } from "./platform.js";
 
-const DEFAULT_PROVIDER_IDS = Object.freeze(["kimi", "deepseek", "glm", "glm-api"]);
 const MAX_SECRET_LENGTH = 16_384;
 
 function assertProvider(provider, providerIds) {
@@ -46,8 +46,16 @@ export class SecretStore {
   constructor(options = {}) {
     this.filePath = options.filePath ?? getSecretStorePath(options);
     this.platform = options.platform ?? process.platform;
-    this.providerIds = new Set(options.providerIds ?? DEFAULT_PROVIDER_IDS);
+    this.configRoot = options.configRoot;
+    this.providerIds = options.providerIds === undefined ? null : new Set(options.providerIds);
     this.fs = options.fs ?? { mkdir, readFile, writeFile, rename, chmod, unlink };
+  }
+
+  async getProviderIds() {
+    if (this.providerIds) return this.providerIds;
+    const config = await loadConfigSet({ configRoot: this.configRoot });
+    this.providerIds = new Set(config.providers.map((provider) => provider.secretId));
+    return this.providerIds;
   }
 
   async readAll() {
@@ -58,22 +66,23 @@ export class SecretStore {
       if (error.code === "ENOENT") return { version: 1, providers: {} };
       throw new Error(`cannot read secret store: ${error.code ?? error.message}`);
     }
-    return parseStore(raw, this.providerIds);
+    return parseStore(raw, await this.getProviderIds());
   }
 
   async get(provider) {
-    assertProvider(provider, this.providerIds);
+    assertProvider(provider, await this.getProviderIds());
     const store = await this.readAll();
     return store.providers[provider] ?? null;
   }
 
   async status() {
+    const providerIds = await this.getProviderIds();
     const store = await this.readAll();
-    return Object.fromEntries([...this.providerIds].sort().map((provider) => [provider, Boolean(store.providers[provider])]));
+    return Object.fromEntries([...providerIds].sort().map((provider) => [provider, Boolean(store.providers[provider])]));
   }
 
   async set(provider, secret) {
-    assertProvider(provider, this.providerIds);
+    assertProvider(provider, await this.getProviderIds());
     assertSecret(secret);
     const store = await this.readAll();
     store.providers[provider] = secret;

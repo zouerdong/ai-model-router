@@ -535,3 +535,93 @@ Windows T4 必须在实际 Windows 内核、Windows 文件系统与 Windows shel
 | AB11 | Blocker | 独立审阅通过后才可准备 Release |
 
 Provider 真实验收由维护者确认；自动化、Node 18、Windows、打包、自更新与公开 Release 证据统一记录在 `docs/16`。
+
+## 16. `1.5.0` Kimi Code 会员 Provider 任务卡 1 验收矩阵
+
+本节是 `docs/17` 任务卡 1 的绑定验收矩阵。当前只完成官方事实、产品范围、架构合同和验收门禁的规格工作；没有真实 Kimi Code Key，不得把任何 Provider、模型、工具、子 Agent、额度归属或 HighSpeed 结论写成 PASS。以下矩阵的 Blocker 适用于后续实现与发布；任务卡 1 交回时仅登记“规格已完成、等待 Sol 独立复核”。
+
+### AC — 配置身份与官方事实
+
+| ID | 级别 | 验收项 | 必须证据 |
+|---|---|---|---|
+| AC1 | Blocker | `kimi` 仍是开放平台按量通道；`kimi-code` 使用独立 Kimi Code 会员通道，Base URL、Key 来源、Secret ID、鉴权 Header 和账单边界不混用 | `docs/01/02/07/17` 交叉审阅、官方直接链接 |
+| AC2 | Blocker | 首批正式候选精确为 `kimi-code`、`kimi-code-k3-256k`、`kimi-code-k3` 三个 Profile；HighSpeed 不在候选配置 | Profile/别名规格、配置集合审阅 |
+| AC3 | Blocker | `kimi-for-coding`、`k3-256k`、`k3` 的模型 ID、上下文和最低会员档位符合当前 Kimi Code 官方页 | `docs/07` 2026-08-12 事实章节、官方模型/Claude Code 页面 |
+| AC4 | Blocker | K3 的 Claude Code 选择值是 `k3[1m]`，上游原生 ID 是 `k3`；CMR 不自行剥离 `[1m]` | 官方 Kimi Code Claude Code 页、Claude Code Model Configuration 页、后续假 Claude/协议证据 |
+| AC5 | Blocker | 三个 Profile 均完整映射主模型、Opus、Sonnet、Haiku、Fable、Subagent；K3 两套映射为官方直接示例，`kimi-for-coding` 完整映射明确标为受约束推断；`CLAUDE_CODE_MAX_CONTEXT_TOKENS` 与 auto compact 的目标值有规格依据 | 官方 Kimi Code Claude Code 示例、事实/推断分栏、环境映射表、后续环境快照 |
+| AC6 | Blocker | Kimi Code 会员的 7 天刷新、滚动 5 小时窗口、月度总额度、Extra Usage 和个人交互式使用限制被准确描述；不得写成无限额度或固定价格 | 官方 Membership Benefits、Community Guidelines、事实/推断分栏 |
+| AC7 | Blocker | 当前 Kimi Code 页面与旧/开放平台 Claude Code 页面之间的端点、鉴权和模型命名冲突被显式登记；任何跨通道混用均阻断实现 | `docs/07` 冲突表、Sol 独立复核 |
+| AC8 | Major | Claude Code 的 `/model`、`--model`、`ANTHROPIC_MODEL`、Settings 优先级、`/model` 默认持久化和 `ANTHROPIC_CUSTOM_MODEL_OPTION` 语义被记录；CMR 不把自定义 picker 当作 Provider 注册 | Claude Code 官方 Model Configuration、架构边界审阅 |
+| AC9 | Blocker | Kimi Code 官方跳过登录脚本会写用户 Claude 配置，而 CMR 禁止持久修改；该差异被登记为 Blocker，环境变量直启必须在隔离配置与真实 Provider 门禁中证明 | Kimi Code Claude Code、Claude Code Authentication、`docs/07/17` 冲突登记 |
+
+### AD — Entitlement、Secret 与 Setup
+
+| ID | 级别 | 验收项 | 必须证据 |
+|---|---|---|---|
+| AD1 | Blocker | 新增 Profile 只引用独立 `entitlementRef`；不得引用 `kimi-k3` PAYG `pricingRef` 冒充会员价格，且两种 Ref 必须互斥 | `docs/01/02/17` Schema 合同，任务卡 2/3 测试 |
+| AD2 | Blocker | 三个 Profile 共用 `kimi-code` Secret；不复用、复制、识别、替换既有 `kimi` Secret，不在 401/402/403/429 后 fallback | Secret/Provider 设计、假 Key 隔离测试 |
+| AD3 | Blocker | Full setup 由动态 Provider 集合发现第五家 unseen；targeted/inline setup 只操作 `kimi-code`，不误标其他 Provider | Setup State 差集测试、临时 HOME |
+| AD4 | Blocker | Kimi Code Key 只在用户主动交互式配置中输入；不修改真实 Store、Settings、Shell、系统环境或 Extra Usage | 测试夹具、只读审计、敏感扫描 |
+| AD5 | Major | 输出只有 `configured/missing` 和脱敏权益提示，不显示 Key、掩码、长度、余额、精确费用或账户信息 | hostile 输出测试 |
+| AD6 | Major | 写入第五 Secret 后，降级到旧版本可能拒绝 Store 的风险被文档化；不得自动删除新 Key | 降级说明、回退审阅 |
+
+### AE — 启动环境与 Claude Code 隔离
+
+| ID | 级别 | 验收项 | 必须证据 |
+|---|---|---|---|
+| AE1 | Blocker | Kimi Code 子进程只注入 `ANTHROPIC_API_KEY`；所有大小写变体的 `ANTHROPIC_AUTH_TOKEN` 与旧模型变量先被清除 | 假 Claude 环境快照、mixed-case 参数化测试 |
+| AE2 | Blocker | `CLAUDE_CODE_MAX_CONTEXT_TOKENS` 只由 Kimi Code Profile 回注；Kimi、DeepSeek、GLM 两种模式不继承该变量 | 连续 Profile 启动快照、父环境前后对照 |
+| AE3 | Blocker | 三个 Profile 的全量模型/compact/effort 映射与已登记的官方事实或受约束推断一致，不缺 Fable/后台/Subagent，不把 `kimi-for-coding` 推断伪装成官方示例 | 假 Claude snapshot、Schema 测试、事实/推断交叉审阅 |
+| AE4 | Blocker | argv、cwd、TTY、Ctrl+C、退出码、父环境隔离继续满足 `1.4.0` 合同；CMR 不解析、重排、记录或回显 `--model` 等参数 | 既有回归、Hostile QA、假 Claude E2E |
+| AE5 | Blocker | 不把 Kimi Code `kimi-for-coding-highspeed` 与 Claude Code `/fast` 混为同一能力；记录 `/fast` 会切到受支持 Opus、默认持久化及网关资格检查风险，在任务卡 8 前不添加 HighSpeed 入口 | Kimi Code Model Configuration、Claude Code Fast mode、架构审阅 |
+| AE6 | Major | `ANTHROPIC_BASE_URL` 非一方端点导致 Tool Search 默认禁用的 Claude Code 语义被保留；不凭经验加入 Tool Search 变量 | 官方 Environment variables、环境快照 |
+
+### AF — 真实 Provider 与权益归属
+
+| ID | 级别 | 验收项 | 必须证据 |
+|---|---|---|---|
+| AF1 | Blocker | 用户授权后，三个首批 Profile 各自通过 `/status` Base URL、最小主请求、工具和子 Agent；考虑 Kimi 官方允许 `/status` 仍显示 Claude 名称，模型选择层与上游原生 ID 必须由环境/协议证据另行证明 | 脱敏真实 Provider 证据；无真实 Key 时 BLOCKED |
+| AF2 | Blocker | K3 256K 与 K3 1M 的会员档位权限、上下文限制、Thinking/Effort 行为和切换/compact 影响得到真实验证 | 会员档位记录、脱敏请求与 `/status` |
+| AF3 | Blocker | 用量前后回读证明请求走 Kimi Code 会员通道，不误扣开放平台余额；不把静态配置当作归属证明 | Kimi Code Console/订阅页脱敏回读 |
+| AF4 | Blocker | Extra Usage 在用户授权状态下保持可控；CMR 未开启、未修改支出上限、未自动切换 | 用户授权记录、脱敏状态前后 |
+| AF5 | Blocker | HighSpeed 真实验证覆盖模型 ID、Claude Code `/fast` 是否切向 Anthropic、持久设置污染、额度消耗与归属；结果只允许显式 Profile/只文档化/继续延后三选一 | 任务卡 8 真实证据；未验证则延后 |
+| AF6 | Blocker | 真实 Provider 失败、会员不足、Extra Usage、401/403/429 等按原样失败，不做 Key 类型检测、自动重试或费用通道 fallback | 失败路径与代码审阅 |
+
+### AG — 分发、候选与 Release 门禁
+
+| ID | 级别 | 验收项 | 必须证据 |
+|---|---|---|---|
+| AG1 | Blocker | 任务卡 1 只改允许的规范文档和证据登记；不改 `src/`、`config/`、`tests/`、`package.json`、用户配置、CI、Git 远端或 Release | `git diff --stat`、变更清单 |
+| AG2 | Blocker | 任务卡 1 的 `npm test`、`npm run lint`、`git diff --check` 全部通过；后续实现卡还需按其合同补齐 pack/跨平台/Updater 验证 | 命令、退出码、测试数量 |
+| AG3 | Blocker | 没有真实 Key、账号、额度截图、完整环境、提示词或本机路径进入仓库、日志、快照和候选包 | 敏感扫描与人工审阅 |
+| AG4 | Blocker | 没有三个首批 Profile 的真实 Provider PASS，不得发布 `1.5.0` 或将其标为 Latest；当前稳定版仍为 `1.4.0` | 发布状态、后续任务卡 7/8/9 证据 |
+| AG5 | Major | 任务卡 6 前，候选文档明确个人交互式使用限制、会员/开放平台 Key 不通用、Extra Usage 风险、HighSpeed 未纳入稳定范围 | README/使用文档审阅 |
+| AG6 | Blocker | Sol 独立复核前不得进入任务卡 2；任何事实冲突无法按产品边界消解时必须停在 FAIL/阻断 | `docs/17` 角色合同与证据登记 |
+
+本节结论格式仍使用第 8 节的 `PASS` / `CONDITIONAL PASS` / `FAIL`。任务卡 1 的“规格完成”不等于任何 AF 真实 Provider 门禁通过。
+
+## 17. GLM-5.3 Coding Plan 升级验收矩阵
+
+绑定实施合同：`docs/18-v1.5-glm-5.3-upgrade-implementation-guide.md`。本节只覆盖 GLM53-1 至 GLM53-4 的仓库候选，不改变第 14、15 节对 `1.4.0` 历史 GLM-5.2 的验收记录。
+
+### GLM53-A — 规格与 Coding Plan 映射
+
+| ID | 级别 | 验收项 |
+|---|---|---|
+| G53-A1 | Blocker | `glm` 使用 `glm-5.3[1m]`、`glm-4.7`、1000000 compact、3000000 timeout、traffic=1 |
+| G53-A2 | Blocker | `glm` 只使用 `ANTHROPIC_AUTH_TOKEN`/`glm` Secret，不残留 API Key |
+| G53-A3 | Blocker | `glm-5.3`、`glm-5.2`、`glm-plan` 三个别名均解析到当前 `glm` Profile |
+| G53-A4 | Blocker | `glm` 不引用 `glm-5.2` Pricing，改用独立 subscription-quota entitlement |
+| G53-A5 | Major | 启动提示使用通用 subscription quota 话术，不显示 2/8/28 或会话费用 |
+
+### GLM53-B — 标准 API 边界与回归
+
+| ID | 级别 | 验收项 |
+|---|---|---|
+| G53-B1 | Blocker | `glm-api` 仍为 `glm-5.2[1m]`/`glm-4.7`，只使用 `ANTHROPIC_API_KEY` |
+| G53-B2 | Blocker | `glm-api` 仍引用 `glm-5.2` Pricing，价格为 2/8/28 CNY/M |
+| G53-B3 | Blocker | 5.3 Coding Plan 支持不会自动迁移、fallback 或改写标准 API |
+| G53-B4 | Blocker | `glm` ↔ `glm-api` 双向启动无 auth/model 残留，Kimi Code 七 Profile 零退化 |
+| G53-B5 | Major | `npm test`、`npm run lint`、`git diff --check` 和必要的 pack/敏感扫描通过 |
+
+本轮没有真实 Provider 或标准 API 门禁；最高结论是仓库实现候选完成，不能把自动化结果写成真实连接、计费归属或 Release PASS。

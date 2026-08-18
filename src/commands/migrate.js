@@ -7,8 +7,7 @@ import { ROUTER_MANAGED_ENV_VARS } from "../environment.js";
 import { getHomeDir } from "../platform.js";
 
 export const MIGRATION_REMOVE_ENV_VARS = Object.freeze([
-  ...ROUTER_MANAGED_ENV_VARS,
-  "CLAUDE_CODE_MAX_CONTEXT_TOKENS"
+  ...ROUTER_MANAGED_ENV_VARS
 ]);
 
 const MIGRATION_REMOVE_SHELL_KEYS = Object.freeze([

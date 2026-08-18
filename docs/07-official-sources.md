@@ -1,7 +1,7 @@
 # 07 — 官方参数与事实基线
 
-核验日期：2026-07-28
-实现状态：`1.4.0` 发布日官方事实复核、跨平台验收、immutable Release 与公开回读已完成；统一发布证据见 `docs/16-v1.4-unified-glm-release.md`
+核验日期：2026-08-16
+实现状态：`1.4.0` 发布日事实与发布证据已完成；`1.5.0` Kimi Code 官方事实已复核并形成已接受的未发布仓库实现候选，真实 Provider、HighSpeed 与发布仍阻断；统一 `1.4.0` 发布证据见 `docs/16-v1.4-unified-glm-release.md`
 用途：实现者不得用历史对话或记忆替代本文件中的官方来源；开始实现与发布前必须重新核验。
 
 ## 1. Kimi K3 Profile
@@ -334,3 +334,111 @@ Claude Code 将 `[1m]` 用于 Opus/Sonnet 的 1M 选择层，并在向 Provider 
 智谱标准 Claude API 兼容页明确提供标准 API 的 Base URL、Key 与 native model；完整 Claude Code 指南明确现有 Opus/Sonnet/Haiku、compact、traffic 和 timeout 映射。本候选仅据此复用相同映射，并将鉴权边界替换为标准 API Key。真实标准 API 验收必须在用户逐项授权后，验证直连、`cmr glm-api` 主请求、工具、子 Agent 与费用明细；结果不符合时先更新本文件与 `docs/15`，再改实现。
 
 CMR 不发起 Key 类型检测、余额/用量查询、费用估算、Plan 超额按量设置、自动 fallback 或认证重试。标准 API 的 401/403/429 与 Coding Plan 的 1316–1321 等错误都按 Claude Code/Provider 原样失败；用户通过 `cmr glm` 或 `cmr glm-api` 显式决定费用通道。
+
+## 12. `1.5.0` Kimi Code 会员 Provider 事实（2026-08-12 任务卡 1 复核）
+
+本节只使用 Kimi/Moonshot 与 Claude Code 官方页面。它把可变事实、设计推断和页面冲突分开记录；没有真实 Kimi Code Key，本节不构成 Provider 可用性或额度归属验收。
+
+### 12.1 当前 Kimi Code 官方产品事实
+
+主来源：
+
+- [Kimi Code Overview](https://www.kimi.com/code/docs/en/)
+- [Kimi Code — Claude Code](https://www.kimi.com/code/docs/en/third-party-tools/claude-code.html)
+- [Kimi Code Model Configuration](https://www.kimi.com/code/docs/en/kimi-code/models.html)
+- [Kimi Code Membership Benefits](https://www.kimi.com/code/docs/en/kimi-code/membership.html)
+- [Kimi Code FAQ](https://www.kimi.com/code/docs/en/kimi-code/faq.html)
+- [Kimi Code Community Guidelines](https://www.kimi.com/code/docs/en/kimi-code/community-guidelines.html)
+
+官方当前将 Kimi Code 定义为 Kimi 会员权益中的开发者编程服务，并允许会员在 Kimi Code Console 创建 API Key 供第三方工具使用。Anthropic-compatible Base URL 为：
+
+```text
+https://api.kimi.com/coding/
+```
+
+当前官方 Claude Code 接入页为 K3-256K 与 K3-1M 直接给出的完整环境变量如下：
+
+```text
+ANTHROPIC_BASE_URL=https://api.kimi.com/coding/
+ANTHROPIC_API_KEY=<Kimi Code Console API Key>
+ANTHROPIC_MODEL=<profile model>
+ANTHROPIC_DEFAULT_FABLE_MODEL=<profile model>
+ANTHROPIC_DEFAULT_OPUS_MODEL=<profile model>
+ANTHROPIC_DEFAULT_SONNET_MODEL=<profile model>
+ANTHROPIC_DEFAULT_HAIKU_MODEL=<profile model>
+CLAUDE_CODE_SUBAGENT_MODEL=<profile model>
+CLAUDE_CODE_EFFORT_LEVEL=high  # K3 / K3-256K 配置
+CLAUDE_CODE_AUTO_COMPACT_WINDOW=<context limit>
+CLAUDE_CODE_MAX_CONTEXT_TOKENS=<context limit>
+```
+
+Kimi Code 官方页没有要求为这条接入默认增加 `ENABLE_TOOL_SEARCH=false`。Claude Code 官方说明：当 `ANTHROPIC_BASE_URL` 指向非 Anthropic 一方主机时，MCP Tool Search 默认禁用；只有代理确实转发 `tool_reference` blocks 时，才可显式设置 `ENABLE_TOOL_SEARCH=true`。因此 CMR 候选不自行补齐 Tool Search 变量。
+
+同一接入页列出了 `kimi-for-coding` 的模型 ID、256K 上下文和会员档位，但没有提供它的第三套完整 Claude Code 环境示例。候选 `kimi-code` Profile 将官方 K2.7 模型/上下文事实代入同一套 Claude Code 前后台映射，并不额外注入 effort；这是为了避免后台任务回落的受约束设计推断，不是官方已经发布的完整 Profile，仍须真实 Provider 验收。
+
+### 12.2 三个首批模型、上下文和最低会员档位
+
+| Kimi Code Model ID | 官方产品含义 | 最低已知会员档位 | 上下文事实 | Claude Code 选择层 |
+|---|---|---|---:|---|
+| `kimi-for-coding` | Kimi K2.7 Code 标准版 | 所有 Kimi 会员（Andante 起） | `262144` | `kimi-for-coding` |
+| `k3-256k` | Kimi K3 256K 版本 | Moderato 及以上 | `262144` | `k3-256k` |
+| `k3` | Kimi K3 | Moderato 及以上；Allegretto 及以上解锁最高 1M | `1048576`（Allegretto+） | `k3[1m]` |
+
+同一官方 Claude Code 页同时给出了档位矩阵：Andante 只列 `kimi-for-coding`；Moderato 列 `k3`、`k3-256k`、`kimi-for-coding`；Allegretto 及以上再列 `kimi-for-coding-highspeed`，并将 K3 的上限提升到 1M。`k3[1m]` 只用于 Claude Code 环境变量；Kimi Code API 请求和其他第三方工具使用原生 `k3`。因此 CMR 必须保留两层值，不得在 Router 中重复剥离后缀。
+
+K3/K3-256K 的完整映射是官方接入页的直接事实：主模型、Opus、Sonnet、Haiku、Fable 和 Subagent 都使用同一个候选模型，并设置 `CLAUDE_CODE_EFFORT_LEVEL=high`。Kimi 官方还说明 K3 支持 `low/high/max`，K2.7 Code 系列保持 Thinking 开启。`CLAUDE_CODE_MAX_CONTEXT_TOKENS` 在官方 256K 与 1M 示例中与 `CLAUDE_CODE_AUTO_COMPACT_WINDOW` 同值出现，故 `1.5.0` 候选将其纳入 Router 管理变量；`kimi-for-coding` 的完整映射则按上一段明确标为受约束推断。任务卡 2 已实现该变量的清理与回注，任务卡 3–7 已完成隔离回归。
+
+### 12.3 会员额度、滚动窗口和 Extra Usage
+
+Kimi Code 官方会员页给出以下事实：
+
+- 额度从订阅日期起每 7 天自动刷新，未用额度不结转。
+- 除周额度外，还有独立的滚动 5 小时限流窗口；短时间请求过多会触发限流，窗口滚动后恢复。
+- 已登录设备和 API Key 共用额度；Kimi 会员月度总额度耗尽时，Kimi Code 额度可能被冻结。
+- 订阅用户可以显式开启 Extra Usage；Kimi Web 与 Kimi Code 共用该余额，订阅额度耗尽后才按实际用量从 Extra Usage 扣除。
+- Extra Usage 支持用户设置月度支出上限；官方说明未设置时没有上限。余额可累积且不自动过期；退款等账户规则以平台当日说明为准，CMR 不作承诺。
+- 官方使用说明还给出约 300–1,200 次请求/5 小时、最多 30 个并发的产品级概览数字；该数字会变动，不进入 CMR Schema、提示或费用计算。
+
+官方 [Kimi Code Community Guidelines](https://www.kimi.com/code/docs/en/kimi-code/community-guidelines.html) 将订阅限定为个人交互式使用，允许通过 Claude Code 等主流工具调用，但不允许非交互式批处理、转售账号/API 或将能力包装为服务；企业集成和商业服务应转向 Kimi Platform。CMR 因此只能文档化使用边界，不以代码强行推断用户场景，也不自动开启 Extra Usage、读取余额、估算费用、切换额度通道或在错误后 fallback。
+
+### 12.4 Claude Code 鉴权、模型和 Fast mode 事实
+
+主来源：[Claude Code Authentication](https://code.claude.com/docs/en/team)、[Environment variables](https://code.claude.com/docs/en/env-vars)、[Model configuration](https://code.claude.com/docs/en/model-config)、[Commands](https://code.claude.com/docs/en/commands) 与 [Fast mode](https://code.claude.com/docs/en/fast-mode)。
+
+- `ANTHROPIC_API_KEY` 由 Claude Code 发送为 `X-Api-Key`；`ANTHROPIC_AUTH_TOKEN` 的值会被加上 `Bearer ` 后发送为 `Authorization`。认证优先级中 `AUTH_TOKEN` 高于 `API_KEY`，所以 Kimi Code 子进程必须只有 API Key 这条鉴权变量，Kimi 开放平台子进程必须只有 Auth Token。
+- `ANTHROPIC_BASE_URL` 改变请求发送端点，不负责决定模型；CMR 仍通过数据化 `ANTHROPIC_MODEL` 与各档位环境变量注入模型选择值。
+- Claude Code 当前模型选择优先级是会话内 `/model`、启动参数 `--model`、`ANTHROPIC_MODEL`、Settings。`--model` 和环境变量只作用于本次启动；交互式 `/model <name>` 或 picker 的 Enter 会把选择写入用户 Settings，作为后续新会话默认，picker 的 `s` 才只切换当前会话。CMR 继续把这些参数作为 opaque argv，不解析、不记录、不改写，但必须记录 `/model` 的持久化风险。
+- `ANTHROPIC_CUSTOM_MODEL_OPTION` 只是在 Claude Code `/model` picker 增加一个自定义选项；它不等于 CMR 的 Provider/Profile 注册，当前候选不引入它。
+- Kimi Code 官方接入页把 `/status` 的 Base URL 作为成功判据，并明确模型栏仍可能显示 Claude 名称。静态环境快照可证明选择层配置，但真实上游模型 ID 必须通过 Provider/协议证据验证，不能只凭 `/status` 文案判定。
+- Claude Code `/fast` 当前是 Anthropic Opus 5/4.8 的研究预览快速配置，不是单独模型；启用时若当前模型不受支持会自动切到 Opus 5，交互式启用默认跨会话持久化。网关/代理下的资格检查直接请求 `api.anthropic.com`，不跟随 `ANTHROPIC_BASE_URL`，网关 Key 可能导致检查失败；跳过客户端检查也不证明上游支持。Kimi Code 的 `kimi-for-coding-highspeed` 是独立模型 ID，不能把 `/fast` 当成该模型的入口或可用性证据。
+
+### 12.5 Kimi 新旧/不同产品页面冲突登记
+
+以下页面均为官方页面，但不能作为一套环境变量或模型映射拼接：
+
+| 冲突 | 官方页面证据 | 处理 | 级别 |
+|---|---|---|---|
+| Kimi Code 当前页与旧/开放平台 Claude Code 页的通道、鉴权和模型 ID 不同 | 当前 [Kimi Code Claude Code](https://www.kimi.com/code/docs/en/third-party-tools/claude-code.html) 使用 `api.kimi.com/coding/`、`ANTHROPIC_API_KEY`、`kimi-for-coding`/`k3`；[Kimi 开放平台 Claude Code](https://platform.kimi.com/docs/guide/claude-code-kimi) 使用 `api.moonshot.cn/anthropic`、`ANTHROPIC_AUTH_TOKEN`、`kimi-k3`，并仍出现 `kimi-k2.7-code`/旧 HighSpeed 命名 | 由产品边界消解：前者只绑定 `kimi-code`，后者只绑定既有 `kimi`；任何交叉使用均阻断实现 | Blocker |
+| Kimi Code 显式模型切换与 Claude Code `/fast` 的高速语义不同 | Kimi Code [Model Configuration](https://www.kimi.com/code/docs/en/kimi-code/models.html) 将 `kimi-for-coding-highspeed` 作为独立 Model ID、标为约 6 倍速度与 3 倍额度；Claude Code [Fast mode](https://code.claude.com/docs/en/fast-mode) 是 Opus 5/4.8 的 API 配置，可能切换到 Opus 并持久化，网关资格检查还会直连 `api.anthropic.com` | HighSpeed 不进入首批 Profile；任务卡 8 真实验证后只能三选一：显式 Profile、只文档化经验证的显式模型 ID 切换、继续延后；禁止把 `/fast` 写成 Kimi HighSpeed 入口 | Blocker |
+| Kimi Code 跳过登录脚本与 CMR 无持久修改边界不同 | 当前 [Kimi Code Claude Code](https://www.kimi.com/code/docs/en/third-party-tools/claude-code.html) 要求直接接入前写入 `~/.claude.json` 标记并清理 `~/.claude/settings.json` 的旧模型项；Claude Code [Authentication](https://code.claude.com/docs/en/team) 说明设置 `ANTHROPIC_API_KEY` 会跳过登录并提示批准 | CMR 不执行脚本、不写用户配置；任务卡 3 先做隔离配置验证，任务卡 8 再做真实环境变量直启。若仍必须写持久配置，阻断候选并回到产品决策 | Blocker |
+| 会员额度的刷新周期与会员月度总额度同时存在 | Kimi Code [Membership Benefits](https://www.kimi.com/code/docs/en/kimi-code/membership.html) 同时说明每 7 天刷新、滚动 5 小时窗口和月度总额度冻结 | 视为不同维度，不折算为单一“每周额度”或精确费用；实现只显示脱敏提示 | Blocker（若被错误合并） |
+
+结论：当前 Kimi Code 官方页面足以支持 `1.5.0` 的候选规格与仓库实现，但旧/开放平台页面冲突禁止运行时自行猜测。当前未发布候选已按独立 Provider、Secret、鉴权和账单边界实现并通过任务卡 7 总体验收；真实 Provider、HighSpeed 与发布门禁继续保持未通过。
+
+## 13. GLM-5.3 Coding Plan 与标准 API 分界（2026-08-16）
+
+绑定实施合同：[docs/18-v1.5-glm-5.3-upgrade-implementation-guide.md](18-v1.5-glm-5.3-upgrade-implementation-guide.md)。本节是 2026-08-16 的当前事实增量；第 10、11 节的 2026-07-28 `1.4.0` 发布复核保留为历史证据，不做全局替换。
+
+主来源：
+
+- [GLM-5.3 模型页](https://docs.bigmodel.cn/cn/guide/models/text/glm-5.3)
+- [智谱 Claude Code 接入](https://docs.bigmodel.cn/cn/guide/develop/claude)
+- [智谱 Claude API 兼容](https://docs.bigmodel.cn/cn/guide/develop/claude/introduction)
+- [GLM-5.2 模型页](https://docs.bigmodel.cn/cn/guide/models/text/glm-5.2)
+- [智谱产品价格](https://bigmodel.cn/pricing)
+
+官方事实：GLM-5.3 页面声明 GLM Coding Plan 已全量上线 GLM-5.3，支持 1M 上下文、最大输出 128K；同页同时声明模型 API 将于近期上线。其列出的 Anthropic Message Base URL 是未来 API 协议信息，不能当作当前标准 API 可用性证明。当前 Claude Code 接入页仍给出 GLM-5.2 的 Coding Plan 示例环境；本轮在 `cmr glm` 的 Claude Code 选择层使用用户绑定的 GLM-5.3 目标值，并保留既有 `glm-4.7`/compact/timeout/disable-nonessential 运行参数。
+
+标准 API 边界：当前 Claude API 兼容页面仍以原生 `glm-5.2` 为示例，并使用 `ANTHROPIC_API_KEY`/`x-api-key`；标准价格仍按现有记录为缓存命中 2、输入 8、输出 28 CNY/M。故 `glm-api` 继续使用 `glm-5.2[1m]`、`glm-4.7`、`ANTHROPIC_API_KEY` 和 `config/pricing/glm-5.2.json`，不得因为 Coding Plan 已支持 5.3 而提前迁移。
+
+设计合同而非标准 API 事实：`glm-5.3[1m]` 是 Claude Code 选择层值，CMR 不剥离 `[1m]`；`glm` 的 Opus/Sonnet 选择值、别名和 subscription-quota entitlement 由 `docs/18` 绑定。真实 Provider 请求、API 请求与账单回读均未执行。
