@@ -155,3 +155,32 @@ ERROR unknown provider: kimi-code
 与合同偏差：无
 下一步：停止 — SSFC-1 至 SSFC-3 仓库候选完成；commit、push、并入哪个常规版本、tag、Release 未执行，待项目负责人逐项授权
 ```
+
+## 8. v1.5.1 发布门禁记录
+
+发布决策（2026-08-18，项目负责人授权「按此执行」）：v1.5.1 追加发布，含 SSFC-1~3 修复与版本收口；门禁按序为 commit → push main + Windows 验证分支 → staging 构建 + tag + Release → 发布后回读。流程镜像 `docs/16` §7 与 `docs/17` §12 配方。
+
+### 8.1 门 1 — 候选 commit
+
+```text
+commit：5b6ee7e release: prepare Claude Model Router v1.5.1 repository candidate
+内容：SSFC-1~3 全部改动 + VERSION/package.json 1.5.0→1.5.1 + 移除过时的
+      "Kimi Code membership validation is pending; this 1.5.0 checkout is an
+      unreleased repository candidate" usage 行（会员验证已于 2026-08-18 真实通过）
+验证：npm test 171/168 pass/3 skip（Windows-only）/0 fail；npm run lint exit 0；
+      git diff --check exit 0；红绿验证见 §7 SSFC-3
+```
+
+### 8.2 门 2 — push 与 Windows 验证门
+
+```text
+push main：afdcc54..5b6ee7e
+验证分支：codex/windows-t4-validation @ 5b6ee7e（新建；上一验证分支按惯例于 1.5.0 发布后删除）
+Actions run：32125785518 "Windows T4 acceptance" — success（2026-08-18T10:17:27Z）
+  ✓ PowerShell full regression
+  ✓ CMD T4 + Kimi Code fake-key E2E
+  ✓ Git Bash T4 + Kimi Code fake-key E2E
+门禁口径说明：1.5.1 采用 CI 门（windows-t4.yml）而非 1.5.0 任务卡 9.1 的实机门；
+理由：本轮 diff 平台无关（secret-store 读取逻辑为纯 JS，未触碰 platform.js/路径/权限代码，
+本地 skip 的 3 个 Windows-only 测试已全部在 CI 通过）。实机复验可随时按 docs/17 §12.1 补做。
+```
