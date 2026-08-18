@@ -32,7 +32,7 @@ function isolatedEnvironment(home) {
 test("version and list are non-interactive and do not expose secrets", async () => {
   const version = capture();
   assert.equal(await runCli(["version"], { output: version.output }), 0);
-  assert.equal(version.value, "1.5.0\n");
+  assert.equal(version.value, "1.5.1\n");
   const list = capture();
   assert.equal(await runCli(["list"], { output: list.output }), 0);
   assert.match(list.value, /kimi: Kimi K3/);
@@ -68,7 +68,7 @@ test("help shows CMR usage without starting Claude Code", async () => {
   assert.match(help.value, /cmr kimi-code \[claude args\.\.\.\].*Kimi Code Membership/);
   assert.match(help.value, /Kimi Code Membership API Keys and Kimi Open Platform API Keys are separate and not interchangeable/);
   assert.match(help.value, /membership quota; Extra Usage may incur additional charges when enabled/);
-  assert.match(help.value, /Kimi Code membership validation is pending; this 1\.5\.0 checkout is an unreleased repository candidate/);
+  assert.doesNotMatch(help.value, /unreleased repository candidate|membership validation is pending/);
   assert.match(help.value, /passed through unchanged/);
   assert.match(help.value, /entity npm global packages only/);
   assert.match(help.value, /never updates Claude Code, Node\.js, or Provider API Keys/);
@@ -244,6 +244,49 @@ test("seen state enters the daily status menu even when keys later become missin
   assert.equal(code, 0);
   assert.doesNotMatch(output.value, /Claude Model Router setup/);
   assert.match(prompter.calls[0].choices[1].label, /deepseek — DeepSeek Auto \[missing\]/);
+});
+
+test("the daily menu opens on a secret store written by a newer CMR version", async (t) => {
+  const home = await mkdtemp(path.join(tmpdir(), "cmr-cli-legacy-reader-home-"));
+  t.after(async () => {
+    const { rm } = await import("node:fs/promises");
+    await rm(home, { recursive: true, force: true });
+  });
+  const full = await loadConfigSet();
+  const legacyConfig = {
+    ...full,
+    providers: full.providers.filter((provider) => provider.id !== "kimi-code"),
+    profiles: full.profiles.filter((profile) => profile.provider !== "kimi-code")
+  };
+  const storePath = path.join(home, "secrets.json");
+  const newerWriter = new SecretStore({ filePath: storePath });
+  await newerWriter.set("kimi", "test-kimi-key");
+  await newerWriter.set("kimi-code", "test-kimi-code-key");
+  const secretStore = new SecretStore({
+    filePath: storePath,
+    providerIds: legacyConfig.providers.map((provider) => provider.secretId)
+  });
+  const setupStateStore = new SetupStateStore({ filePath: path.join(home, "state.json") });
+  await setupStateStore.markSeen(legacyConfig.providers.map((provider) => provider.id));
+  const output = capture(true);
+  const errorOutput = capture(true);
+  const prompter = fakeMenuPrompter(["exit"]);
+  const code = await runCli([], {
+    config: legacyConfig,
+    secretStore,
+    setupStateStore,
+    input: { isTTY: true },
+    output: { ...output.output, isTTY: true },
+    errorOutput: errorOutput.output,
+    interactive: true,
+    prompter,
+    claudeExecutable: null
+  });
+  assert.equal(code, 0);
+  assert.doesNotMatch(errorOutput.value, /unknown provider/);
+  assert.match(prompter.calls[0].choices[0].label, /kimi — Kimi K3 \[configured\]/);
+  assert.match(prompter.calls[0].choices[1].label, /deepseek — DeepSeek Auto \[missing\]/);
+  assert.doesNotMatch(prompter.calls[0].choices.map((choice) => choice.label).join("\n"), /kimi-code/);
 });
 
 test("a three-provider seen state triggers a full GLM API onboarding dashboard", async (t) => {

@@ -227,10 +227,10 @@ macOS 默认位置：
 ~/Library/Application Support/ClaudeModelRouter/state.json
 ```
 
-- `secrets.json`：Secret Store Schema v1，保存 Provider Key；不要手工打印、复制到仓库或编辑。
+- `secrets.json`：Secret Store Schema v1，保存 Provider Key；不要手工打印、复制到仓库或编辑。较新 CMR 写入、当前版本不认识的 Provider Key 会被当前版本忽略并原样保留，升级后即可使用。
 - `state.json`：只保存 Schema 版本和已看过的 Provider ID，不含 Key、账号、时间、路径或使用记录。
 
-运行 `cmr config path` 可查看当前实际路径，但不会读取文件正文。Store 损坏或不可读时 CMR 会停止，避免覆盖现有 Key；不要自行删除文件，应先根据错误和备份方案确认恢复动作。`1.4.0` 写入 `glm` 或 `glm-api` 后，手工降级到 `1.3.0` 可能使旧版拒绝四 Provider Store；`1.5.0` 候选写入第五个 `kimi-code` Secret 后，手工降级到公开 `1.4.0` 可能使旧版拒绝整个五 Provider Store。不得为降级自动删除字段，应先制定脱敏备份与兼容方案。
+运行 `cmr config path` 可查看当前实际路径，但不会读取文件正文。Store 损坏或不可读时 CMR 会停止，避免覆盖现有 Key；不要自行删除文件，应先根据错误和备份方案确认恢复动作。历史降级风险（`docs/19` 修复前）：`1.4.0` 写入 `glm` 或 `glm-api` 后，手工降级到 `1.3.0` 会使旧版拒绝四 Provider Store；`1.5.0` 写入第五个 `kimi-code` Secret 后，手工降级到公开 `1.4.0` 会使旧版拒绝整个五 Provider Store。自 `docs/19` 修复版本起，读取忽略未知 Provider Key 并原样保留，旧版可继续使用原有通道；不得为降级自动删除字段。
 
 验收所用 Mac 的用户级 `cmr` 位于 `$HOME/.local/bin/cmr`，链接到本项目。移动、卸载或重新安装会改变本机命令环境，应先确认准确的安装位置和回退方式。
 

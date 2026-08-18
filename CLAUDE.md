@@ -41,4 +41,4 @@ CMR 是零依赖 Node.js ESM CLI（Node ≥18，仅标准库），职责是 Clau
 
 ## 当前状态
 
-`v1.5.0` 已于 2026-08-18 公开发布（Latest，tag = 发布 commit）。下一开发周期从 `docs/19` 新合同开始；已登记未做的候选项：HighSpeed 显式 Profile、GLM-5.3 标准 API 迁移、Claude Code `/fast` 行为实测。
+`v1.5.0` 已于 2026-08-18 公开发布（Latest，tag = 发布 commit）。`v1.5.1` 候选（`docs/19` SSFC-1~3 Secret Store 前向兼容修复 + 版本收口）已于 2026-08-18 完成，按 docs/17 §12 发布配方走门禁。已登记未做的候选项：HighSpeed 显式 Profile、GLM-5.3 标准 API 迁移、Claude Code `/fast` 行为实测。

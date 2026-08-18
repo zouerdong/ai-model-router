@@ -32,7 +32,8 @@ function parseStore(raw, providerIds) {
     throw new Error("secret store has an invalid schema");
   }
   for (const key of Object.keys(value.providers)) {
-    assertProvider(key, providerIds);
+    // Keys written by newer CMR versions are preserved as opaque data; only known providers are validated.
+    if (!providerIds.has(key)) continue;
     try {
       assertSecret(value.providers[key]);
     } catch {

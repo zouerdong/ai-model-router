@@ -15,7 +15,7 @@ import { readHiddenSecret, SecretStore } from "./secret-store.js";
 import { getSecretStorePath, getSetupStatePath } from "./platform.js";
 import { SetupStateStore, isSetupStateCorrupt } from "./setup-state.js";
 
-export const VERSION = "1.5.0";
+export const VERSION = "1.5.1";
 
 export function isMainModule(
   entryPath = process.argv[1],
@@ -57,7 +57,6 @@ function printUsage(output = stdout, config) {
   output.write("Keys are entered only through hidden TTY input, never as command arguments.\n");
   output.write("Kimi Code Membership API Keys and Kimi Open Platform API Keys are separate and not interchangeable.\n");
   output.write("Kimi Code profiles use membership quota; Extra Usage may incur additional charges when enabled.\n");
-  output.write("Kimi Code membership validation is pending; this 1.5.0 checkout is an unreleased repository candidate.\n");
   output.write("Claude Code arguments after the profile are passed through unchanged.\n");
   output.write("Self-update supports entity npm global packages only; source-linked checkouts must be maintained manually.\n");
   output.write("Self-update never updates Claude Code, Node.js, or Provider API Keys.\n");

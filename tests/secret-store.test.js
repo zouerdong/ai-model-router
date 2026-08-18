@@ -84,6 +84,91 @@ test("secret store reads the old four-provider 1.4.0 v1 schema and atomically ad
   assert.equal(await readFile(filePath, "utf8"), beforeFailure);
 });
 
+test("an older provider set reads a newer-version store, ignores unknown keys, and preserves them on rewrite", async (t) => {
+  const directory = await mkdtemp(path.join(tmpdir(), "cmr-secret-forward-compat-"));
+  t.after(async () => {
+    const { rm } = await import("node:fs/promises");
+    await rm(directory, { recursive: true, force: true });
+  });
+  const filePath = path.join(directory, "secrets.json");
+  await writeFile(filePath, JSON.stringify({
+    version: 1,
+    providers: {
+      kimi: "test-kimi-key",
+      deepseek: "test-deepseek-key",
+      glm: "test-glm-key",
+      "glm-api": "test-glm-api-key",
+      "kimi-code": "test-kimi-code-key"
+    }
+  }, null, 2));
+  const legacyStore = new SecretStore({ filePath, providerIds: ["kimi", "deepseek", "glm", "glm-api"] });
+  assert.deepEqual(await legacyStore.readAll(), {
+    version: 1,
+    providers: {
+      kimi: "test-kimi-key",
+      deepseek: "test-deepseek-key",
+      glm: "test-glm-key",
+      "glm-api": "test-glm-api-key",
+      "kimi-code": "test-kimi-code-key"
+    }
+  });
+  assert.equal(await legacyStore.get("kimi"), "test-kimi-key");
+  assert.deepEqual(await legacyStore.status(), { deepseek: true, glm: true, "glm-api": true, kimi: true });
+  await assert.rejects(() => legacyStore.get("kimi-code"), /unknown provider: kimi-code/);
+
+  await legacyStore.set("kimi", "test-kimi-rotated");
+  assert.deepEqual((await legacyStore.readAll()).providers, {
+    kimi: "test-kimi-rotated",
+    deepseek: "test-deepseek-key",
+    glm: "test-glm-key",
+    "glm-api": "test-glm-api-key",
+    "kimi-code": "test-kimi-code-key"
+  });
+  const upgradedStore = new SecretStore({ filePath });
+  assert.equal(await upgradedStore.get("kimi-code"), "test-kimi-code-key");
+});
+
+test("unknown provider secrets stay in the redaction set and malformed unknown values do not fail the read", async (t) => {
+  const directory = await mkdtemp(path.join(tmpdir(), "cmr-secret-opaque-unknown-"));
+  t.after(async () => {
+    const { rm } = await import("node:fs/promises");
+    await rm(directory, { recursive: true, force: true });
+  });
+  const filePath = path.join(directory, "secrets.json");
+  await writeFile(filePath, JSON.stringify({
+    version: 1,
+    providers: {
+      kimi: "test-kimi-key",
+      "kimi-code": "line1\nline2"
+    }
+  }, null, 2));
+  const legacyStore = new SecretStore({ filePath, providerIds: ["kimi", "deepseek", "glm", "glm-api"] });
+  assert.equal(await legacyStore.get("kimi"), "test-kimi-key");
+  const redaction = await legacyStore.readSecretsForRedaction();
+  assert.deepEqual([...redaction].sort(), ["line1\nline2", "test-kimi-key"].sort());
+
+  await legacyStore.set("kimi", "test-kimi-new");
+  const raw = JSON.parse(await readFile(filePath, "utf8"));
+  assert.equal(raw.providers["kimi-code"], "line1\nline2");
+  assert.equal(raw.providers.kimi, "test-kimi-new");
+});
+
+test("known provider values and the top-level schema remain strict for the older provider set", async (t) => {
+  const directory = await mkdtemp(path.join(tmpdir(), "cmr-secret-strict-known-"));
+  t.after(async () => {
+    const { rm } = await import("node:fs/promises");
+    await rm(directory, { recursive: true, force: true });
+  });
+  const corruptValuePath = path.join(directory, "secrets.json");
+  await writeFile(corruptValuePath, JSON.stringify({ version: 1, providers: { kimi: "line1\nline2" } }));
+  const legacyIds = ["kimi", "deepseek", "glm", "glm-api"];
+  await assert.rejects(() => new SecretStore({ filePath: corruptValuePath, providerIds: legacyIds }).get("kimi"), /invalid secret/);
+
+  const corruptSchemaPath = path.join(directory, "schema.json");
+  await writeFile(corruptSchemaPath, JSON.stringify({ version: 2, providers: {} }));
+  await assert.rejects(() => new SecretStore({ filePath: corruptSchemaPath, providerIds: legacyIds }).get("kimi"), /invalid schema/);
+});
+
 test("SecretStore derives accepted Provider IDs from the loaded configuration when not injected", async (t) => {
   const root = await mkdtemp(path.join(tmpdir(), "cmr-secret-dynamic-config-"));
   await cp(getDefaultConfigRoot(), root, { recursive: true });

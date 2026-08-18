@@ -633,3 +633,26 @@ cmr glm-api / glm-payg
 ```
 
 两条通道仍共享 Anthropic-compatible Base URL，但鉴权变量、Secret 槽位和商业元数据保持独立。`glm` 的 subscription-quota 提示来自 entitlement JSON；`glm-api` 的 pay-as-you-go 提示继续来自 `glm-5.2` Pricing。因标准 API 页面截至 2026-08-16 仍将 GLM-5.3 API 标为近期上线，不能从 Coding Plan 5.3 支持推导出标准 API 迁移。
+
+## 21. Secret Store 前向兼容架构
+
+绑定实施合同：`docs/19-secret-store-forward-compatibility-implementation-guide.md`。
+
+Secret Store 是**跨安装共享的单机状态**：源码 checkout 与全局 npm 安装读写同一个仓库外文件（macOS `~/Library/Application Support/ClaudeModelRouter/secrets.json`、Windows `%APPDATA%` 等价路径），而校验它所用的 provider 集合（`secretId` 全集）随**当前安装版本**静态打包。`1.5.0` 及之前 `parseStore` 要求文件中每个 key 都在当前版本集合内，因此「较新版本写入较新 provider 的 key，较旧版本随后读取」会让旧版所有读库路径（菜单、任意 Profile 启动、`setup`、`doctor`、`secret status`）整体抛 `unknown provider` 并不可用——2026-08-18 维护者开发机（源码 checkout 写入 `kimi-code` + 全局 `1.4.0` 读取）实测复现；`cmr update` 不读库所以仍可自救。对照设计见 `setup-state.js`：`getUnseenProviderIds` 只过滤当前 provider、容忍状态中多出的 ID，天然前向兼容。`cmr update` 自带的失败回滚不触发本问题：回滚目标是更新前正在运行的版本，必然认识库中所有 key。
+
+修复后的读取与写入合同：
+
+```text
+parseStore（分层校验）
+  ├── 顶层 schema：合法 JSON、仅 version/providers 两键、version=1   —— 不变，违反即抛
+  ├── 已知 provider key：值校验（assertSecret 全项）                —— 不变，违反即抛
+  └── 未知 provider key：跳过校验，原样保留在返回对象中（不透明数据）
+        └── 值即使为空串/含换行等非法格式，也不导致读取失败
+
+get(provider)        对被请求的 provider 仍拒绝未知（菜单/启动链不会请求未知 ID）—— 不变
+set(provider, ...)   仅更新被请求 key；写回天然保留全部未知 key，不删除、不改写
+status()             只列当前版本已知 provider；未知 key 不出现
+readSecretsForRedaction()  必须包含未知 key 的值（错误脱敏完整性不得缩窄）—— 安全关键
+```
+
+不变量：Schema v1、原子写入（临时文件 + rename）、目录 0700/文件 0600、已知 key 全部值校验、`get`/`set` 对未知请求 provider 的拒绝、密钥红线均不变。限制：已发布的 `1.4.0`/`1.5.0` 二进制无法追补本行为，仍会在含 `kimi-code` key 的 Store 上拒绝读取；修复随下一常规版本发布后，从该版本起的降级/混用场景获得保护。

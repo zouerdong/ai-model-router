@@ -638,3 +638,21 @@ Provider 真实验收由维护者确认；自动化、Node 18、Windows、打包
 | G53-B5 | Major | `npm test`、`npm run lint`、`git diff --check` 和必要的 pack/敏感扫描通过 |
 
 本轮没有真实 Provider 或标准 API 门禁；最高结论是仓库实现候选完成，不能把自动化结果写成真实连接、计费归属或 Release PASS。
+
+## 18. Secret Store 前向兼容验收矩阵
+
+绑定实施合同：`docs/19-secret-store-forward-compatibility-implementation-guide.md`。本节只覆盖 SSFC-1 至 SSFC-3 的仓库候选，不追溯改变已发布版本（`1.4.0`/`1.5.0`）的行为记录。
+
+### SSFC-A — 宽容读取与跨版本共存
+
+| ID | 级别 | 验收项 |
+|---|---|---|
+| SSFC-A1 | Blocker | 注入旧版 provider 集合读取含未知 provider key 的 Store：`readAll`/`get`/`status` 不抛 `unknown provider`，`get` 返回正确值，`status` 只列已知 provider |
+| SSFC-A2 | Blocker | `set` 写回后未知 key 及其值原样保留；不删除、不改写 |
+| SSFC-A3 | Blocker | `readSecretsForRedaction()` 返回包含未知 key 的值（脱敏完整性不得因本修复缩窄） |
+| SSFC-A4 | Blocker | 未知 key 的值为非法格式（空串/换行等）时读取仍成功、写回仍原样保留（不透明数据） |
+| SSFC-A5 | Blocker | 已知 key 值校验与顶层 schema 校验不变；`get`/`set` 对未知请求 provider 仍拒绝 |
+| SSFC-A6 | Blocker | 菜单与 `cmr <profile>` 两条真实读库路径在模拟旧版 provider 集合 + 含未知 key 的 Store 下不再抛 `unknown provider` |
+| SSFC-A7 | Major | `npm test`、`npm run lint`、`git diff --check` 通过；现有七 Profile 行为零退化 |
+
+本轮无真实 Provider、无真实 Key、无发布门禁；最高结论是仓库实现候选完成。合并入哪个常规版本、commit、push、tag、Release 由项目负责人另行授权。

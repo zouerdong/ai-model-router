@@ -152,6 +152,38 @@ test("launchProfile injects the selected profile and passes Claude args unchange
   assert.doesNotMatch(glm.output, /direct standard API billing/);
 });
 
+test("a legacy provider set launches from a store written by a newer CMR version", async (t) => {
+  const root = await mkdtemp(path.join(tmpdir(), "cmr-launch-legacy-reader-"));
+  t.after(async () => {
+    const { rm } = await import("node:fs/promises");
+    await rm(root, { recursive: true, force: true });
+  });
+  const storePath = path.join(root, "secrets.json");
+  const newerWriter = new SecretStore({ filePath: storePath });
+  await newerWriter.set("kimi", "test-kimi-key");
+  await newerWriter.set("kimi-code", "test-kimi-code-key");
+  const legacyStore = new SecretStore({ filePath: storePath, providerIds: ["kimi", "deepseek", "glm", "glm-api"] });
+  const outputFile = path.join(root, "legacy-launch.json");
+  const output = outputCapture();
+  const code = await launchProfile("kimi", [], {
+    secretStore: legacyStore,
+    output: output.stream,
+    parentEnv: { PATH: process.env.PATH, FAKE_OUTPUT_FILE: outputFile },
+    cwd: root,
+    executable: process.execPath,
+    executableArgs: [fixture],
+    stdio: "ignore"
+  });
+  assert.equal(code, 0);
+  assert.doesNotMatch(output.text, /unknown provider/);
+  const snapshot = JSON.parse(await readFile(outputFile, "utf8"));
+  assert.deepEqual(snapshot.args, []);
+  assert.equal(snapshot.hasAuthToken, true);
+  assert.equal(snapshot.hasApiKey, false);
+  assert.equal(snapshot.model, "kimi-k3[1m]");
+  assert.doesNotMatch(output.text, /test-kimi-key/);
+});
+
 test("Kimi Code profiles launch through the isolated API key path with exact argv and quota warning", async (t) => {
   const root = await mkdtemp(path.join(tmpdir(), "cmr-launch-kimi-code-"));
   t.after(async () => {
