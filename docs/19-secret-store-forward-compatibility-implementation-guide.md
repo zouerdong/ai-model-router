@@ -1,6 +1,6 @@
 # 19 — Secret Store 前向兼容修复：SSFC-1 至 SSFC-3 实施指导书
 
-状态：**IMPLEMENTED — SSFC-1 至 SSFC-3 仓库候选完成（2026-08-18），待随下一常规版本合并发布；发布决策另行授权**
+状态：**RELEASED — SSFC-1 至 SSFC-3 实施完成并随 `v1.5.1` 于 2026-08-18 公开发布（Latest，tag 指向发布 commit 546e8fc）**
 制定日期：2026-08-18
 目标：修复密钥库严格校验导致的跨版本瘫痪，恢复「旧版本永远可以继续使用旧通道」的产品预期；随下一个常规版本合并发布，不单独 hotfix。
 
@@ -15,7 +15,7 @@
 发布决策（2026-08-18，项目负责人确认）：
 
 1. 不做 `v1.5.1` hotfix：外部暴露面约为零（`kimi-code` key 只能由 `1.5.0` 写入，`1.5.0` 发布当天尚无存量用户降级场景）。
-2. 修复随下一个常规版本合并发布。已发布的 `1.4.0`/`1.5.0` 无法追补；修复只有进入「用户日常运行的旧版二进制」后才开始提供保护，这是选择随版发布的根本原因。
+2. 修复随下一个常规版本合并发布。（本条为制定时决策，已被 §8 记录的追加发布决策取代：2026-08-18 当日改为 `v1.5.1` 独立补丁发布，理由见 §8 引言。）已发布的 `1.4.0`/`1.5.0` 无法追补；修复只有进入「用户日常运行的旧版二进制」后才开始提供保护，这是选择随版发布的根本原因。
 
 ## 2. 事件与根因登记（2026-08-18）
 
@@ -183,4 +183,31 @@ Actions run：32125785518 "Windows T4 acceptance" — success（2026-08-18T10:17
 门禁口径说明：1.5.1 采用 CI 门（windows-t4.yml）而非 1.5.0 任务卡 9.1 的实机门；
 理由：本轮 diff 平台无关（secret-store 读取逻辑为纯 JS，未触碰 platform.js/路径/权限代码，
 本地 skip 的 3 个 Windows-only 测试已全部在 CI 通过）。实机复验可随时按 docs/17 §12.1 补做。
+```
+
+### 8.3 门 3 — staging 构建、tag 与 Release
+
+```text
+门禁证据 commit：546e8fc docs: record v1.5.1 candidate commit and Windows CI gate PASS（tag 目标）
+staging：/private/tmp 仓库外目录，完整 clone @ 546e8fc 后 npm pack --ignore-scripts --no-audit
+固定资产：claude-model-router.tgz（39 文件，与 1.5.0 相同清单结构；无 lifecycle script、零运行时依赖）
+SHA-256：2bcd969dcb6d3f239708a4555845a32c2981a3f8743f0d19c073cfe719c74daa
+隔离 prefix 安装（本地 tgz）：cmr version → 1.5.1；help 正常；过时文案 0 出现
+tag：v1.5.1（annotated，指向 546e8fc）已推送
+Draft Release：两项资产上传后回读，与 staging 字节一致（tgz 与 SHA256SUMS 均 cmp 通过）
+发布：2026-08-18T10:21:29Z，immutable + Latest，prerelease=false
+```
+
+### 8.4 门 4 — 发布后公开回读
+
+```text
+exact URL 回读：releases/download/v1.5.1/claude-model-router.tgz → SHA-256 与 staging 一致
+latest URL 回读：releases/latest/download/claude-model-router.tgz → 与 exact 字节一致（cmp 通过）
+公开 latest URL 隔离 prefix 安装：全新 prefix，cmr version → 1.5.1；
+  cmr update --check → "CMR 1.5.1 is already the latest stable release."
+真机只读探测（维护者 Mac，实体 npm 全局 1.5.0）：cmr update --check →
+  Current 1.5.0 / Latest 1.5.1 / Update available（未执行真实 cmr update，实体升级由维护者自行执行）
+网络备注：首次 curl 回读遇一次 TLS 抖动（已知代理问题），重试后成功；结论以成功回读为准
+状态翻转：AGENTS.md §1/§2、README（Current version、安装 URL、docs 清单、stable tag）、
+  CLAUDE.md、docs/19 状态行 → RELEASED（本 commit）
 ```

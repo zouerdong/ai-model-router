@@ -4,7 +4,7 @@
 
 本项目为 Claude Code 提供跨平台的“启动前 Provider/Profile 选择”，不修改或管理 Codex，也不接管 Claude Code 自身的会话与命令语义。
 
-当前稳定版为 `1.5.0`（2026-08-18 公开发布，Latest）：在 `1.4.0` 基线上新增 Kimi Code 会员三 Profile（真实验收通过）与 GLM-5.3 Coding Plan 升级。前一稳定版 `1.4.0` 在 `1.3.0` GitHub Release 自更新基线上，一次发布 GLM Coding Plan 与 GLM 标准 API 按量付费两个显式 Profile，并保持独立的凭据、鉴权和费用边界。`1.1.0` 的 Mac 独立验收见 `docs/11-v1.1-first-run-setup-implementation-brief.md` 第 17 节；`1.2.1` 发布证据见 `docs/12-v1.2.1-windows-compatibility-patch.md`；`1.3.0` 发布与公开回读证据见 `docs/13-v1.3-self-update-implementation-brief.md` 第 19 节；`1.4.0` 统一发布证据见 `docs/16-v1.4-unified-glm-release.md`。
+当前稳定版为 `1.5.1`（2026-08-18 发布，Latest）：`1.5.0` 同日的 Secret Store 前向兼容补丁——旧版读取密钥库时忽略并原样保留较新版本写入的未知 Provider Key，恢复「旧版可继续使用旧通道」合同（`docs/19` SSFC-1~3）；无新增 Provider/Profile/价格。前一稳定版 `1.5.0`（2026-08-18 公开发布）：在 `1.4.0` 基线上新增 Kimi Code 会员三 Profile（真实验收通过）与 GLM-5.3 Coding Plan 升级。`1.4.0` 在 `1.3.0` GitHub Release 自更新基线上，一次发布 GLM Coding Plan 与 GLM 标准 API 按量付费两个显式 Profile，并保持独立的凭据、鉴权和费用边界。`1.1.0` 的 Mac 独立验收见 `docs/11-v1.1-first-run-setup-implementation-brief.md` 第 17 节；`1.2.1` 发布证据见 `docs/12-v1.2.1-windows-compatibility-patch.md`；`1.3.0` 发布与公开回读证据见 `docs/13-v1.3-self-update-implementation-brief.md` 第 19 节；`1.4.0` 统一发布证据见 `docs/16-v1.4-unified-glm-release.md`。
 
 `1.5.0` 已于 2026-08-18 完成 `docs/17` 全部九张任务卡并公开发布（Windows 实机 9.1 run 32112918053 全绿；GitHub 候选 9.2 通过；9.3 发布与公开回读闭环：exact/latest 双 URL 字节一致、隔离 prefix 安装 `1.5.0`、真机 `cmr update --check` 正确探测 1.5.0）。Kimi Code 三个首批 Profile 均真实验收 `PROVIDER PASS`（2026-08-18 用户授权，Allegretto+ 档，Extra Usage 关闭，脱敏回读；归属闭环：会员 Console 0%→1%，开放平台当日零请求）；HighSpeed 按决策 2 处理（仅文档化显式 `--model` 切换，不新增 Profile，`/fast` 不是入口）。治理模式：项目负责人于 2026-08-18 指令撤销 Luna/Sol 双角色审阅循环，改为单一执行者 + 自动化验证（全量 `npm test`/`npm run lint` + 脱敏证据记录）+ 项目负责人门禁（commit/push/tag/Release 逐项授权）。`docs/17-v1.5-kimi-code-membership-implementation-guide.md` 为 Kimi Code 绑定执行指导，`docs/18-v1.5-glm-5.3-upgrade-implementation-guide.md` 为 GLM-5.3 绑定执行指导。
 
@@ -29,12 +29,12 @@ Profile 只决定 Claude Code 子进程启动时使用哪套 Provider 环境。K
 1. 本文件。
 2. `docs/01-product-scope.md`。
 3. `docs/02-architecture.md`。
-4. 当前阶段的执行文档；实施首次运行向导时必须读取 `docs/11-v1.1-first-run-setup-implementation-brief.md`，实施自更新时必须读取 `docs/13-v1.3-self-update-implementation-brief.md`，实施或发布 GLM 时必须读取 `docs/14`、`docs/15` 与 `docs/16`，实施 Kimi Code 会员 Provider 时必须读取 `docs/17-v1.5-kimi-code-membership-implementation-guide.md`。
+4. 当前阶段的执行文档；实施首次运行向导时必须读取 `docs/11-v1.1-first-run-setup-implementation-brief.md`，实施自更新时必须读取 `docs/13-v1.3-self-update-implementation-brief.md`，实施或发布 GLM 时必须读取 `docs/14`、`docs/15` 与 `docs/16`，实施 Kimi Code 会员 Provider 时必须读取 `docs/17-v1.5-kimi-code-membership-implementation-guide.md`，修改 Secret Store 行为时必须读取 `docs/19-secret-store-forward-compatibility-implementation-guide.md`。
 5. `docs/07-official-sources.md`。
 6. `docs/08-acceptance-and-recovery.md`。
 7. `docs/09-phase-1-acceptance.md`，用于核对已完成的 Mac 基线。
 
-`docs/10-v0.2-transparent-profile-launcher-implementation-brief.md` 是 `1.0.0` 稳定运行时的历史实施与验收依据。`docs/11-v1.1-first-run-setup-implementation-brief.md` 是 `1.1.0` 的实施与验收依据。`docs/12-v1.2.1-windows-compatibility-patch.md` 是 `1.2.1` 的发布依据。`docs/13-v1.3-self-update-implementation-brief.md` 是自更新功能的实施、验收与首次发布依据。`docs/14` 与 `docs/15` 分别记录两个 GLM Profile 的实施合同，`docs/16` 是二者统一进入 `1.4.0` 的版本决策、验收与发布依据。`docs/17` 是 `1.5.0` Kimi Code 会员 Provider 的逐卡实施、审阅与发布门禁依据。GitHub 与 Windows 阶段分别按 `docs/04-phase-2-github.md` 和 `docs/05-phase-3-windows.md` 执行。
+`docs/10-v0.2-transparent-profile-launcher-implementation-brief.md` 是 `1.0.0` 稳定运行时的历史实施与验收依据。`docs/11-v1.1-first-run-setup-implementation-brief.md` 是 `1.1.0` 的实施与验收依据。`docs/12-v1.2.1-windows-compatibility-patch.md` 是 `1.2.1` 的发布依据。`docs/13-v1.3-self-update-implementation-brief.md` 是自更新功能的实施、验收与首次发布依据。`docs/14` 与 `docs/15` 分别记录两个 GLM Profile 的实施合同，`docs/16` 是二者统一进入 `1.4.0` 的版本决策、验收与发布依据。`docs/17` 是 `1.5.0` Kimi Code 会员 Provider 的逐卡实施、审阅与发布门禁依据。`docs/19` 是 `1.5.1` Secret Store 前向兼容修复的实施合同与发布门禁依据。GitHub 与 Windows 阶段分别按 `docs/04-phase-2-github.md` 和 `docs/05-phase-3-windows.md` 执行。
 
 冲突时，以编号更靠前的现行文档为准。发现规范需要改变时，先修改对应文档并说明理由，再修改实现。
 
