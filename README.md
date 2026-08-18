@@ -1,17 +1,15 @@
 # Claude Model Router
 
-Current public Latest stable version: **`1.4.0`**.
-This checkout is an **unreleased `1.5.0` repository candidate**.
+Current public Latest stable version: **`1.5.0`** (released 2026-08-18).
 
-Kimi Code repository implementation candidate is complete.
+Kimi Code membership is part of the public stable release.
 Real membership Provider validation passed on 2026-08-18 (all three profiles).
-The current public Latest stable release remains v1.4.0 until the release gates close.
 
-Version `1.4.0` added two explicit GLM profiles in one release: GLM-5.2 Coding Plan and the GLM standard API pay-as-you-go channel. They remain separate Provider, authentication, billing, and Secret Store boundaries. This checkout also contains the unreleased GLM-5.3 Coding Plan upgrade candidate; `glm-api` intentionally remains GLM-5.2.
+Version `1.4.0` added two explicit GLM profiles in one release: GLM-5.2 Coding Plan and the GLM standard API pay-as-you-go channel. They remain separate Provider, authentication, billing, and Secret Store boundaries. Version `1.5.0` upgrades the Coding Plan to GLM-5.3; `glm-api` intentionally remains GLM-5.2.
 
-The `1.5.0` candidate adds three Kimi Code membership profiles. Their real membership Provider validation passed on 2026-08-18 (redacted evidence in `docs/17` §14 and `docs/08` §16); the Windows, GitHub, and release gates are still open, so they are not part of the public `1.4.0` Latest release yet.
+Version `1.5.0` adds three Kimi Code membership profiles. Their real membership Provider validation passed on 2026-08-18 (redacted evidence in `docs/17` §14 and `docs/08` §16), and the Windows, GitHub, and release gates all closed the same day.
 
-Claude Model Router (`cmr`) is a cross-platform profile launcher for Claude Code. Before Claude Code starts, it lets you choose the public Kimi, DeepSeek, GLM Coding Plan, or GLM standard API pay-as-you-go profiles; this checkout also contains the unreleased Kimi Code candidate profiles. It injects the selected provider's environment for the child process and forwards every remaining Claude Code argument unchanged.
+Claude Model Router (`cmr`) is a cross-platform profile launcher for Claude Code. Before Claude Code starts, it lets you choose the Kimi open-platform, DeepSeek, GLM Coding Plan, GLM standard API pay-as-you-go, or Kimi Code membership profiles. It injects the selected provider's environment for the child process and forwards every remaining Claude Code argument unchanged.
 
 Version `1.3.0` adds self-update support through a fixed GitHub Release asset. The updater only replaces the regular npm global package mapped to the currently active `cmr` command. It safely refuses source-linked checkouts, junctions, Homebrew or WinGet installations, and any installation whose prefix cannot be identified unambiguously.
 
@@ -29,20 +27,20 @@ Prerequisites:
 - For GLM, use a Coding Plan Key with `cmr glm` or a distinct standard API Key with `cmr glm-api`. CMR does not identify Key types, combine slots, or switch between them.
 - Kimi Code is intended only for the personal interactive development scenarios allowed by Kimi's official policy. Enterprise integrations, commercial services, and non-interactive batch use require a separate policy and product evaluation.
 
-Install the reproducible `v1.4.0` Release asset:
+Install the reproducible `v1.5.0` Release asset:
 
 ```bash
-npm install --global "https://github.com/zouerdong/ai-model-router/releases/download/v1.4.0/claude-model-router.tgz"
+npm install --global "https://github.com/zouerdong/ai-model-router/releases/download/v1.5.0/claude-model-router.tgz"
 cmr version
 cmr
 ```
 
-Existing `1.3.0` users can run `cmr update`; `1.2.1` and older users must run the exact install command once to bootstrap self-update support.
+Existing `1.3.0`/`1.4.0` users can run `cmr update`; `1.2.1` and older users must run the exact install command once to bootstrap self-update support.
 
 If the existing installation uses a custom npm prefix, specify that same prefix so your terminal does not continue resolving an older copy:
 
 ```bash
-npm install --global --prefix <current-prefix> "https://github.com/zouerdong/ai-model-router/releases/download/v1.4.0/claude-model-router.tgz"
+npm install --global --prefix <current-prefix> "https://github.com/zouerdong/ai-model-router/releases/download/v1.5.0/claude-model-router.tgz"
 ```
 
 You can also install the latest stable fixed asset:
@@ -51,7 +49,7 @@ You can also install the latest stable fixed asset:
 npm install --global "https://github.com/zouerdong/ai-model-router/releases/latest/download/claude-model-router.tgz"
 ```
 
-For reproducible installation, prefer the exact `releases/download/v1.4.0/claude-model-router.tgz` URL over `latest`.
+For reproducible installation, prefer the exact `releases/download/v1.5.0/claude-model-router.tgz` URL over `latest`.
 
 To inspect and install from source:
 
@@ -84,7 +82,7 @@ cmr glm-5.3          # GLM-5.3 Coding Plan alias
 cmr glm-api          # GLM standard API pay-as-you-go
 ```
 
-The unreleased `1.5.0` candidate also exposes these Kimi Code entries when run from this checkout:
+The `1.5.0` stable release also exposes these Kimi Code entries:
 
 ```bash
 cmr kimi-code              # kimi-for-coding, all Kimi Code membership tiers
@@ -123,9 +121,9 @@ CMR does not prescribe a handoff workflow or document name. You can keep using a
 
 The Kimi Code and GLM Coding Plan profiles print subscription-quota awareness notices when they start. `glm-api` prints a one-line direct standard API billing notice whose GLM-5.2 reference prices come from the bundled pricing record. Neither adds a CMR confirmation. CMR does not record prompts, session IDs, or forwarded arguments.
 
-## Kimi Code `1.5.0` repository candidate
+## Kimi Code membership (`v1.5.0`)
 
-The three candidate profiles share the independent `kimi-code` Provider and Secret Store slot. Their model and membership requirements are:
+The three membership profiles share the independent `kimi-code` Provider and Secret Store slot. Their model and membership requirements are:
 
 | Profile | Alias | Claude Code value / upstream model | Minimum known membership tier | Context |
 |---|---|---|---|---:|
@@ -133,7 +131,7 @@ The three candidate profiles share the independent `kimi-code` Provider and Secr
 | `kimi-code-k3-256k` | `kimi-membership-k3-256k` | `k3-256k` / `k3-256k` | Moderato or above | 262144 |
 | `kimi-code-k3` | `kimi-membership-k3` | `k3[1m]` / `k3` | Allegretto or above | 1048576 |
 
-The candidate maps each profile's main, Opus, Sonnet, Haiku, Fable, and sub-agent model to that profile's Kimi Code model. `k3[1m]` is the Claude Code selection value; the upstream model ID remains `k3`.
+CMR maps each profile's main, Opus, Sonnet, Haiku, Fable, and sub-agent model to that profile's Kimi Code model. `k3[1m]` is the Claude Code selection value; the upstream model ID remains `k3`.
 
 Kimi Code uses subscription quota, not the open-platform token-pricing records. Official quota rules described by the project baseline include a seven-day subscription refresh with no carry-over, a separate rolling five-hour rate-limit window, shared quota across devices and API keys, and a monthly total that may freeze Kimi Code when exhausted. Extra Usage is an explicit Kimi-side option: after subscription quota is exhausted it may charge shared balance by actual usage. CMR does not query usage, enable Extra Usage, or promise unlimited quota or no additional charges; users should review the Kimi-side monthly spending limit.
 
@@ -196,7 +194,7 @@ The setup flow performs local format validation and atomic storage only. It does
 
 `cmr update --check` checks the fixed asset from the latest GitHub Release without changing the installation. `cmr update` backs up, installs, and verifies a candidate on the regular npm global package associated with the active command, then attempts rollback if verification fails. It never runs lifecycle scripts, changes provider configuration, or switches to npm's default prefix.
 
-`cmr help` displays CMR help only. Use `cmr kimi --help`, `cmr deepseek --help`, `cmr glm --help`, `cmr glm-api --help`, or a Kimi Code candidate profile's `--help` to view Claude Code help.
+`cmr help` displays CMR help only. Use `cmr kimi --help`, `cmr deepseek --help`, `cmr glm --help`, `cmr glm-api --help`, or a Kimi Code profile's `--help` to view Claude Code help.
 
 API keys are written through hidden local TTY input to the Secret Store outside the repository. They are never placed in repository files, command arguments, logs, or chat messages.
 
@@ -228,4 +226,4 @@ API keys are written through hidden local TTY input to the Secret Store outside 
 17. [Version 1.5.0 Kimi Code membership implementation guide](docs/17-v1.5-kimi-code-membership-implementation-guide.md)
 18. [GLM-5.3 Coding Plan upgrade implementation guide](docs/18-v1.5-glm-5.3-upgrade-implementation-guide.md)
 
-The runtime has no third-party dependencies. The public repository uses `main` as its default branch, and the current public stable tag remains `v1.4.0`; no `v1.5.0` tag, Release, checksum, or Latest update exists for this candidate.
+The runtime has no third-party dependencies. The public repository uses `main` as its default branch; the current public stable tag is `v1.5.0`, published as an immutable Release with the fixed `claude-model-router.tgz` asset and `SHA256SUMS`.

@@ -4,18 +4,21 @@
 
 本项目为 Claude Code 提供跨平台的“启动前 Provider/Profile 选择”，不修改或管理 Codex，也不接管 Claude Code 自身的会话与命令语义。
 
-当前稳定版为 `1.4.0`：它在 `1.3.0` GitHub Release 自更新基线上，一次发布 GLM Coding Plan 与 GLM 标准 API 按量付费两个显式 Profile，并保持独立的凭据、鉴权和费用边界。`1.1.0` 的 Mac 独立验收见 `docs/11-v1.1-first-run-setup-implementation-brief.md` 第 17 节；`1.2.1` 发布证据见 `docs/12-v1.2.1-windows-compatibility-patch.md`；`1.3.0` 发布与公开回读证据见 `docs/13-v1.3-self-update-implementation-brief.md` 第 19 节；`1.4.0` 统一发布证据见 `docs/16-v1.4-unified-glm-release.md`。
+当前稳定版为 `1.5.0`（2026-08-18 公开发布，Latest）：在 `1.4.0` 基线上新增 Kimi Code 会员三 Profile（真实验收通过）与 GLM-5.3 Coding Plan 升级。前一稳定版 `1.4.0` 在 `1.3.0` GitHub Release 自更新基线上，一次发布 GLM Coding Plan 与 GLM 标准 API 按量付费两个显式 Profile，并保持独立的凭据、鉴权和费用边界。`1.1.0` 的 Mac 独立验收见 `docs/11-v1.1-first-run-setup-implementation-brief.md` 第 17 节；`1.2.1` 发布证据见 `docs/12-v1.2.1-windows-compatibility-patch.md`；`1.3.0` 发布与公开回读证据见 `docs/13-v1.3-self-update-implementation-brief.md` 第 19 节；`1.4.0` 统一发布证据见 `docs/16-v1.4-unified-glm-release.md`。
 
-下一候选阶段为 `1.5.0` Kimi Code 会员 Provider 与 GLM-5.3 Coding Plan 升级。`docs/17-v1.5-kimi-code-membership-implementation-guide.md` 为 Kimi Code 绑定执行指导，`docs/18-v1.5-glm-5.3-upgrade-implementation-guide.md` 为 GLM-5.3 绑定执行指导。当前任务卡 1–8 已完成：2026-08-18 在用户授权（Allegretto+ 档、Extra Usage 关闭、脱敏回读）下完成三个首批 Profile 的真实 Provider 验收（均判 `PROVIDER PASS`，归属闭环：会员 Console 0%→1%，开放平台当日零请求），HighSpeed 按决策 2 处理（仅文档化显式 `--model` 切换，不新增 Profile，`/fast` 不是入口）。治理变更：项目负责人于 2026-08-18 指令撤销 Luna/Sol 双角色审阅循环，改为单一执行者 + 自动化验证（全量 `npm test`/`npm run lint` + 脱敏证据记录）+ 项目负责人门禁（commit/push/tag/Release 逐项授权）模式。Windows 实机门禁（任务卡 9.1）与 GitHub 候选门禁（任务卡 9.2）已于 2026-08-18 通过：9.1 为 GitHub 托管 Windows 2025 × Node 18/24 双矩阵全绿（run 32112918053，含三 shell Kimi Code 假 Key E2E）；9.2 在用户批准下将候选推送至远端 `main`（`6e0dd17`），Latest Release 核实仍为 `v1.4.0`。发布门禁（9.3）未开始，不改变 `1.4.0` 的公开 Latest 稳定发布结论。
+`1.5.0` 已于 2026-08-18 完成 `docs/17` 全部九张任务卡并公开发布（Windows 实机 9.1 run 32112918053 全绿；GitHub 候选 9.2 通过；9.3 发布与公开回读闭环：exact/latest 双 URL 字节一致、隔离 prefix 安装 `1.5.0`、真机 `cmr update --check` 正确探测 1.5.0）。Kimi Code 三个首批 Profile 均真实验收 `PROVIDER PASS`（2026-08-18 用户授权，Allegretto+ 档，Extra Usage 关闭，脱敏回读；归属闭环：会员 Console 0%→1%，开放平台当日零请求）；HighSpeed 按决策 2 处理（仅文档化显式 `--model` 切换，不新增 Profile，`/fast` 不是入口）。治理模式：项目负责人于 2026-08-18 指令撤销 Luna/Sol 双角色审阅循环，改为单一执行者 + 自动化验证（全量 `npm test`/`npm run lint` + 脱敏证据记录）+ 项目负责人门禁（commit/push/tag/Release 逐项授权）。`docs/17-v1.5-kimi-code-membership-implementation-guide.md` 为 Kimi Code 绑定执行指导，`docs/18-v1.5-glm-5.3-upgrade-implementation-guide.md` 为 GLM-5.3 绑定执行指导。
 
 `1.3.0` 引入的 GitHub Release 自更新继续作为 `1.4.0` 的稳定更新通道。PowerShell、CMD、Git Bash 的隔离 prefix、自替换、回滚、junction 与中断场景均已通过；固定 Release 资产、checksum、tag、immutable 发布、exact/latest 下载、临时 prefix bootstrap 与公开 `cmr update --check` 已闭环。
 
-`1.4.0` 提供四个数据化 Profile：
+`1.5.0` 提供七个数据化 Profile：
 
 - `kimi`：Kimi K3 的完整 Claude Code 模型映射。
 - `deepseek`：DeepSeek Auto；主会话由 V4 Pro 承担，Haiku 档与子 Agent 由 V4 Flash 承担。
-- `glm`：GLM Coding Plan；使用独立 `glm` Secret 与 `ANTHROPIC_AUTH_TOKEN`。
+- `glm`：GLM-5.3 Coding Plan；使用独立 `glm` Secret 与 `ANTHROPIC_AUTH_TOKEN` 及订阅额度提示。
 - `glm-api`：GLM 标准 API 按量付费；使用独立 `glm-api` Secret 与 `ANTHROPIC_API_KEY`。
+- `kimi-code`：Kimi Code 会员（`kimi-for-coding`，256K）。
+- `kimi-code-k3-256k`：Kimi Code 会员 K3 256K。
+- `kimi-code-k3`：Kimi Code 会员 K3 1M（`k3[1m]`）。
 
 Profile 只决定 Claude Code 子进程启动时使用哪套 Provider 环境。Kimi 适合规划、DeepSeek 适合执行只是推荐工作流，不是功能限制；用户可用任一 Profile 进行规划、编码、续聊或其他 Claude Code 支持的操作。两个 GLM Profile 不自动互相 fallback，也不共享或识别 Key 类型。
 

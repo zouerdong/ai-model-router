@@ -1,6 +1,6 @@
 # 02 — 系统架构
 
-状态：`1.4.0` GLM 双模式公开 Latest 稳定架构；`1.5.0` Kimi Code 会员 Provider 为已接受的未发布仓库实现候选，真实 Provider 与发布仍阻断
+状态：`1.5.0` 公开 Latest 稳定架构（2026-08-18 发布）；Kimi Code 会员 Provider 已真实验收并发布
 更新时间：2026-08-16
 
 ## 1. 架构结论
@@ -549,9 +549,9 @@ Secret Store 和 Setup State 都保持 Schema v1。旧 `seenProviderIds=["deepse
 
 Secret Store 与 Setup State 保持 Schema v1 和动态集合机制：旧三 Provider Store 无迁移可读，第四 Provider 缺失即为 `missing`；旧三 Provider seen 状态自然得到 `glm-api` unseen。CMR 不复制 GLM Key、不检测 Key 类型、不中间代理请求，也不因任意错误在 Plan/PAYG 间切换。写入第四 Key 后旧版本可能无法读取整个 Store，这是手工降级风险，不是 updater rollback 要自动处理的数据迁移。
 
-## 19. `1.5.0` Kimi Code 会员 Provider 候选架构（未发布仓库实现候选）
+## 19. `1.5.0` Kimi Code 会员 Provider 架构
 
-绑定执行指导：`docs/17-v1.5-kimi-code-membership-implementation-guide.md`。任务卡 1–7 已按本节架构形成并接受未发布仓库实现候选；它不改变公开 Latest `v1.4.0`，也不替代真实 Provider、Windows 实机、GitHub 与发布门禁。
+绑定执行指导：`docs/17-v1.5-kimi-code-membership-implementation-guide.md`。任务卡 1–9 已按本节架构完成实现、真实 Provider 验收与公开发布（2026-08-18）。
 
 ### 19.1 双通道边界
 

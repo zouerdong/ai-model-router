@@ -1,11 +1,11 @@
 # 06 — 操作说明手册
 
-状态：当前公开 Latest 稳定版为 `1.4.0`；本仓库为未发布的 `1.5.0` repository candidate
+状态：当前公开 Latest 稳定版为 `1.5.0`（2026-08-18 发布）
 适用范围：Mac 与原生 Windows/WSL
 
 Kimi Code repository implementation candidate is complete.
 Real membership Provider validation is pending.
-The current public Latest stable release remains v1.4.0.
+The current public Latest stable release is v1.5.0.
 
 CMR 只在启动 Claude Code 前选择 Provider/Profile，并注入临时子进程环境。进入 Claude Code 后，任务用途、权限模式、会话和参数都遵循 Claude Code 原生行为。
 
@@ -17,7 +17,7 @@ CMR 只在启动 Claude Code 前选择 Provider/Profile，并注入临时子进�
 cmr version
 ```
 
-公开稳定 Release 应输出 `1.4.0`；从本仓库候选源代码运行时 `cmr version` 应输出 `1.5.0`。`1.3.0` 用户可运行 `cmr update`；`1.2.1` 或更旧版本先按 README 的 exact-release bootstrap 升级。然后在交互式终端执行：
+公开稳定 Release 应输出 `1.5.0`；从本仓库源代码运行时 `cmr version` 同样输出 `1.5.0`。`1.3.0` 用户可运行 `cmr update`；`1.2.1` 或更旧版本先按 README 的 exact-release bootstrap 升级。然后在交互式终端执行：
 
 ```bash
 cmr
@@ -54,7 +54,7 @@ cmr glm       # GLM Coding Plan
 cmr glm-api   # GLM standard API pay-as-you-go
 ```
 
-本仓库未发布的 `1.5.0` 候选还提供三个 Kimi Code 入口：
+`1.5.0` 稳定版还提供三个 Kimi Code 入口：
 
 ```bash
 cmr kimi-code              # kimi-for-coding；所有 Kimi Code 会员；262144 上下文
@@ -325,9 +325,9 @@ missing GLM Standard API (Pay-as-you-go) secret; run cmr secret set glm-api
 
 交互式终端可以执行 `cmr setup glm-api` 或直接运行 `cmr glm-api` 进行仅该槽位的隐藏输入配置；取消时不会启动 Claude Code。
 
-## 19. `1.5.0` Kimi Code 会员 repository candidate
+## 19. `1.5.0` Kimi Code 会员
 
-本节描述当前源码候选，不表示公开稳定版已经包含 Kimi Code。三个候选 Profile 如下：
+本节描述 `1.5.0` 公开稳定版中的 Kimi Code 会员 Profile。三个 Profile 如下：
 
 | 规范 Profile | 兼容别名 | Claude Code 选择值 | 最低已知会员档位 | 上下文 |
 |---|---|---|---|---:|
@@ -363,10 +363,10 @@ HighSpeed 决策（2026-08-18，决策 2 —— 仅文档化显式切换）：`-
 3. 信任目录——回车。
 4. 首跑还会对 `api.anthropic.com` 做一次性连通性检查；代理瞬断会直接退出（`Unable to connect to Anthropic services`），链路恢复后重试即可。日常 Kimi Code 流量走 `api.kimi.com`，不依赖该检查。
 
-候选阻断声明：
+发布状态（2026-08-18）：
 
 ```text
-Kimi Code repository implementation candidate is complete.
+Kimi Code membership is part of the public v1.5.0 Latest stable release.
 Real membership Provider validation passed on 2026-08-18 (all three profiles).
-The current public Latest stable release remains v1.4.0 until the release gates close.
+Windows, GitHub, and release gates all closed; public readback verified.
 ```

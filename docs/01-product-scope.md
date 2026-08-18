@@ -1,6 +1,6 @@
 # 01 — 产品范围
 
-状态：`1.4.0` 公开 Latest 稳定发布；`1.5.0` Kimi Code 会员 Provider 为已接受的未发布仓库实现候选，真实 Provider 与发布仍阻断
+状态：`1.5.0` 公开 Latest 稳定发布（2026-08-18）；Kimi Code 会员 Provider 已真实验收并发布，GLM-5.3 Coding Plan 升级同版发布
 更新时间：2026-08-16
 
 ## 1. 一句话定义
@@ -320,9 +320,9 @@ cmr glm-payg [claude args...]
 
 两种 GLM 模式共享一次版本发布，但 CMR 仍不合并 Secret、不检测 Key 类型、不查询账单，也不在任意错误后自动切换费用通道。
 
-## 14. `1.5.0` Kimi Code 会员 Provider 范围（未发布仓库实现候选）
+## 14. `1.5.0` Kimi Code 会员 Provider 范围
 
-> 本节源自 `docs/17-v1.5-kimi-code-membership-implementation-guide.md` 任务卡 1 的产品合同。任务卡 1–7 已完成，当前仓库运行时已形成未发布的 Kimi Code 实现候选；这不表示真实 Provider 已验收或公开稳定版已经包含 Kimi Code，当前公开 Latest 仍为 `v1.4.0`。
+> 本节源自 `docs/17-v1.5-kimi-code-membership-implementation-guide.md` 任务卡 1 的产品合同。任务卡 1–9 已全部完成：三个首批 Profile 真实验收 `PROVIDER PASS`，随 `1.5.0` 于 2026-08-18 公开发布。
 
 ### 14.1 独立产品与凭据边界
 
@@ -370,7 +370,7 @@ Kimi Code 官方事实包括：额度按订阅日每 7 天刷新、未使用额�
 
 Kimi Code 是订阅权益通道，不得复用 `kimi-k3` 的开放平台 Pricing 记录。三个新 Profile 必须引用独立 `entitlementRef`，与既有按量 Profile 的 `pricingRef` 互斥；权益元数据至少记录 `subscription-quota`、官方说明、核验日期和来源链接。
 
-任务卡 1 当时只更新事实、规格和验收矩阵；后续任务卡已在仓库内新增 Provider/Profile、Secret/Setup 支持和未发布 `1.5.0` 候选版本，但没有修改用户配置、CI、Git 远端或 Release。没有真实会员 Key 时，最高结论仍只能是实现候选，不能写成 Kimi Code Provider 已真实验收或 `1.5.0` 已发布。
+任务卡 1 当时只更新事实、规格和验收矩阵；后续任务卡在仓库内新增 Provider/Profile、Secret/Setup 支持并完成 `1.5.0` 版本。2026-08-18 真实 Provider 验收（用户授权）与全部发布门禁通过后，`1.5.0` 已公开发布。
 
 Kimi Code 官方 Claude Code 页还给出一段会写入 `~/.claude.json` 并清理 `~/.claude/settings.json` 模型项的跳过登录脚本；Claude Code 官方认证页则说明设置 `ANTHROPIC_API_KEY` 会跳过登录并提示用户批准。CMR 不执行该脚本，也不修改用户 Claude 配置。环境变量直启是否足够必须在隔离配置和真实 Provider 门禁中证明；若仍依赖该脚本，则停止并重新做产品决策。
 
