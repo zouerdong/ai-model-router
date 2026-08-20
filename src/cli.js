@@ -5,17 +5,15 @@ import { stdin, stdout, stderr } from "node:process";
 import { fileURLToPath } from "node:url";
 import path from "node:path";
 import { getDefaultConfigRoot, getConfigPath, loadConfigSet } from "./config/loader.js";
-import { runDoctor } from "./commands/doctor.js";
 import { formatList } from "./commands/list.js";
 import { launchProfile } from "./commands/launch.js";
-import { createProductionPrompter, runSetup } from "./commands/setup.js";
-import { runUpdate } from "./commands/update.js";
+import { createProductionPrompter, readStatuses, runSetup } from "./commands/setup.js";
 import { redactError } from "./redact.js";
 import { readHiddenSecret, SecretStore } from "./secret-store.js";
 import { getSecretStorePath, getSetupStatePath } from "./platform.js";
 import { SetupStateStore, isSetupStateCorrupt } from "./setup-state.js";
 
-export const VERSION = "1.5.1";
+export const VERSION = "1.5.2";
 
 export function isMainModule(
   entryPath = process.argv[1],
@@ -62,12 +60,6 @@ function printUsage(output = stdout, config) {
   output.write("Self-update never updates Claude Code, Node.js, or Provider API Keys.\n");
 }
 
-async function getProviderStatuses(providers, secretStore) {
-  const statuses = new Map();
-  for (const provider of providers) statuses.set(provider.id, Boolean(await secretStore.get(provider.secretId)));
-  return statuses;
-}
-
 async function interactiveMenu({
   config,
   input = stdin,
@@ -76,7 +68,7 @@ async function interactiveMenu({
   interactive = true,
   ...options
 } = {}) {
-  const currentConfig = config ?? options.config ?? await loadConfigSet(options);
+  const currentConfig = config ?? await loadConfigSet(options);
   const secretStore = options.secretStore ?? new SecretStore({
     ...options,
     providerIds: currentConfig.providers.map((provider) => provider.secretId)
@@ -84,7 +76,7 @@ async function interactiveMenu({
   const setupStateStore = options.setupStateStore ?? new SetupStateStore(options);
   const prompter = options.menuPrompter ?? options.prompter ?? createProductionPrompter({ input, output });
   while (true) {
-    const statuses = await getProviderStatuses(currentConfig.providers, secretStore);
+    const statuses = await readStatuses(currentConfig.providers, secretStore);
     const choices = [];
     output.write("Claude Model Router\n");
     for (const profile of currentConfig.profiles) {
@@ -100,6 +92,7 @@ async function interactiveMenu({
     const action = await prompter.choose({ message: "Select an action", choices });
     if (action === "exit") return 0;
     if (action === "doctor") {
+      const { runDoctor } = await import("./commands/doctor.js");
       const doctorResult = await runDoctor({ ...options, input, output, interactive });
       output.write(`${doctorResult.text}\n`);
       return doctorResult.lines.some((item) => item.startsWith("FAIL")) ? 1 : 0;
@@ -215,7 +208,6 @@ export async function runCli(argv = process.argv.slice(2), options = {}) {
       setupStateStore
     });
   }
-  if (!command) return 0;
   if (command === "version") {
     if (args.length > 0) throw new Error("usage: cmr version");
     output.write(`${VERSION}\n`);
@@ -233,11 +225,13 @@ export async function runCli(argv = process.argv.slice(2), options = {}) {
   }
   if (command === "doctor") {
     if (args.length > 0) throw new Error("usage: cmr doctor");
+    const { runDoctor } = await import("./commands/doctor.js");
     const result = await runDoctor(sharedOptions);
     output.write(`${result.text}\n`);
     return result.lines.some((item) => item.startsWith("FAIL")) ? 1 : 0;
   }
   if (command === "update") {
+    const { runUpdate } = await import("./commands/update.js");
     const result = await runUpdate(args, {
       ...sharedOptions,
       entryPath: sharedOptions.entryPath ?? process.argv[1],

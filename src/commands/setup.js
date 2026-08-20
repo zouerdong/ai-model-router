@@ -35,10 +35,10 @@ function result({ exitCode, status, providers, statuses, changedProviders = [], 
   };
 }
 
-async function readStatuses(providers, secretStore) {
-  const statuses = new Map();
-  for (const provider of providers) statuses.set(provider.id, Boolean(await secretStore.get(provider.secretId)));
-  return statuses;
+// One store read for all providers instead of one full re-read per provider.
+export async function readStatuses(providers, secretStore) {
+  const status = await secretStore.status();
+  return new Map(providers.map((provider) => [provider.id, status[provider.secretId] === true]));
 }
 
 function writeError(errorOutput, message) {

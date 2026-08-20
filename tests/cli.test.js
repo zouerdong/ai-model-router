@@ -32,7 +32,7 @@ function isolatedEnvironment(home) {
 test("version and list are non-interactive and do not expose secrets", async () => {
   const version = capture();
   assert.equal(await runCli(["version"], { output: version.output }), 0);
-  assert.equal(version.value, "1.5.1\n");
+  assert.equal(version.value, "1.5.2\n");
   const list = capture();
   assert.equal(await runCli(["list"], { output: list.output }), 0);
   assert.match(list.value, /kimi: Kimi K3/);

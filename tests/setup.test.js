@@ -391,6 +391,7 @@ test("a provider write failure does not leak a secret from the thrown cause", as
   const fakeStore = {
     values: new Map(),
     async get(provider) { return this.values.get(provider) ?? null; },
+    async status() { return Object.fromEntries([...this.values].map(([id, secret]) => [id, Boolean(secret)])); },
     async set(provider, secret) {
       if (provider === "deepseek") throw new Error(`write failed ${sentinel}`);
       this.values.set(provider, secret);
@@ -411,6 +412,7 @@ test("a GLM write failure preserves existing Provider keys and redacts the cause
   const fakeStore = {
     values: new Map(),
     async get(provider) { return this.values.get(provider) ?? null; },
+    async status() { return Object.fromEntries([...this.values].map(([id, secret]) => [id, Boolean(secret)])); },
     async set(provider, secret) {
       if (provider === "glm") throw new Error(`write failed ${sentinel}`);
       this.values.set(provider, secret);
@@ -447,6 +449,7 @@ test("a Kimi Code write failure preserves all four existing Provider keys", asyn
       ["glm-api", "test-glm-api-key"]
     ]),
     async get(provider) { return this.values.get(provider) ?? null; },
+    async status() { return Object.fromEntries([...this.values].map(([id, secret]) => [id, Boolean(secret)])); },
     async set(provider, secret) {
       if (provider === "kimi-code") throw new Error(`write failed ${sentinel}`);
       this.values.set(provider, secret);
@@ -470,6 +473,7 @@ test("after a second-provider failure, rerun starts from the remaining missing p
     values: new Map(),
     failDeepseek: true,
     async get(provider) { return this.values.get(provider) ?? null; },
+    async status() { return Object.fromEntries([...this.values].map(([id, secret]) => [id, Boolean(secret)])); },
     async set(provider, secret) {
       if (provider === "deepseek" && this.failDeepseek) throw new Error("temporary write failure");
       this.values.set(provider, secret);

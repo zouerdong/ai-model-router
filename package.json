@@ -1,6 +1,6 @@
 {
   "name": "claude-model-router",
-  "version": "1.5.1",
+  "version": "1.5.2",
   "description": "A cross-platform startup profile selector for Claude Code.",
   "license": "MIT",
   "author": "ErDongZou-AI",

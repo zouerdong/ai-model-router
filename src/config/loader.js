@@ -96,12 +96,10 @@ function orderConfigIds(ids, preferredIds = []) {
   ];
 }
 
-async function discoverOrderedConfigIds(configRoot, category) {
-  const [ids, catalog] = await Promise.all([
-    discoverConfigIds(configRoot, category),
-    readCatalog(configRoot)
-  ]);
-  return orderConfigIds(ids, catalog[category] ?? []);
+async function discoverOrderedConfigIds(configRoot, category, catalog) {
+  const ids = await discoverConfigIds(configRoot, category);
+  const preferred = (catalog ?? await readCatalog(configRoot))[category] ?? [];
+  return orderConfigIds(ids, preferred);
 }
 
 export async function loadProvider(id, options = {}) {
@@ -111,10 +109,11 @@ export async function loadProvider(id, options = {}) {
 
 export async function loadProfile(id, options = {}) {
   const configRoot = options.configRoot ?? DEFAULT_CONFIG_ROOT;
+  const catalog = options.catalog ?? await readCatalog(configRoot);
   const [providerIds, pricingIds, entitlementIds] = await Promise.all([
-    options.providerIds ?? discoverOrderedConfigIds(configRoot, "providers"),
-    options.pricingIds ?? discoverOrderedConfigIds(configRoot, "pricing"),
-    options.entitlementIds ?? discoverOrderedConfigIds(configRoot, "entitlements")
+    options.providerIds ?? discoverOrderedConfigIds(configRoot, "providers", catalog),
+    options.pricingIds ?? discoverOrderedConfigIds(configRoot, "pricing", catalog),
+    options.entitlementIds ?? discoverOrderedConfigIds(configRoot, "entitlements", catalog)
   ]);
   const profile = await readJson(configRoot, "profiles", id);
   return validateProfile(profile, new Set(providerIds), {
@@ -141,11 +140,12 @@ export async function loadEntitlement(id, options = {}) {
 
 export async function loadConfigSet(options = {}) {
   const configRoot = options.configRoot ?? DEFAULT_CONFIG_ROOT;
+  const catalog = await readCatalog(configRoot);
   const [providerIds, profileIds, pricingIds, entitlementIds] = await Promise.all([
-    options.providerIds ?? discoverOrderedConfigIds(configRoot, "providers"),
-    options.profileIds ?? discoverOrderedConfigIds(configRoot, "profiles"),
-    options.pricingIds ?? discoverOrderedConfigIds(configRoot, "pricing"),
-    options.entitlementIds ?? discoverOrderedConfigIds(configRoot, "entitlements")
+    options.providerIds ?? discoverOrderedConfigIds(configRoot, "providers", catalog),
+    options.profileIds ?? discoverOrderedConfigIds(configRoot, "profiles", catalog),
+    options.pricingIds ?? discoverOrderedConfigIds(configRoot, "pricing", catalog),
+    options.entitlementIds ?? discoverOrderedConfigIds(configRoot, "entitlements", catalog)
   ]);
   const [providers, profiles, pricing, entitlements] = await Promise.all([
     Promise.all(providerIds.map((id) => loadProvider(id, { ...options, configRoot }))),
