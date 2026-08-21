@@ -1,8 +1,10 @@
 # Claude Model Router
 
-Current public Latest stable version: **`1.5.1`** (released 2026-08-18).
+Current public Latest stable version: **`1.6.0`** (released 2026-08-21).
 
-Version `1.5.1` is a patch release: reading the Secret Store now ignores and preserves provider keys written by a newer CMR version, so an older installation keeps working with its existing channels instead of failing with `ERROR unknown provider`. No new providers, profiles, or pricing. Binding contract and evidence: `docs/19`.
+Version `1.6.0` integrates the multimodal model DeepSeek released on 2026-08-21: the `deepseek` Auto profile now uses `deepseek-v4-flash-vision-exp` for its Haiku slot and sub-agents, and a new `deepseek-vision` profile maps every model slot to that model. No new providers, secrets, or credential boundaries; binding contract and evidence: `docs/20`.
+
+Version `1.5.1` is a patch release: reading the Secret Store now ignores and preserves provider keys written by a newer CMR version, so an older installation keeps working with its existing channels instead of failing with `ERROR unknown provider`. Binding contract and evidence: `docs/19`.
 
 Kimi Code membership is part of the public stable release.
 Real membership Provider validation passed on 2026-08-18 (all three profiles).
@@ -29,20 +31,20 @@ Prerequisites:
 - For GLM, use a Coding Plan Key with `cmr glm` or a distinct standard API Key with `cmr glm-api`. CMR does not identify Key types, combine slots, or switch between them.
 - Kimi Code is intended only for the personal interactive development scenarios allowed by Kimi's official policy. Enterprise integrations, commercial services, and non-interactive batch use require a separate policy and product evaluation.
 
-Install the reproducible `v1.5.1` Release asset:
+Install the reproducible `v1.6.0` Release asset:
 
 ```bash
-npm install --global "https://github.com/zouerdong/ai-model-router/releases/download/v1.5.1/claude-model-router.tgz"
+npm install --global "https://github.com/zouerdong/ai-model-router/releases/download/v1.6.0/claude-model-router.tgz"
 cmr version
 cmr
 ```
 
-Existing `1.3.0`/`1.4.0`/`1.5.0` users can run `cmr update`; `1.2.1` and older users must run the exact install command once to bootstrap self-update support.
+Existing `1.3.0` and newer entity npm-global installations can run `cmr update`; `1.2.1` and older users must run the exact install command once to bootstrap self-update support.
 
 If the existing installation uses a custom npm prefix, specify that same prefix so your terminal does not continue resolving an older copy:
 
 ```bash
-npm install --global --prefix <current-prefix> "https://github.com/zouerdong/ai-model-router/releases/download/v1.5.1/claude-model-router.tgz"
+npm install --global --prefix <current-prefix> "https://github.com/zouerdong/ai-model-router/releases/download/v1.6.0/claude-model-router.tgz"
 ```
 
 You can also install the latest stable fixed asset:
@@ -51,7 +53,7 @@ You can also install the latest stable fixed asset:
 npm install --global "https://github.com/zouerdong/ai-model-router/releases/latest/download/claude-model-router.tgz"
 ```
 
-For reproducible installation, prefer the exact `releases/download/v1.5.1/claude-model-router.tgz` URL over `latest`.
+For reproducible installation, prefer the exact `releases/download/v1.6.0/claude-model-router.tgz` URL over `latest`.
 
 To inspect and install from source:
 
@@ -85,7 +87,7 @@ cmr glm-5.3          # GLM-5.3 Coding Plan alias
 cmr glm-api          # GLM standard API pay-as-you-go
 ```
 
-The `1.5.0` stable release also exposes these Kimi Code entries:
+The stable release also exposes these Kimi Code entries:
 
 ```bash
 cmr kimi-code              # kimi-for-coding, all Kimi Code membership tiers
@@ -231,5 +233,6 @@ API keys are written through hidden local TTY input to the Secret Store outside 
 17. [Version 1.5.0 Kimi Code membership implementation guide](docs/17-v1.5-kimi-code-membership-implementation-guide.md)
 18. [GLM-5.3 Coding Plan upgrade implementation guide](docs/18-v1.5-glm-5.3-upgrade-implementation-guide.md)
 19. [Secret Store forward-compatibility fix implementation guide](docs/19-secret-store-forward-compatibility-implementation-guide.md)
+20. [DeepSeek-V4-Flash-Vision implementation guide](docs/20-deepseek-v4-flash-vision-implementation-guide.md)
 
-The runtime has no third-party dependencies. The public repository uses `main` as its default branch; the current public stable tag is `v1.5.1`, published as an immutable Release with the fixed `claude-model-router.tgz` asset and `SHA256SUMS`.
+The runtime has no third-party dependencies. The public repository uses `main` as its default branch; the current public stable tag is `v1.6.0`, published as an immutable Release with the fixed `claude-model-router.tgz` asset and `SHA256SUMS`.

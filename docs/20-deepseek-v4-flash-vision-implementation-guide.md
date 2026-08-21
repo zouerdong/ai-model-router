@@ -1,6 +1,6 @@
 # 20 — DeepSeek-V4-Flash-Vision 接入：DSV-1 至 DSV-4 实施指导书
 
-状态：**IN PROGRESS — DSV-1 至 DSV-4 实施中，尚未发布**
+状态：**RELEASED — DSV-1 至 DSV-4 实施完成并随 `v1.6.0` 于 2026-08-21 公开发布（Latest，tag `v1.6.0` 指向门禁 commit 718ccd1）**
 制定日期：2026-08-21
 目标：接入 2026-08-21 官方上线的多模态模型 `deepseek-v4-flash-vision-exp`：① `deepseek` Auto Profile 的 Haiku 档与子 Agent 槽切换到该模型；② 新增显式 `deepseek-vision` Profile，全部模型映射使用该模型。不新增 Provider、Secret 或凭据边界。
 
@@ -128,4 +128,31 @@ Actions run：32473004213 "Windows T4 acceptance" — success（2026-08-21T10:31
   ✓ Windows 2025 / Node 24（同上）
 门禁口径：同 1.5.1 — 本轮 diff 为配置/validator/测试层，平台无关；
 本地 skip 的 3 个 Windows-only 测试已在 CI 通过。实机复验可随时按 docs/17 §12.1 补做。
+```
+
+### 7.3 门 3 — staging 构建、tag 与 Release
+
+```text
+门禁证据 commit：718ccd1 docs: record v1.6.0 candidate commit and Windows CI gate PASS（tag 目标，已 push）
+staging：/private/tmp 仓库外目录，完整 clone @ 718ccd1 后 npm pack --ignore-scripts --no-audit
+固定资产：claude-model-router.tgz（40 文件；无 lifecycle script、零运行时依赖）
+SHA-256：d04d9fc1627733d74f1ab21f3bd223d8b64d11d607bfd1e69ac2b2c069cb4951
+隔离 prefix 安装（本地 tgz）：cmr version → 1.6.0；cmr list 含 deepseek-vision 条目
+tag：v1.6.0（annotated，指向 718ccd1）已推送
+Draft Release：两项资产上传后回读，与 staging 字节一致（tgz 与 SHA256SUMS 均 cmp 通过）
+发布：2026-08-21T10:36:19Z，immutable + Latest，prerelease=false
+```
+
+### 7.4 门 4 — 发布后公开回读
+
+```text
+exact URL 回读：releases/download/v1.6.0/claude-model-router.tgz → SHA-256 与 staging 一致
+latest URL 回读：releases/latest/download/claude-model-router.tgz → 与 exact 字节一致（cmp 通过）
+公开 latest URL 隔离 prefix 安装：全新 prefix，cmr version → 1.6.0；
+  cmr update --check → "CMR 1.6.0 is already the latest stable release."
+真机只读探测（维护者 Mac，实体 npm 全局 1.5.1）：cmr update --check →
+  Current 1.5.1 / Latest 1.6.0 / Update available（未执行真实 cmr update，实体升级由维护者自行执行）
+状态翻转：AGENTS.md §1/§2、README（Current version、安装 URL、docs 清单、stable tag）、
+  CLAUDE.md、docs/06、docs/20 状态行 → RELEASED（本 commit）
+验证分支：codex/windows-t4-validation 发布后按惯例删除（内容已回收入 main，Actions 日志独立留存）
 ```

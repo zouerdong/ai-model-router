@@ -28,7 +28,7 @@ CMR 是零依赖 Node.js ESM CLI（Node ≥18，仅标准库），职责是 Clau
 4. **自更新** `src/updater.js` + `update-lock.js` + `command-runner.js`：只从固定 GitHub Release 资产 `releases/latest/download/claude-model-router.tgz` 更新，带备份/校验/回滚，对源码 checkout/junction 等拒绝。
 5. **平台层** `src/platform.js`：macOS/Windows 差异（路径、claude.exe/.cmd 发现）。
 
-当前 5 Provider / 7 Profile：kimi（开放平台）、deepseek、glm（Coding Plan 5.3）、glm-api（标准 API 5.2）、kimi-code 会员 ×3。每条通道是独立凭据边界——**CMR 永不检测 Key 类型、合并槽位、或跨通道 fallback**。
+当前 5 Provider / 8 Profile：kimi（开放平台）、deepseek、deepseek-vision（全槽位多模态实验模型）、glm（Coding Plan 5.3）、glm-api（标准 API 5.2）、kimi-code 会员 ×3。每条通道是独立凭据边界——**CMR 永不检测 Key 类型、合并槽位、或跨通道 fallback**。
 
 ## 关键约定（易踩坑）
 
@@ -41,4 +41,4 @@ CMR 是零依赖 Node.js ESM CLI（Node ≥18，仅标准库），职责是 Clau
 
 ## 当前状态
 
-`v1.5.1` 已于 2026-08-18 发布（Latest，tag 指向发布 commit 546e8fc；内容：`docs/19` SSFC-1~3 Secret Store 前向兼容修复 + 版本收口，无新增 Provider/Profile）。`v1.5.0`（同日早些时候发布）新增 Kimi Code 会员三 Profile 与 GLM-5.3 Coding Plan。已登记未做的候选项：HighSpeed 显式 Profile、GLM-5.3 标准 API 迁移、Claude Code `/fast` 行为实测、Kimi 混合档位映射（2026-08-18 评估后暂缓，见 docs/01 §14.2）。
+`v1.6.0` 已于 2026-08-21 发布（Latest，tag `v1.6.0` 指向门禁 commit 718ccd1；内容：`docs/20` DSV-1~4 DeepSeek-V4-Flash-Vision 接入——deepseek Auto 的 Haiku/子 Agent 槽位 + 新增 `deepseek-vision` Profile，并入原 1.5.2 候选的内部清理）。`v1.5.1`（2026-08-18）：`docs/19` SSFC-1~3 Secret Store 前向兼容修复。`v1.5.0`（同日早些时候发布）新增 Kimi Code 会员三 Profile 与 GLM-5.3 Coding Plan。已登记未做的候选项：HighSpeed 显式 Profile、GLM-5.3 标准 API 迁移、Claude Code `/fast` 行为实测、Kimi 混合档位映射（2026-08-18 评估后暂缓，见 docs/01 §14.2）、vision-exp `[1m]` 后缀验证、deepseek-v4 pricing 记录与 2026-08-17 峰谷 CNY 定价的口径更新（见 docs/20 §6）。
