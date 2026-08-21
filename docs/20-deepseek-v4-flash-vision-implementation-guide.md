@@ -102,3 +102,30 @@
 2. vision-exp 思考强度档位（low/high/max）官方未单独声明，本轮按 flash 正式版同级使用 `max`。
 3. 存量偏差：`config/pricing/deepseek-v4.json` 记录 USD 单价（verified 2026-07-23），官方 2026-08-17 起改为峰谷 CNY 定价（flash：命中 0.05/0.10 元、未命中 1.5/3.0 元、输出 4.5/9.0 元，vision-exp 同价）。vision-exp 与 flash 同价使 `pricingRef: deepseek-v4` 复用成立；但该记录绝对值已过期，更新涉及币种/口径决策，登记为独立候选项，不在本轮修改。
 4. 发布版本号决策（`v1.5.2` 重定范围 vs `v1.6.0`）：留给发布门禁。
+
+## 7. v1.6.0 发布门禁记录
+
+发布决策（2026-08-21，项目负责人授权「commit吧！发布！」）：新增 Profile 属 feature，按 `1.4.0`/`1.5.0` 先例取 `v1.6.0`；未发布的 `v1.5.2` 内部清理候选（cd50a19）并入 `v1.6.0` 一并发布。门禁按序为 commit → push main + Windows 验证分支 → staging 构建 + tag + Release → 发布后回读。流程镜像 `docs/19` §8 配方。
+
+### 7.1 门 1 — 候选 commit
+
+```text
+commit：e3d3e8b release: prepare Claude Model Router v1.6.0 repository candidate
+内容：DSV-1~DSV-4 全部改动（含未发布 1.5.2 清理基线）+ 版本收口
+      1.5.2→1.6.0（package.json、src/cli.js VERSION、tests/cli.test.js 断言）
+验证：npm test 172 tests：169 pass / 0 fail / 3 Windows-only skip（macOS arm64）；
+      npm run lint exit 0；git diff --check exit 0；cmr list 冒烟（deepseek/
+      deepseek-vision 条目输出正确）
+```
+
+### 7.2 门 2 — push 与 Windows 验证门
+
+```text
+push main：c467f64..e3d3e8b
+验证分支：codex/windows-t4-validation @ e3d3e8b（新建；上一验证分支按惯例于 1.5.1 发布后删除）
+Actions run：32473004213 "Windows T4 acceptance" — success（2026-08-21T10:31:10Z 触发）
+  ✓ Windows 2025 / Node 18.20.8（PowerShell full regression、CMD T4、Git Bash T4）
+  ✓ Windows 2025 / Node 24（同上）
+门禁口径：同 1.5.1 — 本轮 diff 为配置/validator/测试层，平台无关；
+本地 skip 的 3 个 Windows-only 测试已在 CI 通过。实机复验可随时按 docs/17 §12.1 补做。
+```
