@@ -13,7 +13,7 @@ import { readHiddenSecret, SecretStore } from "./secret-store.js";
 import { getSecretStorePath, getSetupStatePath } from "./platform.js";
 import { SetupStateStore, isSetupStateCorrupt } from "./setup-state.js";
 
-export const VERSION = "1.5.2";
+export const VERSION = "1.6.0";
 
 export function isMainModule(
   entryPath = process.argv[1],

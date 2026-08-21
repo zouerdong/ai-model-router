@@ -152,9 +152,9 @@ Pricing 只负责启动提示，不参与路由或账单：
 
 ### 5.4 Profile ID、别名与保留字
 
-- 规范 ID 只有 `kimi`、`deepseek`。
-- Kimi 兼容别名：`plan`、`kimi-k3`。
-- DeepSeek 兼容别名：`build`、`deepseek-auto`。
+- 规范 ID：`kimi`、`deepseek`、`glm`、`glm-api`、`kimi-code`、`kimi-code-k3-256k`、`kimi-code-k3`；候选追加 `deepseek-vision`（`docs/20`）。
+- Kimi 兼容别名：`plan`、`kimi-k3`；Kimi Code 别名：`kimi-membership*`。
+- DeepSeek 兼容别名：`build`、`deepseek-auto`；DeepSeek Vision 别名：`deepseek-flash-vision`。
 - `help`、`version`、`list`、`doctor`、`config`、`secret` 等管理命令是保留字，Profile ID 与别名不得占用。
 - ID、别名解析必须来自数据化 Profile；CLI 不得分别写一套模型映射。
 - 两个 Profile 配置文件在 `0.2.0` 实施时从 `plan.json/build.json` 重命名为 `kimi.json/deepseek.json`。这是文件移动/删除语义，执行者必须先获得用户对精确文件的批准。

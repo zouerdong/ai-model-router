@@ -389,3 +389,14 @@ Kimi Code 官方 Claude Code 页还给出一段会写入 `~/.claude.json` 并清
 `cmr glm-api` 与 `cmr glm-payg` 保持独立的 GLM-5.2 标准 API Profile：只使用 `ANTHROPIC_API_KEY`、`glm-5.2[1m]`/`glm-4.7` 和现有 2/8/28 CNY/M Pricing。智谱截至 2026-08-16 仍将 GLM-5.3 模型 API 标为近期上线；Coding Plan 已支持 GLM-5.3 不构成标准 API 已支持的证据。CMR 不自动切换两种费用通道。
 
 GLM Coding Plan 的启动提示只使用通用 subscription quota 话术，不显示标准 API 单价、不估算会话费用、不查询额度。真实 GLM 请求、真实标准 API 请求、费用回读、Windows 实机、发布与 Git 远端操作均不属于本轮。
+
+## 16. DeepSeek-V4-Flash-Vision 接入范围（DSV-1 至 DSV-4）
+
+本节绑定 `docs/20-deepseek-v4-flash-vision-implementation-guide.md`，描述 2026-08-21 官方上线的多模态模型 `deepseek-v4-flash-vision-exp` 的接入增量，不改写既有发布证据。
+
+两项改动：
+
+1. `deepseek` Auto Profile 的 `ANTHROPIC_DEFAULT_HAIKU_MODEL` 与 `CLAUDE_CODE_SUBAGENT_MODEL` 从 `deepseek-v4-flash` 切换为 `deepseek-v4-flash-vision-exp`；主模型/Opus/Sonnet 保持 `deepseek-v4-pro[1m]`，effort 保持 `max`。官方 Auto 指南尚未更新为 vision 模型，本切换是产品决策（用户指令），依据为官方图像理解指南确认该模型可用 Anthropic 兼容端点调用、纯文本能力与 flash 正式版持平、价格相同。
+2. 新增规范 Profile `deepseek-vision`（兼容别名 `deepseek-flash-vision`）：主模型、Opus、Sonnet、Haiku、子 Agent 全部映射 `deepseek-v4-flash-vision-exp`，`CLAUDE_CODE_EFFORT_LEVEL=max`。复用 `deepseek` Provider、Secret 与 `ANTHROPIC_AUTH_TOKEN`，`costNotice: standard`，`pricingRef: deepseek-v4`（官方定价页 vision-exp 与 flash 同价）。不新增凭据边界，不触发新的 onboarding。
+
+CMR 仍不做模型能力检测与内容路由；vision 模型仅意味着该通道可接受图片输入，Claude Code 会话内实际多模态行为由上游决定。`[1m]` 后缀对 vision-exp 未经验证，本轮全部槽位使用不带后缀形式；vision-exp 思考强度档位官方未单独声明，按 flash 正式版同级使用 `max`；`deepseek-v4` Pricing 记录绝对值与官方 2026-08-17 峰谷 CNY 定价的偏差为存量登记项。以上三项均见 `docs/20` §6。

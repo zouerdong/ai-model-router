@@ -12,11 +12,12 @@ import {
   validateProvider
 } from "../src/config/validator.js";
 
-test("loads exactly the five providers, seven profiles, three pricing records and two entitlements", async () => {
+test("loads exactly the five providers, eight profiles, three pricing records and two entitlements", async () => {
   const config = await loadConfigSet();
   assert.deepEqual(config.profiles.map((profile) => profile.id), [
     "kimi",
     "deepseek",
+    "deepseek-vision",
     "glm",
     "glm-api",
     "kimi-code",
@@ -42,7 +43,7 @@ test("derives the Provider collection from configuration files and appends a new
     sourceUrl: "https://third.example.com/docs"
   }));
   t.after(() => rm(root, { recursive: true, force: true }));
-  const config = await loadConfigSet({ configRoot: root, now: new Date("2026-08-16T00:00:00Z") });
+  const config = await loadConfigSet({ configRoot: root, now: new Date("2026-08-21T00:00:00Z") });
   assert.equal(config.providers.at(-1).id, "third-provider");
   assert.equal(config.providers.length, 6);
 });
@@ -73,6 +74,8 @@ test("resolves profile IDs and aliases without fuzzy matching", async () => {
   assert.equal(resolveProfile(profiles, "kimi-k3").id, "kimi");
   assert.equal(resolveProfile(profiles, "deepseek").id, "deepseek");
   assert.equal(resolveProfile(profiles, "build").id, "deepseek");
+  assert.equal(resolveProfile(profiles, "deepseek-vision").id, "deepseek-vision");
+  assert.equal(resolveProfile(profiles, "deepseek-flash-vision").id, "deepseek-vision");
   assert.equal(resolveProfile(profiles, "glm").id, "glm");
   assert.equal(resolveProfile(profiles, "glm-5.3").id, "glm");
   assert.equal(resolveProfile(profiles, "glm-5.2").id, "glm");
@@ -153,16 +156,34 @@ test("Kimi Code profiles contain exact complete model and context mappings", asy
   assert.equal(config.profiles.find((item) => item.id === "kimi-code-k3").environment.ANTHROPIC_MODEL, "k3[1m]");
 });
 
-test("DeepSeek profile stays on the official Auto Pro/Flash mapping", async () => {
+test("DeepSeek profile stays on the official Auto Pro mapping with vision Flash slots", async () => {
   const config = await loadConfigSet();
   const profile = config.profiles.find((item) => item.id === "deepseek");
   assert.equal(profile.environment.ANTHROPIC_MODEL, "deepseek-v4-pro[1m]");
   assert.equal(profile.environment.ANTHROPIC_DEFAULT_OPUS_MODEL, "deepseek-v4-pro[1m]");
   assert.equal(profile.environment.ANTHROPIC_DEFAULT_SONNET_MODEL, "deepseek-v4-pro[1m]");
-  assert.equal(profile.environment.ANTHROPIC_DEFAULT_HAIKU_MODEL, "deepseek-v4-flash");
-  assert.equal(profile.environment.CLAUDE_CODE_SUBAGENT_MODEL, "deepseek-v4-flash");
+  assert.equal(profile.environment.ANTHROPIC_DEFAULT_HAIKU_MODEL, "deepseek-v4-flash-vision-exp");
+  assert.equal(profile.environment.CLAUDE_CODE_SUBAGENT_MODEL, "deepseek-v4-flash-vision-exp");
   assert.equal(Object.hasOwn(profile.environment, "ANTHROPIC_DEFAULT_FABLE_MODEL"), false);
   assert.equal(Object.hasOwn(profile.environment, "CLAUDE_CODE_AUTO_COMPACT_WINDOW"), false);
+});
+
+test("DeepSeek Vision profile maps every slot to the multimodal vision model", async () => {
+  const config = await loadConfigSet();
+  const profile = config.profiles.find((item) => item.id === "deepseek-vision");
+  assert.deepEqual(profile.aliases, ["deepseek-flash-vision"]);
+  assert.equal(profile.provider, "deepseek");
+  assert.equal(profile.pricingRef, "deepseek-v4");
+  assert.equal(profile.costNotice, "standard");
+  assert.deepEqual(profile.environment, {
+    ANTHROPIC_MODEL: "deepseek-v4-flash-vision-exp",
+    ANTHROPIC_DEFAULT_OPUS_MODEL: "deepseek-v4-flash-vision-exp",
+    ANTHROPIC_DEFAULT_SONNET_MODEL: "deepseek-v4-flash-vision-exp",
+    ANTHROPIC_DEFAULT_HAIKU_MODEL: "deepseek-v4-flash-vision-exp",
+    CLAUDE_CODE_SUBAGENT_MODEL: "deepseek-v4-flash-vision-exp",
+    CLAUDE_CODE_EFFORT_LEVEL: "max"
+  });
+  assert.deepEqual(profile.requiredEnvironment, Object.keys(profile.environment));
 });
 
 test("GLM profile contains the exact Coding Plan mapping and no unverified variables", async () => {
@@ -361,7 +382,7 @@ test("provider endpoints, authentication and pricing records match the verified 
   glmUsesPricingProfile.pricingRef = "glm-5.2";
   glmUsesPricingProfile.costNotice = "payg";
   assert.throws(
-    () => validateConfigSet(glmUsesPricing, { now: new Date("2026-08-16T00:00:00Z") }),
+    () => validateConfigSet(glmUsesPricing, { now: new Date("2026-08-21T00:00:00Z") }),
     /glm profile must reference the glm provider and Coding Plan subscription entitlement/
   );
 

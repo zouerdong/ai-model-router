@@ -10,10 +10,11 @@
 
 `1.3.0` 引入的 GitHub Release 自更新继续作为 `1.4.0` 的稳定更新通道。PowerShell、CMD、Git Bash 的隔离 prefix、自替换、回滚、junction 与中断场景均已通过；固定 Release 资产、checksum、tag、immutable 发布、exact/latest 下载、临时 prefix bootstrap 与公开 `cmr update --check` 已闭环。
 
-`1.5.0` 提供七个数据化 Profile：
+`1.5.0` 提供七个数据化 Profile；未发布候选（`docs/20`，2026-08-21）追加第八个：
 
 - `kimi`：Kimi K3 的完整 Claude Code 模型映射。
-- `deepseek`：DeepSeek Auto；主会话由 V4 Pro 承担，Haiku 档与子 Agent 由 V4 Flash 承担。
+- `deepseek`：DeepSeek Auto；主会话由 V4 Pro 承担，Haiku 档与子 Agent 由 V4 Flash Vision 实验模型（`deepseek-v4-flash-vision-exp`，多模态）承担。
+- `deepseek-vision`（候选）：DeepSeek V4 Flash Vision；全部模型映射使用 `deepseek-v4-flash-vision-exp`，复用 `deepseek` Provider 与 Secret。
 - `glm`：GLM-5.3 Coding Plan；使用独立 `glm` Secret 与 `ANTHROPIC_AUTH_TOKEN` 及订阅额度提示。
 - `glm-api`：GLM 标准 API 按量付费；使用独立 `glm-api` Secret 与 `ANTHROPIC_API_KEY`。
 - `kimi-code`：Kimi Code 会员（`kimi-for-coding`，256K）。
@@ -29,7 +30,7 @@ Profile 只决定 Claude Code 子进程启动时使用哪套 Provider 环境。K
 1. 本文件。
 2. `docs/01-product-scope.md`。
 3. `docs/02-architecture.md`。
-4. 当前阶段的执行文档；实施首次运行向导时必须读取 `docs/11-v1.1-first-run-setup-implementation-brief.md`，实施自更新时必须读取 `docs/13-v1.3-self-update-implementation-brief.md`，实施或发布 GLM 时必须读取 `docs/14`、`docs/15` 与 `docs/16`，实施 Kimi Code 会员 Provider 时必须读取 `docs/17-v1.5-kimi-code-membership-implementation-guide.md`，修改 Secret Store 行为时必须读取 `docs/19-secret-store-forward-compatibility-implementation-guide.md`。
+4. 当前阶段的执行文档；实施首次运行向导时必须读取 `docs/11-v1.1-first-run-setup-implementation-brief.md`，实施自更新时必须读取 `docs/13-v1.3-self-update-implementation-brief.md`，实施或发布 GLM 时必须读取 `docs/14`、`docs/15` 与 `docs/16`，实施 Kimi Code 会员 Provider 时必须读取 `docs/17-v1.5-kimi-code-membership-implementation-guide.md`，修改 Secret Store 行为时必须读取 `docs/19-secret-store-forward-compatibility-implementation-guide.md`，实施或发布 DeepSeek Vision 接入时必须读取 `docs/20-deepseek-v4-flash-vision-implementation-guide.md`。
 5. `docs/07-official-sources.md`。
 6. `docs/08-acceptance-and-recovery.md`。
 7. `docs/09-phase-1-acceptance.md`，用于核对已完成的 Mac 基线。

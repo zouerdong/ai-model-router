@@ -351,7 +351,7 @@ export function validateConfigSet({ providers, profiles, pricing, entitlements =
       aliases.add(alias);
     }
   }
-  const requiredProfiles = ["kimi", "deepseek", "glm", "glm-api", "kimi-code", "kimi-code-k3-256k", "kimi-code-k3"];
+  const requiredProfiles = ["kimi", "deepseek", "deepseek-vision", "glm", "glm-api", "kimi-code", "kimi-code-k3-256k", "kimi-code-k3"];
   const requiredProviders = ["kimi", "deepseek", "glm", "glm-api", "kimi-code"];
   const requiredPricing = ["kimi-k3", "deepseek-v4", "glm-5.2"];
   const requiredEntitlements = ["kimi-code-membership", "glm-coding-plan-membership"];
@@ -372,6 +372,7 @@ export function validateConfigSet({ providers, profiles, pricing, entitlements =
   }
   const kimi = profiles.find((profile) => profile.id === "kimi");
   const deepseek = profiles.find((profile) => profile.id === "deepseek");
+  const deepseekVision = profiles.find((profile) => profile.id === "deepseek-vision");
   const glm = profiles.find((profile) => profile.id === "glm");
   const glmApi = profiles.find((profile) => profile.id === "glm-api");
   const kimiCode = profiles.find((profile) => profile.id === "kimi-code");
@@ -394,6 +395,38 @@ export function validateConfigSet({ providers, profiles, pricing, entitlements =
   }
   if (deepseek.provider !== "deepseek" || deepseek.pricingRef !== "deepseek-v4") {
     fail("deepseek profile must reference the deepseek provider and deepseek-v4 pricing");
+  }
+  if (deepseekVision.aliases.length !== 1 || deepseekVision.aliases[0] !== "deepseek-flash-vision") {
+    fail("deepseek-vision profile must contain exactly the deepseek-flash-vision alias");
+  }
+  if (deepseekVision.provider !== "deepseek"
+    || deepseekVision.pricingRef !== "deepseek-v4"
+    || deepseekVision.costNotice !== "standard") {
+    fail("deepseek-vision profile must reference the deepseek provider, deepseek-v4 pricing and standard cost notice");
+  }
+  const expectedDeepseekEnvironment = {
+    ANTHROPIC_MODEL: "deepseek-v4-pro[1m]",
+    ANTHROPIC_DEFAULT_OPUS_MODEL: "deepseek-v4-pro[1m]",
+    ANTHROPIC_DEFAULT_SONNET_MODEL: "deepseek-v4-pro[1m]",
+    ANTHROPIC_DEFAULT_HAIKU_MODEL: "deepseek-v4-flash-vision-exp",
+    CLAUDE_CODE_SUBAGENT_MODEL: "deepseek-v4-flash-vision-exp",
+    CLAUDE_CODE_EFFORT_LEVEL: "max"
+  };
+  const expectedDeepseekVisionEnvironment = {
+    ANTHROPIC_MODEL: "deepseek-v4-flash-vision-exp",
+    ANTHROPIC_DEFAULT_OPUS_MODEL: "deepseek-v4-flash-vision-exp",
+    ANTHROPIC_DEFAULT_SONNET_MODEL: "deepseek-v4-flash-vision-exp",
+    ANTHROPIC_DEFAULT_HAIKU_MODEL: "deepseek-v4-flash-vision-exp",
+    CLAUDE_CODE_SUBAGENT_MODEL: "deepseek-v4-flash-vision-exp",
+    CLAUDE_CODE_EFFORT_LEVEL: "max"
+  };
+  if (JSON.stringify(deepseek.environment) !== JSON.stringify(expectedDeepseekEnvironment)
+    || JSON.stringify(deepseek.requiredEnvironment) !== JSON.stringify(Object.keys(expectedDeepseekEnvironment))) {
+    fail("deepseek profile environment mapping is invalid");
+  }
+  if (JSON.stringify(deepseekVision.environment) !== JSON.stringify(expectedDeepseekVisionEnvironment)
+    || JSON.stringify(deepseekVision.requiredEnvironment) !== JSON.stringify(Object.keys(expectedDeepseekVisionEnvironment))) {
+    fail("deepseek-vision profile environment mapping is invalid");
   }
   if (kimiProvider.displayName !== "Kimi"
     || kimiProvider.baseUrl !== "https://api.moonshot.cn/anthropic"

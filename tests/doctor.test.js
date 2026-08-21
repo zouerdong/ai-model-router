@@ -70,7 +70,7 @@ test("doctor finds redacted settings, shell and environment conflicts without wr
   assert.match(result.text, /kimi-code secret: missing/);
   assert.match(result.text, /Kimi Code Membership: subscription\/quota; verified 2026-08-12/);
   assert.match(result.text, /Extra Usage may incur additional charges when enabled/);
-  assert.match(result.text, /validated 7 profiles and 5 providers/);
+  assert.match(result.text, /validated 8 profiles and 5 providers/);
 });
 
 test("doctor invokes Windows cmd shims through cmd.exe without shell mode", async (t) => {

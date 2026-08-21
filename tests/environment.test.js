@@ -43,8 +43,8 @@ test("builds DeepSeek Auto without Kimi-only leftovers", async () => {
     secret: "test-deepseek-key"
   });
   assert.equal(child.ANTHROPIC_MODEL, "deepseek-v4-pro[1m]");
-  assert.equal(child.ANTHROPIC_DEFAULT_HAIKU_MODEL, "deepseek-v4-flash");
-  assert.equal(child.CLAUDE_CODE_SUBAGENT_MODEL, "deepseek-v4-flash");
+  assert.equal(child.ANTHROPIC_DEFAULT_HAIKU_MODEL, "deepseek-v4-flash-vision-exp");
+  assert.equal(child.CLAUDE_CODE_SUBAGENT_MODEL, "deepseek-v4-flash-vision-exp");
   assert.equal(Object.hasOwn(child, "ANTHROPIC_DEFAULT_FABLE_MODEL"), false);
   assert.equal(child.ANTHROPIC_AUTH_TOKEN, "test-deepseek-key");
   assert.equal(Object.hasOwn(child, "ANTHROPIC_API_KEY"), false);
@@ -162,7 +162,7 @@ test("builds Kimi Code with API key authentication only and exact context mappin
   assert.equal(JSON.stringify(snapshot).includes("test-kimi-code-key"), false);
 });
 
-test("all seven formal profiles clear inherited max-context variants without mutating the parent", async () => {
+test("all eight formal profiles clear inherited max-context variants without mutating the parent", async () => {
   const config = await loadConfigSet();
   const providers = new Map(config.providers.map((provider) => [provider.id, provider]));
   const parent = {

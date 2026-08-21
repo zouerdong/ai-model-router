@@ -32,13 +32,15 @@ function isolatedEnvironment(home) {
 test("version and list are non-interactive and do not expose secrets", async () => {
   const version = capture();
   assert.equal(await runCli(["version"], { output: version.output }), 0);
-  assert.equal(version.value, "1.5.2\n");
+  assert.equal(version.value, "1.6.0\n");
   const list = capture();
   assert.equal(await runCli(["list"], { output: list.output }), 0);
   assert.match(list.value, /kimi: Kimi K3/);
   assert.match(list.value, /aliases: plan, kimi-k3/);
   assert.match(list.value, /deepseek: DeepSeek Auto/);
   assert.match(list.value, /aliases: build, deepseek-auto/);
+  assert.match(list.value, /deepseek-vision: DeepSeek V4 Flash Vision/);
+  assert.match(list.value, /aliases: deepseek-flash-vision/);
   assert.match(list.value, /glm: GLM-5\.3 Coding Plan/);
   assert.match(list.value, /aliases: glm-5\.3, glm-5\.2, glm-plan/);
   assert.match(list.value, /glm-api: GLM-5\.2 API \(Pay-as-you-go\)/);
@@ -173,9 +175,11 @@ test("first interactive bare cmr shows the full dashboard, marks seen, then retu
   assert.match(output.value, /glm: missing/);
   assert.match(output.value, /glm-api: missing/);
   assert.match(prompter.calls[1].choices[0].label, /kimi — Kimi K3 \[missing\]/);
-  assert.match(prompter.calls[1].choices[3].label, /glm-api — GLM-5\.2 API \(Pay-as-you-go\) \[missing\]/);
-  assert.match(prompter.calls[1].choices[4].label, /kimi-code — Kimi Code Membership \[missing\]/);
-  assert.match(prompter.calls[1].choices[7].label, /setup — Configure or replace API Keys/);
+  assert.match(prompter.calls[1].choices[2].label, /deepseek-vision — DeepSeek V4 Flash Vision \[missing\]/);
+  assert.match(prompter.calls[1].choices[3].label, /glm — GLM-5\.3 Coding Plan \[missing\]/);
+  assert.match(prompter.calls[1].choices[4].label, /glm-api — GLM-5\.2 API \(Pay-as-you-go\) \[missing\]/);
+  assert.match(prompter.calls[1].choices[5].label, /kimi-code — Kimi Code Membership \[missing\]/);
+  assert.match(prompter.calls[1].choices[8].label, /setup — Configure or replace API Keys/);
   assert.deepEqual((await new SetupStateStore({
     filePath: getSetupStatePath({ platform: process.platform, env, homedir: home })
   }).read()).seenProviderIds, ["deepseek", "glm", "glm-api", "kimi", "kimi-code"]);
@@ -521,6 +525,8 @@ test("CLI accepts profile IDs and aliases with opaque Claude args", async (t) =>
     ["deepseek", ["--version"], "deepseek.json", "test-deepseek-key"],
     ["plan", ["--continue"], "plan.json", "test-kimi-key"],
     ["build", ["--permission-mode", "plan"], "build.json", "test-deepseek-key"],
+    ["deepseek-vision", ["--version"], "deepseek-vision.json", "test-deepseek-key"],
+    ["deepseek-flash-vision", ["--continue"], "deepseek-flash-vision.json", "test-deepseek-key"],
     ["glm", ["--help"], "glm.json", "test-glm-key"],
     ["glm-5.2", ["--version"], "glm-5.2.json", "test-glm-key"],
     ["glm-plan", ["--model", "provider-model"], "glm-plan.json", "test-glm-key"],

@@ -50,6 +50,7 @@ cmr kimi
 
 ```bash
 cmr deepseek
+cmr deepseek-vision   # DeepSeek V4 Flash Vision（多模态实验模型）
 cmr glm       # GLM Coding Plan
 cmr glm-api   # GLM standard API pay-as-you-go
 ```
@@ -68,7 +69,7 @@ Kimi 启动时只显示一行高费用提示、价格摘要和核验日期，不
 
 无参数 `cmr` 的日常菜单会显示：
 
-- Kimi、DeepSeek、GLM Coding Plan、GLM API 与三个 Kimi Code Profile 及其实时 `configured/missing` 状态。
+- Kimi、DeepSeek、DeepSeek Vision、GLM Coding Plan、GLM API 与三个 Kimi Code Profile 及其实时 `configured/missing` 状态。
 - `setup`：配置或更换 Key；结束后刷新菜单状态。
 - `doctor`：执行只读诊断。
 - `exit`：不启动 Claude Code，正常退出。
@@ -370,3 +371,19 @@ Kimi Code membership is part of the public v1.5.0 Latest stable release.
 Real membership Provider validation passed on 2026-08-18 (all three profiles).
 Windows, GitHub, and release gates all closed; public readback verified.
 ```
+
+## 20. DeepSeek V4 Flash Vision（候选，未发布）
+
+2026-08-21 官方上线多模态视觉理解实验模型 `deepseek-v4-flash-vision-exp`（详见 `docs/20`）。仓库候选提供两个入口：
+
+| 规范 Profile | 兼容别名 | 主模型/Opus/Sonnet | Haiku/子 Agent | Secret |
+|---|---|---|---|---|
+| `deepseek` | `build`、`deepseek-auto` | `deepseek-v4-pro[1m]` | `deepseek-v4-flash-vision-exp` | `deepseek` |
+| `deepseek-vision` | `deepseek-flash-vision` | `deepseek-v4-flash-vision-exp`（全部槽位） | 同左 | `deepseek`（复用） |
+
+```bash
+cmr deepseek-vision            # 全部映射使用多模态实验模型
+cmr deepseek-vision --continue # 与其他 Profile 相同的透传语义
+```
+
+两个入口共用 `deepseek` Secret 与 `ANTHROPIC_AUTH_TOKEN`，价格与 `deepseek-v4-flash` 相同（官方定价页同列同价）。`deepseek-vision` 面向需要图片输入的会话；`deepseek` Auto 的主会话仍由 V4 Pro 承担。该模型为实验性质，官方可能调整能力或下线；`[1m]` 后缀与思考档位待验证项见 `docs/20` §6。

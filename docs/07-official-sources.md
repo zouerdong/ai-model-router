@@ -457,3 +457,20 @@ Kimi Code 官方会员页给出以下事实：
 标准 API 边界：当前 Claude API 兼容页面仍以原生 `glm-5.2` 为示例，并使用 `ANTHROPIC_API_KEY`/`x-api-key`；标准价格仍按现有记录为缓存命中 2、输入 8、输出 28 CNY/M。故 `glm-api` 继续使用 `glm-5.2[1m]`、`glm-4.7`、`ANTHROPIC_API_KEY` 和 `config/pricing/glm-5.2.json`，不得因为 Coding Plan 已支持 5.3 而提前迁移。
 
 设计合同而非标准 API 事实：`glm-5.3[1m]` 是 Claude Code 选择层值，CMR 不剥离 `[1m]`；`glm` 的 Opus/Sonnet 选择值、别名和 subscription-quota entitlement 由 `docs/18` 绑定。真实 Provider 请求、API 请求与账单回读均未执行。
+
+## 14. DeepSeek-V4-Flash-Vision 事实（2026-08-21 复核）
+
+绑定实施合同：[docs/20-deepseek-v4-flash-vision-implementation-guide.md](20-deepseek-v4-flash-vision-implementation-guide.md)。本节是 2026-08-21 的当前事实增量；第 2 节的 Auto 基线保留为官方指南原文（官方当日尚未更新该指南）。
+
+主来源：
+
+- [DeepSeek 更新日志](https://api-docs.deepseek.com/zh-cn/updates/)：2026-08-21 条目「DeepSeek-V4-Flash-Vision-Exp 发布」，实验性质模型，`model='deepseek-v4-flash-vision-exp'`；纯文本能力与 DeepSeek-V4-Flash 正式版持平，视觉 Agent 能力接近 Opus-4.8。
+- [DeepSeek 图像理解](https://api-docs.deepseek.com/zh-cn/guides/vision)：官方明确可通过 Anthropic 兼容端点 `base_url=https://api.deepseek.com/anthropic` 调用（图片用 `image` 内容块，`source.type` 为 `base64`/`url`/`file`）；仅视觉模型接受图片，其他模型返回 400 "This model does not support image"；图片仅可出现在 `user` 消息。支持 JPEG/PNG/GIF/WebP；图片按尺寸折算 token（每图上限 384）与文本一并计费。
+- [DeepSeek 模型与价格](https://api-docs.deepseek.com/zh-cn/quick_start/pricing)：`deepseek-v4-flash-vision-exp` 与 `deepseek-v4-flash` 同列同价（峰谷两档：输入命中 0.05/0.10 元、未命中 1.5/3.0 元、输出 4.5/9.0 元 每百万 tokens），上下文 1M、输出最大 384K、并发限制 2500、支持思考模式/Tool Calls/Json Output/Responses API/Anthropic API。
+
+仓库采用方式：
+
+- `deepseek` Auto Profile：Haiku 档与子 Agent 槽切换为 `deepseek-v4-flash-vision-exp`（产品决策，非官方 Auto 映射变更；官方指南仍写 `deepseek-v4-flash`）。
+- `deepseek-vision` Profile：全部模型槽位 `deepseek-v4-flash-vision-exp` + `CLAUDE_CODE_EFFORT_LEVEL=max`。
+
+待验证（见 `docs/20` §6）：`deepseek-v4-flash-vision-exp[1m]` 选择值有效性；vision-exp 思考强度档位；`config/pricing/deepseek-v4.json` 的 USD 绝对值（verified 2026-07-23）与 2026-08-17 生效的峰谷 CNY 定价不一致，为独立存量登记项（vision-exp 与 flash 同价使 pricingRef 复用仍成立）。

@@ -79,6 +79,7 @@ Run either profile from your target project directory:
 ```bash
 cmr kimi
 cmr deepseek
+cmr deepseek-vision  # DeepSeek V4 Flash Vision (multimodal experimental model)
 cmr glm              # GLM Coding Plan
 cmr glm-5.3          # GLM-5.3 Coding Plan alias
 cmr glm-api          # GLM standard API pay-as-you-go
@@ -114,6 +115,8 @@ cmr plan [claude args...]
 cmr build [claude args...]
 cmr glm-payg [claude args...]
 ```
+
+`deepseek-vision` (alias `deepseek-flash-vision`) maps every model slot — main, Opus, Sonnet, Haiku, and sub-agent — to the multimodal experimental model `deepseek-v4-flash-vision-exp` released by DeepSeek on 2026-08-21. It reuses the `deepseek` Provider, Secret Store slot, `ANTHROPIC_AUTH_TOKEN`, and the DeepSeek V4 pricing record (the vision model is priced identically to `deepseek-v4-flash` on the official pricing page). The plain `deepseek` Auto profile keeps `deepseek-v4-pro[1m]` for its main/Opus/Sonnet slots and uses `deepseek-v4-flash-vision-exp` for Haiku and sub-agents. The model is experimental; official capability or availability changes propagate through config updates only.
 
 `glm`, `glm-5.3`, `glm-5.2`, and `glm-plan` all resolve to the GLM-5.3 Coding Plan Profile. It uses `ANTHROPIC_AUTH_TOKEN` and a subscription-quota entitlement. `glm-api` is the only standard API pay-as-you-go entry, and `glm-payg` is its only alias; it intentionally remains GLM-5.2 with `ANTHROPIC_API_KEY` and the existing 2/8/28 CNY/M Pricing because the official GLM-5.3 model API is still announced as coming soon. The two profiles share an Anthropic-compatible Base URL but use separate Secret Store slots and authentication variables. CMR never detects Key types, injects both variables, or automatically falls back between them.
 

@@ -1,9 +1,9 @@
 {
-  "id": "deepseek",
-  "aliases": ["build", "deepseek-auto"],
-  "displayName": "DeepSeek Auto",
+  "id": "deepseek-vision",
+  "aliases": ["deepseek-flash-vision"],
+  "displayName": "DeepSeek V4 Flash Vision",
   "provider": "deepseek",
-  "purpose": "通过 DeepSeek Auto 运行 Claude Code；主会话 V4 Pro，Haiku 档与子 Agent 用 V4 Flash Vision 多模态实验模型",
+  "purpose": "通过 DeepSeek V4 Flash Vision 运行 Claude Code；全部模型映射使用多模态实验模型 deepseek-v4-flash-vision-exp，支持图片输入",
   "costNotice": "standard",
   "pricingRef": "deepseek-v4",
   "requiredEnvironment": [
@@ -15,9 +15,9 @@
     "CLAUDE_CODE_EFFORT_LEVEL"
   ],
   "environment": {
-    "ANTHROPIC_MODEL": "deepseek-v4-pro[1m]",
-    "ANTHROPIC_DEFAULT_OPUS_MODEL": "deepseek-v4-pro[1m]",
-    "ANTHROPIC_DEFAULT_SONNET_MODEL": "deepseek-v4-pro[1m]",
+    "ANTHROPIC_MODEL": "deepseek-v4-flash-vision-exp",
+    "ANTHROPIC_DEFAULT_OPUS_MODEL": "deepseek-v4-flash-vision-exp",
+    "ANTHROPIC_DEFAULT_SONNET_MODEL": "deepseek-v4-flash-vision-exp",
     "ANTHROPIC_DEFAULT_HAIKU_MODEL": "deepseek-v4-flash-vision-exp",
     "CLAUDE_CODE_SUBAGENT_MODEL": "deepseek-v4-flash-vision-exp",
     "CLAUDE_CODE_EFFORT_LEVEL": "max"
