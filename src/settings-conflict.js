@@ -11,9 +11,10 @@ import { getManagedSettingsPaths, getProjectSettingsPaths, getUserSettingsPath }
 // injects ANTHROPIC_AUTH_TOKEN or ANTHROPIC_API_KEY, both of which outrank apiKeyHelper in
 // Claude Code's authentication precedence.
 export function getClaudeUserSettingsPath({ platform = process.platform, env = process.env, homedir } = {}) {
+  const pathApi = platform === "win32" ? path.win32 : path.posix;
   const configDir = env?.CLAUDE_CONFIG_DIR;
   if (typeof configDir === "string" && configDir.length > 0) {
-    return path.join(configDir, "settings.json");
+    return pathApi.join(configDir, "settings.json");
   }
   return getUserSettingsPath({ platform, env, homedir });
 }
@@ -62,6 +63,9 @@ export async function collectSettingsConflicts({
   homedir,
   fs = { readFile, readdir, stat }
 } = {}) {
+  // Managed/system paths are built with the target platform's separators; match them here so
+  // child files join consistently on a host whose native separator differs from the target.
+  const pathApi = platform === "win32" ? path.win32 : path.posix;
   const conflicts = [];
   for (const { file, source } of settingsCandidates({ platform, env, cwd, homedir })) {
     let metadata;
@@ -78,7 +82,7 @@ export async function collectSettingsConflicts({
         continue;
       }
       for (const entry of entries.filter((name) => name.endsWith(".json")).sort()) {
-        const childFile = path.join(file, entry);
+        const childFile = pathApi.join(file, entry);
         const data = await readSettingsObject(childFile, fs);
         const found = data && conflictsInSettings(data);
         if (found) conflicts.push({ file: childFile, sources: [`${source}/${entry}`], ...found });

@@ -46,15 +46,24 @@ export function getShellProfilePaths({ platform = process.platform, env = proces
 }
 
 export function getManagedSettingsPaths({ platform = process.platform } = {}) {
+  // Fixed system paths per Claude Code's managed-settings documentation; built with the target
+  // platform's path API so they stay identical regardless of the host running CMR
+  // (path.join("C:", ...) on a win32 host yields a drive-relative path).
   if (platform === "win32") {
     return [
-      path.join("C:", "Program Files", "ClaudeCode", "managed-settings.json"),
-      path.join("C:", "Program Files", "ClaudeCode", "managed-settings.d")
+      path.win32.join("C:\\", "Program Files", "ClaudeCode", "managed-settings.json"),
+      path.win32.join("C:\\", "Program Files", "ClaudeCode", "managed-settings.d")
+    ];
+  }
+  if (platform === "linux") {
+    return [
+      path.posix.join("/etc", "claude-code", "managed-settings.json"),
+      path.posix.join("/etc", "claude-code", "managed-settings.d")
     ];
   }
   return [
-    path.join("/", "Library", "Application Support", "ClaudeCode", "managed-settings.json"),
-    path.join("/", "Library", "Application Support", "ClaudeCode", "managed-settings.d")
+    path.posix.join("/", "Library", "Application Support", "ClaudeCode", "managed-settings.json"),
+    path.posix.join("/", "Library", "Application Support", "ClaudeCode", "managed-settings.d")
   ];
 }
 
