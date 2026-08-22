@@ -289,6 +289,13 @@ Doctor 不联网验证余额，不发送测试请求，不读取或显示完整�
 
 阶段一的单元测试应模拟 `win32` 路径与 `.cmd`，但不宣称 Windows 已完成真实验收。
 
+**路径构造按"来源"选 API**（`v1.7.0` Windows 门禁两轮失败的教训，见 `docs/21` 证据台账）：
+
+- 固定系统字面量路径（managed settings 的 `C:\Program Files\ClaudeCode`、`/Library/Application Support/ClaudeCode`、`/etc/claude-code`）必须用**目标平台**的 `path.win32` / `path.posix` 构造，与宿主无关；注意 `path.join("C:", ...)` 在真 Windows 上产出驱动器相对路径，必须 `path.win32.join("C:\\", ...)`。
+- 宿主运行时传入的路径（`CLAUDE_CONFIG_DIR`、homedir、cwd 及其派生）用**宿主** `path` 模块构造；目录展开的子路径跟随父路径所用的同一 API（`settings-conflict.js` 的每个 settings 候选携带自己的 `pathApi`）。
+- 测试中注入 fake fs 的路径键必须与生产代码使用同一构造来源（从生产函数取值或同 API 拼接），不得手写平台相关字面量。
+- macOS 全绿不代表 Windows 会绿：宿主与目标平台一致时会掩盖分隔符差异，Windows 实机 CI 门禁是唯一可靠兜底。
+
 ## 12. 关键风险与控制
 
 | 风险 | 控制 |
