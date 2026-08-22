@@ -11,19 +11,26 @@ import { getManagedSettingsPaths, getProjectSettingsPaths, getUserSettingsPath }
 // injects ANTHROPIC_AUTH_TOKEN or ANTHROPIC_API_KEY, both of which outrank apiKeyHelper in
 // Claude Code's authentication precedence.
 export function getClaudeUserSettingsPath({ platform = process.platform, env = process.env, homedir } = {}) {
-  const pathApi = platform === "win32" ? path.win32 : path.posix;
+  // CLAUDE_CONFIG_DIR and the home directory are host-runtime paths (host == target platform in
+  // real use), so they join with the host path API; only managed system paths are cross-host fixed.
   const configDir = env?.CLAUDE_CONFIG_DIR;
   if (typeof configDir === "string" && configDir.length > 0) {
-    return pathApi.join(configDir, "settings.json");
+    return path.join(configDir, "settings.json");
   }
   return getUserSettingsPath({ platform, env, homedir });
 }
 
 function settingsCandidates({ platform = process.platform, env = process.env, cwd = process.cwd(), homedir } = {}) {
   return [
-    { file: getClaudeUserSettingsPath({ platform, env, homedir }), source: "user" },
-    ...getProjectSettingsPaths(cwd).map((file, index) => ({ file, source: index === 0 ? "project" : "local" })),
-    ...getManagedSettingsPaths({ platform }).map((file) => ({ file, source: "managed" }))
+    { file: getClaudeUserSettingsPath({ platform, env, homedir }), source: "user", pathApi: path },
+    ...getProjectSettingsPaths(cwd).map((file, index) => ({ file, source: index === 0 ? "project" : "local", pathApi: path })),
+    ...getManagedSettingsPaths({ platform }).map((file) => ({
+      file,
+      source: "managed",
+      // Managed paths use the target platform's separators (getManagedSettingsPaths); drop-in
+      // children must join with the same API even on a host whose native separator differs.
+      pathApi: platform === "win32" ? path.win32 : path.posix
+    }))
   ];
 }
 
@@ -63,11 +70,8 @@ export async function collectSettingsConflicts({
   homedir,
   fs = { readFile, readdir, stat }
 } = {}) {
-  // Managed/system paths are built with the target platform's separators; match them here so
-  // child files join consistently on a host whose native separator differs from the target.
-  const pathApi = platform === "win32" ? path.win32 : path.posix;
   const conflicts = [];
-  for (const { file, source } of settingsCandidates({ platform, env, cwd, homedir })) {
+  for (const { file, source, pathApi } of settingsCandidates({ platform, env, cwd, homedir })) {
     let metadata;
     try {
       metadata = await fs.stat(file);
