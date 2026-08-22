@@ -1,6 +1,6 @@
 # 21 — 公开发布安全加固实施指导（候选）
 
-状态：候选实施完成，定版 **`v1.7.0`**（2026-08-22，基于对已发布 `1.6.0` 的 max 强度安全审查；负责人已拍板 §13 全部决策）。未发布前本文件所有 PASS 证据以实际运行结果为准，禁止预填。
+状态：**PASS — `v1.7.0` RELEASED**（2026-08-22T04:12:16Z 公开发布，Latest，tag `v1.7.0` 指向门禁 commit `86f0d40`；候选 commit `9f7e436` + Windows 门禁修复 `4509151`/`86f0d40`）。本文件所有 PASS 证据以实际运行结果为准，禁止预填。
 
 ## 1. 背景与触发
 
@@ -111,8 +111,12 @@
 |---|---|---|
 | `npm test` 全量 | PASS — 184 tests：181 pass / 0 fail / 3 skip（Windows-only，按惯例在 macOS 自动跳过；含 SC-1~SC-5 全部测试） | 2026-08-22 |
 | `npm run lint` | PASS | 2026-08-22 |
-| Windows CI（`codex/windows-t4-validation` 门禁） | 待发布流程 | — |
-| 真实 `cmr update` SHA256SUMS 校验（发布后回读） | 待发布流程 | — |
+| Windows CI（`codex/windows-t4-validation` 门禁） | 第一轮 FAIL（settings-conflict 测试硬编码 POSIX 路径 + managed 路径宿主相关，`4509151`/`86f0d40` 修复：managed 路径按目标平台 path API 确定性构造并补 Linux 官方路径，CLAUDE_CONFIG_DIR/homedir 保持宿主 API）→ 第三轮 [run 32550803846](https://github.com/zouerdong/ai-model-router/actions/runs/32550803846)（commit `86f0d40`，Windows 2025 × Node {18.20.8, 24}）双矩阵 PASS | 2026-08-22 |
+| 固定资产 | staging 自 gate commit `86f0d40` 构建：`claude-model-router.tgz` 46262 字节，SHA-256 `ead40fbe8e036d1c76e087c13c96b8c4299c55006030605d700127457a6ec45d` + `SHA256SUMS`；staging/Draft/exact/latest 四处字节一致 | 2026-08-22 |
+| 公开发布 | [v1.7.0](https://github.com/zouerdong/ai-model-router/releases/tag/v1.7.0)（2026-08-22T04:12:16Z，immutable、非 prerelease、Latest；tag peeled commit = `86f0d40` = main head）；发布说明含中英双语 CC Switch 兼容提醒（§14） | 2026-08-22 |
+| 公开隔离安装 | latest URL 资产安装全新 prefix：`cmr version` = 1.7.0；`cmr update --check` = already latest | 2026-08-22 |
+| 公开 old → new 自更新 | 公开 v1.6.0 资产安装隔离 prefix（隔离 HOME）→ `cmr update` → `CMR updated successfully: 1.6.0 -> 1.7.0` → `cmr version` = 1.7.0 | 2026-08-22 |
+| 真实 SHA256SUMS 完整性校验 | 1.7.0 `verifyReleaseIntegrity` 对公开 latest 资产真实 fetch 校验 PASS（digest `ead40fbe…c45d`，与 SHA256SUMS 条目一致） | 2026-08-22 |
 
 ## 12. 安全红线复核
 
