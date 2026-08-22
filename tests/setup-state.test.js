@@ -110,3 +110,12 @@ test("state write failures do not report a new completed state or leave temp fil
   assert.equal(renameCalls, 1);
   assert.equal((await readdir(directory)).length, 0);
 });
+
+test("setup state accepts dotted provider IDs matching the config loader pattern", async (t) => {
+  const directory = await temporaryDirectory(t, "cmr-state-dotted-");
+  const store = new SetupStateStore({ filePath: path.join(directory, "state.json") });
+  const result = await store.markSeen(["foo.bar", "kimi"]);
+  assert.deepEqual(result.seenProviderIds, ["foo.bar", "kimi"]);
+  await assert.rejects(() => store.markSeen(["NotValid"]), /invalid IDs/);
+  assert.deepEqual((await store.read()).seenProviderIds, ["foo.bar", "kimi"]);
+});

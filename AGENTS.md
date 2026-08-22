@@ -30,7 +30,7 @@ Profile 只决定 Claude Code 子进程启动时使用哪套 Provider 环境。K
 1. 本文件。
 2. `docs/01-product-scope.md`。
 3. `docs/02-architecture.md`。
-4. 当前阶段的执行文档；实施首次运行向导时必须读取 `docs/11-v1.1-first-run-setup-implementation-brief.md`，实施自更新时必须读取 `docs/13-v1.3-self-update-implementation-brief.md`，实施或发布 GLM 时必须读取 `docs/14`、`docs/15` 与 `docs/16`，实施 Kimi Code 会员 Provider 时必须读取 `docs/17-v1.5-kimi-code-membership-implementation-guide.md`，修改 Secret Store 行为时必须读取 `docs/19-secret-store-forward-compatibility-implementation-guide.md`，实施或发布 DeepSeek Vision 接入时必须读取 `docs/20-deepseek-v4-flash-vision-implementation-guide.md`。
+4. 当前阶段的执行文档；实施首次运行向导时必须读取 `docs/11-v1.1-first-run-setup-implementation-brief.md`，实施自更新时必须读取 `docs/13-v1.3-self-update-implementation-brief.md`，实施或发布 GLM 时必须读取 `docs/14`、`docs/15` 与 `docs/16`，实施 Kimi Code 会员 Provider 时必须读取 `docs/17-v1.5-kimi-code-membership-implementation-guide.md`，修改 Secret Store 行为时必须读取 `docs/19-secret-store-forward-compatibility-implementation-guide.md`，实施或发布 DeepSeek Vision 接入时必须读取 `docs/20-deepseek-v4-flash-vision-implementation-guide.md`，实施安全加固（settings 预检、隐藏输入、自更新完整性、密钥回显）时必须读取 `docs/21-security-hardening-implementation-guide.md`。
 5. `docs/07-official-sources.md`。
 6. `docs/08-acceptance-and-recovery.md`。
 7. `docs/09-phase-1-acceptance.md`，用于核对已完成的 Mac 基线。
@@ -52,7 +52,7 @@ Profile 只决定 Claude Code 子进程启动时使用哪套 Provider 环境。K
 
 ## 4. 当前技术基线
 
-- 运行时：Node.js 18+。
+- 运行时：Node.js 18.20+（`>=18.20.0`，2026-08-22 安全加固候选起；18.20.0 是包含 libuv BatBadBut `.cmd`/`.bat` spawn 参数转义修复的首个 18.x 补丁版，见 `docs/21` §7）。
 - 实现语言：标准 JavaScript（ESM）。当前版本不引入 TypeScript 编译链。
 - 核心逻辑优先使用 Node.js 标准库。
 - 配置格式：JSON，避免为 YAML/TOML 解析引入依赖。

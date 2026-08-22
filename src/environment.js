@@ -29,13 +29,18 @@ export function isRouterManagedEnvironmentVariable(key) {
   return typeof key === "string" && ROUTER_MANAGED_ENV_VAR_NAMES.has(key.toLowerCase());
 }
 
+export function removeEnvironmentKeys(parentEnv, isRemoved) {
+  const environment = { ...parentEnv };
+  for (const key of Object.keys(environment)) {
+    if (isRemoved(key)) delete environment[key];
+  }
+  return environment;
+}
+
 export function buildChildEnvironment({ parentEnv = process.env, provider, profile, secret }) {
   if (!provider || !profile) throw new Error("provider and profile are required to build a child environment");
   if (typeof secret !== "string" || secret.length === 0) throw new Error("a configured provider secret is required");
-  const environment = { ...parentEnv };
-  for (const key of Object.keys(environment)) {
-    if (isRouterManagedEnvironmentVariable(key)) delete environment[key];
-  }
+  const environment = removeEnvironmentKeys(parentEnv, isRouterManagedEnvironmentVariable);
   environment.ANTHROPIC_BASE_URL = provider.baseUrl;
   environment[provider.authVariable] = secret;
   for (const key of PROFILE_ENV_KEYS) {

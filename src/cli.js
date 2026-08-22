@@ -13,7 +13,7 @@ import { readHiddenSecret, SecretStore } from "./secret-store.js";
 import { getSecretStorePath, getSetupStatePath } from "./platform.js";
 import { SetupStateStore, isSetupStateCorrupt } from "./setup-state.js";
 
-export const VERSION = "1.6.0";
+export const VERSION = "1.7.0";
 
 export function isMainModule(
   entryPath = process.argv[1],
@@ -50,7 +50,7 @@ function printUsage(output = stdout, config) {
   output.write("  cmr config path      Show repository and secret-store paths\n");
   output.write("  cmr secret set <provider>\n");
   output.write("  cmr secret status    Show configured/missing status only\n");
-  output.write("  cmr version          Show the version\n");
+  output.write("  cmr version          Show the version (--version and -v work too)\n");
   output.write("\nThe first interactive cmr run shows all Provider API Key status; new unseen Providers do the same.\n");
   output.write("Keys are entered only through hidden TTY input, never as command arguments.\n");
   output.write("Kimi Code Membership API Keys and Kimi Open Platform API Keys are separate and not interchangeable.\n");
@@ -208,12 +208,12 @@ export async function runCli(argv = process.argv.slice(2), options = {}) {
       setupStateStore
     });
   }
-  if (command === "version") {
+  if (command === "version" || command === "--version" || command === "-v") {
     if (args.length > 0) throw new Error("usage: cmr version");
     output.write(`${VERSION}\n`);
     return 0;
   }
-  if (command === "help" || command === "--help") {
+  if (command === "help" || command === "--help" || command === "-h") {
     if (args.length > 0) throw new Error("usage: cmr help");
     printUsage(output, sharedOptions.config ?? await loadConfigSet(sharedOptions));
     return 0;

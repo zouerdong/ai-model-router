@@ -1,10 +1,21 @@
-import { chmod, mkdir, readFile, rename, unlink, writeFile } from "node:fs/promises";
+import { chmod, mkdir, readFile, readdir, rename, stat, unlink, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { randomUUID } from "node:crypto";
 import { loadConfigSet } from "./config/loader.js";
 import { getSecretStorePath } from "./platform.js";
 
 const MAX_SECRET_LENGTH = 16_384;
+const ESCAPE_SEQUENCE_LIMIT = 128;
+const CANCEL_CHARACTER = "\u0003"; // Ctrl+C
+const EOF_CHARACTER = "\u0004"; // Ctrl+D
+const ESCAPE_CHARACTER = "\u001b";
+const BEL_CHARACTER = "\u0007";
+
+function isStrayControlCharacter(character) {
+  const code = character.charCodeAt(0);
+  // C0 controls (minus the handled keys), DEL, and C1 controls never belong in a stored key.
+  return (code <= 0x1f && character !== "\b") || code === 0x7f || (code >= 0x80 && code <= 0x9f);
+}
 
 function assertProvider(provider, providerIds) {
   if (!providerIds.has(provider)) throw new Error(`unknown provider: ${provider}`);
@@ -49,7 +60,7 @@ export class SecretStore {
     this.platform = options.platform ?? process.platform;
     this.configRoot = options.configRoot;
     this.providerIds = options.providerIds === undefined ? null : new Set(options.providerIds);
-    this.fs = options.fs ?? { mkdir, readFile, writeFile, rename, chmod, unlink };
+    this.fs = options.fs ?? { mkdir, readFile, writeFile, rename, chmod, unlink, readdir, stat };
   }
 
   async getProviderIds() {
@@ -93,6 +104,7 @@ export class SecretStore {
     } catch (error) {
       throw new Error(`cannot prepare secret store directory: ${error.code ?? error.message}`);
     }
+    await this.sweepTemporaryFiles(directory);
     try {
       await this.fs.chmod(directory, 0o700);
     } catch (error) {
@@ -122,6 +134,35 @@ export class SecretStore {
     }
   }
 
+  // A crash between writeFile and rename leaves a full-copy .secrets-<uuid>.tmp behind forever;
+  // only files older than maxAgeMs are removed so a concurrent writer is never disturbed.
+  async sweepTemporaryFiles(directory, { maxAgeMs = 10 * 60 * 1000, now = Date.now() } = {}) {
+    if (typeof this.fs.readdir !== "function" || typeof this.fs.stat !== "function" || typeof this.fs.unlink !== "function") {
+      return;
+    }
+    let entries;
+    try {
+      entries = await this.fs.readdir(directory);
+    } catch {
+      return;
+    }
+    for (const entry of entries) {
+      if (typeof entry !== "string" || !entry.startsWith(".secrets-") || !entry.endsWith(".tmp")) continue;
+      let details;
+      try {
+        details = await this.fs.stat(path.join(directory, entry));
+      } catch {
+        continue;
+      }
+      if (!details || typeof details.mtimeMs !== "number" || now - details.mtimeMs < maxAgeMs) continue;
+      try {
+        await this.fs.unlink(path.join(directory, entry));
+      } catch {
+        // A concurrent writer may have replaced it; a later run sweeps again.
+      }
+    }
+  }
+
   async readSecretsForRedaction() {
     const store = await this.readAll();
     return Object.values(store.providers);
@@ -143,6 +184,31 @@ export async function readHiddenSecret({ input = process.stdin, output = process
     let settled = false;
     let submitHandle;
     let pendingTerminator = null;
+    // Raw mode delivers editing keys as escape sequences (CSI/SS3/OSC); their bytes must never
+    // fold into the stored secret, even when a sequence is split across separate reads.
+    let escapeState = null;
+    let escapeRun = 0;
+    const consumeEscapeCharacter = (character) => {
+      escapeRun += 1;
+      if (escapeRun > ESCAPE_SEQUENCE_LIMIT) {
+        escapeState = null;
+        return;
+      }
+      if (escapeState === "escape") {
+        if (character === "[" || character === "O") escapeState = "sequence";
+        else if (character === "]" || character === "P" || character === "X" || character === "^" || character === "_") escapeState = "string";
+        else escapeState = null; // A lone ESC plus one key is an Alt binding; the key belongs to the sequence.
+        return;
+      }
+      if (escapeState === "sequence") {
+        // Parameter/intermediate bytes (0x20-0x3F) continue a CSI/SS3 sequence; a final byte (0x40-0x7E) ends it.
+        if (character >= "@" && character <= "~") escapeState = null;
+        else if (!(character >= " " && character <= "?")) escapeState = null;
+        return;
+      }
+      // "string" (OSC/DCS payload) ends at BEL; ESC is accepted as a simplified string terminator.
+      if (character === BEL_CHARACTER || character === ESCAPE_CHARACTER) escapeState = null;
+    };
     const cleanup = () => {
       if (submitHandle !== undefined) clearImmediate(submitHandle);
       input.removeListener("data", onData);
@@ -187,10 +253,20 @@ export async function readHiddenSecret({ input = process.stdin, output = process
       }
       for (let index = 0; index < text.length; index += 1) {
         const character = text[index];
-        if (character === "\u0003") {
+        if (character === CANCEL_CHARACTER || character === EOF_CHARACTER) {
           finish(inputError("secret input cancelled", "CMR_CANCELLED"));
           return;
-        } else if (character === "\r" || character === "\n") {
+        }
+        if (escapeState !== null) {
+          consumeEscapeCharacter(character);
+          continue;
+        }
+        if (character === ESCAPE_CHARACTER) {
+          escapeState = "escape";
+          escapeRun = 1;
+          continue;
+        }
+        if (character === "\r" || character === "\n") {
           const isCrLf = character === "\r" && text[index + 1] === "\n";
           const trailingIndex = index + (isCrLf ? 2 : 1);
           if (trailingIndex < text.length) {
@@ -200,7 +276,10 @@ export async function readHiddenSecret({ input = process.stdin, output = process
           scheduleSubmission(isCrLf ? "\r\n" : character);
           return;
         } else if (character === "\u007f" || character === "\b") {
-          value = value.slice(0, -1);
+          // Remove a full code point: slice(0, -1) would split a surrogate pair pasted as one glyph.
+          value = Array.from(value).slice(0, -1).join("");
+        } else if (isStrayControlCharacter(character)) {
+          continue;
         } else {
           value += character;
           if (value.length > MAX_SECRET_LENGTH) {

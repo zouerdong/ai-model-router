@@ -199,7 +199,9 @@ cmr setup kimi-code
 
 The setup flow performs local format validation and atomic storage only. It does not validate keys over the network, open a browser, or modify Claude Settings, shell profiles, or environment variables.
 
-`cmr update --check` checks the fixed asset from the latest GitHub Release without changing the installation. `cmr update` backs up, installs, and verifies a candidate on the regular npm global package associated with the active command, then attempts rollback if verification fails. It never runs lifecycle scripts, changes provider configuration, or switches to npm's default prefix.
+Before every launch, CMR checks Claude Code settings files (user `~/.claude/settings.json`, or `$CLAUDE_CONFIG_DIR/settings.json`, project `.claude/settings.json` and `.claude/settings.local.json`, and managed settings) for router-managed `env` keys or an `apiKeyHelper`. Claude Code applies settings `env` on top of the environment CMR injects, so such keys (commonly written by provider switchers such as CC Switch) would silently redirect the session to another provider and credential. CMR refuses to launch in that case, lists the offending file and keys, and asks you to remove them; `cmr doctor` reports the same conflicts read-only.
+
+`cmr update --check` checks the fixed asset from the latest GitHub Release without changing the installation. `cmr update` backs up, installs, and verifies a candidate on the regular npm global package associated with the active command, then attempts rollback if verification fails. Before installing, the downloaded release asset is verified against the published `SHA256SUMS`; a fetch failure or digest mismatch aborts the update. It never runs lifecycle scripts, changes provider configuration, or switches to npm's default prefix.
 
 `cmr help` displays CMR help only. Use `cmr kimi --help`, `cmr deepseek --help`, `cmr glm --help`, `cmr glm-api --help`, or a Kimi Code profile's `--help` to view Claude Code help.
 

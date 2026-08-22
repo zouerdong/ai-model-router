@@ -70,6 +70,10 @@ export const CMR_RESERVED_COMMANDS = Object.freeze([
   "update"
 ]);
 
+// Facts older than this many days surface as warnings (doctor/loadConfigSet carry them); they
+// must never brick launch or any other command on an unattended machine (docs/21 SC-5).
+export const STALENESS_WARNING_DAYS = 180;
+
 export class ValidationError extends Error {
   constructor(message) {
     super(message);
@@ -106,7 +110,7 @@ function assertRequiredKeys(value, required, label) {
   }
 }
 
-function assertDate(value, label, now = new Date()) {
+function assertDate(value, label, now = new Date(), warnings) {
   assertString(value, label);
   const match = value.match(/^(\d{4})-(\d{2})-(\d{2})$/);
   if (!match) fail(`${label} must use YYYY-MM-DD`);
@@ -123,7 +127,9 @@ function assertDate(value, label, now = new Date()) {
   const currentDay = Date.UTC(now.getFullYear(), now.getMonth(), now.getDate());
   if (parsedDay > currentDay) fail(`${label} cannot be in the future`);
   const ageDays = (currentDay - parsedDay) / 86_400_000;
-  if (ageDays > 180) fail(`${label} is expired; re-verify the official source`);
+  if (ageDays > STALENESS_WARNING_DAYS && Array.isArray(warnings)) {
+    warnings.push(`${label} is stale (verified ${value}, ${Math.floor(ageDays)} days ago); re-verify the official source when convenient`);
+  }
 }
 
 function assertUrl(value, label) {
@@ -177,7 +183,7 @@ function assertExactValue(actual, expected, label) {
   if (JSON.stringify(actual) !== JSON.stringify(expected)) fail(`${label} is invalid`);
 }
 
-export function validateProvider(provider, { now = new Date() } = {}) {
+export function validateProvider(provider, { now = new Date(), warnings } = {}) {
   assertObject(provider, "provider");
   assertExactKeys(provider, PROVIDER_KEYS, "provider");
   assertRequiredKeys(provider, PROVIDER_KEYS, "provider");
@@ -191,7 +197,7 @@ export function validateProvider(provider, { now = new Date() } = {}) {
   }
   assertString(provider.secretId, "provider.secretId");
   if (provider.secretId !== provider.id) fail("provider.secretId must equal provider.id");
-  assertDate(provider.verifiedOn, "provider.verifiedOn", now);
+  assertDate(provider.verifiedOn, "provider.verifiedOn", now, warnings);
   assertUrl(provider.sourceUrl, "provider.sourceUrl");
   return provider;
 }
@@ -256,7 +262,7 @@ export function validateProfile(profile, providerIds, { pricingIds, entitlementI
   return profile;
 }
 
-export function validatePricing(pricing, { now = new Date() } = {}) {
+export function validatePricing(pricing, { now = new Date(), warnings } = {}) {
   assertObject(pricing, "pricing");
   assertExactKeys(pricing, PRICING_KEYS, "pricing");
   assertRequiredKeys(pricing, PRICING_KEYS, "pricing");
@@ -294,12 +300,12 @@ export function validatePricing(pricing, { now = new Date() } = {}) {
       fail("glm-5.2 pricing values are invalid");
     }
   }
-  assertDate(pricing.verifiedOn, "pricing.verifiedOn", now);
+  assertDate(pricing.verifiedOn, "pricing.verifiedOn", now, warnings);
   assertUrl(pricing.sourceUrl, "pricing.sourceUrl");
   return pricing;
 }
 
-export function validateEntitlement(entitlement, { now = new Date() } = {}) {
+export function validateEntitlement(entitlement, { now = new Date(), warnings } = {}) {
   assertObject(entitlement, "entitlement");
   assertExactKeys(entitlement, ENTITLEMENT_KEYS, "entitlement");
   assertRequiredKeys(entitlement, ENTITLEMENT_KEYS, "entitlement");
@@ -311,30 +317,30 @@ export function validateEntitlement(entitlement, { now = new Date() } = {}) {
   if (typeof entitlement.quotaNotice !== "string" || entitlement.quotaNotice.trim().length === 0) {
     fail("entitlement.quotaNotice must be a non-empty string");
   }
-  assertDate(entitlement.verifiedOn, "entitlement.verifiedOn", now);
+  assertDate(entitlement.verifiedOn, "entitlement.verifiedOn", now, warnings);
   assertUrl(entitlement.sourceUrl, "entitlement.sourceUrl");
   return entitlement;
 }
 
-export function validateConfigSet({ providers, profiles, pricing, entitlements = [], now = new Date() }) {
+export function validateConfigSet({ providers, profiles, pricing, entitlements = [], now = new Date(), warnings = [] }) {
   if (!Array.isArray(providers) || !Array.isArray(profiles) || !Array.isArray(pricing) || !Array.isArray(entitlements)) {
     fail("configuration collections must be arrays");
   }
   const providerIds = new Set();
   for (const provider of providers) {
-    validateProvider(provider, { now });
+    validateProvider(provider, { now, warnings });
     if (providerIds.has(provider.id)) fail(`duplicate provider id: ${provider.id}`);
     providerIds.add(provider.id);
   }
   const pricingIds = new Set();
   for (const item of pricing) {
-    validatePricing(item, { now });
+    validatePricing(item, { now, warnings });
     if (pricingIds.has(item.id)) fail(`duplicate pricing id: ${item.id}`);
     pricingIds.add(item.id);
   }
   const entitlementIds = new Set();
   for (const item of entitlements) {
-    validateEntitlement(item, { now });
+    validateEntitlement(item, { now, warnings });
     if (entitlementIds.has(item.id)) fail(`duplicate entitlement id: ${item.id}`);
     entitlementIds.add(item.id);
   }
@@ -566,5 +572,5 @@ export function validateConfigSet({ providers, profiles, pricing, entitlements =
     assertExactValue(profile.environment, environment, `${profile.id} environment`);
     assertExactValue(profile.requiredEnvironment, Object.keys(environment), `${profile.id} required environment`);
   }
-  return { providers, profiles, pricing, entitlements };
+  return { providers, profiles, pricing, entitlements, warnings };
 }

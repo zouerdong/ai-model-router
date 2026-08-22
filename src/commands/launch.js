@@ -2,8 +2,19 @@ import { stderr } from "node:process";
 import { loadConfigSet, resolveProfile } from "../config/loader.js";
 import { buildChildEnvironment } from "../environment.js";
 import { runClaude } from "../launcher.js";
+import { assertNoSettingsConflicts } from "../settings-conflict.js";
 import { ensureProviderSecret } from "./setup.js";
 import { SecretStore } from "../secret-store.js";
+
+function describeUnknownSelector(selector) {
+  if (typeof selector !== "string" || selector.length === 0) return "unknown profile";
+  // A key accidentally pasted as the profile argument must not be echoed into terminal
+  // scrollback, pipes, or CI logs; token-shaped input is redacted before it reaches the error.
+  if (selector.length >= 24 && /^[A-Za-z0-9_.\-]+$/.test(selector)) {
+    return `unknown profile: <redacted ${selector.length}-character input>`;
+  }
+  return `unknown profile: ${selector.length > 40 ? `${selector.slice(0, 40)}…` : selector}`;
+}
 
 function formatPricing(pricing) {
   if (pricing.id === "kimi-k3") {
@@ -24,10 +35,19 @@ export async function launchProfile(profileSelector, claudeArgs = [], options = 
   if (!Array.isArray(claudeArgs)) throw new TypeError("claudeArgs must be an array");
   const config = options.config ?? await loadConfigSet(options);
   const profile = resolveProfile(config.profiles, profileSelector);
-  if (!profile) throw new Error(`unknown profile: ${profileSelector}`);
+  if (!profile) throw new Error(describeUnknownSelector(profileSelector));
   const provider = config.providers.find((item) => item.id === profile.provider);
   const pricing = config.pricing.find((item) => item.id === profile.pricingRef);
   const entitlement = config.entitlements.find((item) => item.id === profile.entitlementRef);
+  // Claude Code settings env overrides the injected environment; refuse to launch a session that
+  // would be silently redirected (e.g. keys persisted by CC Switch or other provider switchers).
+  await assertNoSettingsConflicts({
+    platform: options.platform ?? process.platform,
+    env: options.parentEnv ?? process.env,
+    cwd: options.cwd ?? process.cwd(),
+    homedir: options.homedir,
+    fs: options.settingsFs
+  });
   const input = options.input ?? process.stdin;
   const output = options.output ?? stderr;
   const errorOutput = options.errorOutput ?? stderr;

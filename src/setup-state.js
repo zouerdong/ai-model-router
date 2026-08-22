@@ -4,7 +4,9 @@ import { randomUUID } from "node:crypto";
 import { getSetupStatePath } from "./platform.js";
 
 const STATE_VERSION = 1;
-const PROVIDER_ID_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
+// Mirrors the config loader's ID_PATTERN (src/config/loader.js): dots are valid provider IDs,
+// and a stricter pattern here would wedge the first-run loop for every dotted provider.
+const PROVIDER_ID_PATTERN = /^[a-z0-9]+(?:[.-][a-z0-9]+)*$/;
 
 export class SetupStateError extends Error {
   constructor(code, message) {

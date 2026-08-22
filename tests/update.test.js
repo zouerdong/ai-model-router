@@ -5,6 +5,7 @@ import os from "node:os";
 import path from "node:path";
 import test from "node:test";
 import { parseUpdateArgs, runUpdate } from "../src/commands/update.js";
+import { createHash } from "node:crypto";
 import { CMR_PACKAGE_NAME } from "../src/updater.js";
 
 function capture() {
@@ -104,6 +105,12 @@ function transactionRunner({ installOutcome = "success", verifyOutput = null, mu
   };
 }
 
+const FAKE_PACKAGE_SHA256 = createHash("sha256").update("fake package").digest("hex");
+const FAKE_CANDIDATE_FILENAME = "claude-model-router-1.3.0-candidate.tgz";
+function fakeReleaseSums() {
+  return async () => ({ ok: true, text: async () => `${FAKE_PACKAGE_SHA256}  ${FAKE_CANDIDATE_FILENAME}\n` });
+}
+
 test("update accepts only the explicit check form", () => {
   assert.deepEqual(parseUpdateArgs([]), { checkOnly: false });
   assert.deepEqual(parseUpdateArgs(["--check"]), { checkOnly: true });
@@ -175,6 +182,7 @@ test("update backs up, installs the candidate into the current prefix, verifies 
     npmExecutable: "/fake/npm",
     runner,
     lockPath,
+    fetchImpl: fakeReleaseSums(),
     randomToken: () => "transaction-owner-abcdefghijkl",
     tempParent: path.dirname(install.prefix),
     output: output.output,
@@ -238,6 +246,7 @@ test("install failure leaves an intact old installation distinguishable from rol
     platform: "darwin",
     npmExecutable: "/fake/npm",
     runner: intactRunner,
+    fetchImpl: fakeReleaseSums(),
     lockPath: path.join(path.dirname(intact.prefix), "intact.lock"),
     randomToken: () => "install-failure-owner-abcdefghijkl",
     tempParent: path.dirname(intact.prefix),
@@ -259,6 +268,7 @@ test("install failure leaves an intact old installation distinguishable from rol
     platform: "darwin",
     npmExecutable: "/fake/npm",
     runner: rollbackRunner,
+    fetchImpl: fakeReleaseSums(),
     lockPath: path.join(path.dirname(rollback.prefix), "rollback.lock"),
     randomToken: () => "rollback-owner-abcdefghijkl",
     tempParent: path.dirname(rollback.prefix),
@@ -284,6 +294,7 @@ test("post-verify failure and rollback failure are reported without false succes
     platform: "darwin",
     npmExecutable: "/fake/npm",
     runner: brokenRunner,
+    fetchImpl: fakeReleaseSums(),
     lockPath: path.join(path.dirname(broken.prefix), "broken.lock"),
     randomToken: () => "broken-owner-abcdefghijkl",
     tempParent: path.dirname(broken.prefix),
@@ -304,6 +315,7 @@ test("post-verify failure and rollback failure are reported without false succes
     platform: "darwin",
     npmExecutable: "/fake/npm",
     runner: failedRunner,
+    fetchImpl: fakeReleaseSums(),
     lockPath: path.join(path.dirname(failed.prefix), "failed.lock"),
     randomToken: () => "failed-owner-abcdefghijkl",
     tempParent: path.dirname(failed.prefix),
@@ -343,6 +355,7 @@ test("post-install verification rejects a command shim that no longer maps to th
     npmExecutable: "/fake/npm",
     runner,
     fsSync,
+    fetchImpl: fakeReleaseSums(),
     lockPath: path.join(path.dirname(install.prefix), "mapping.lock"),
     randomToken: () => "mapping-owner-abcdefghijkl",
     tempParent: path.dirname(install.prefix),
@@ -396,10 +409,12 @@ test("clears Router variables before npm and maps interrupted install to exit 13
       PATH: "/tmp/npm",
       ANTHROPIC_AUTH_TOKEN: "test-router-token",
       ANTHROPIC_MODEL: "test-model",
+      NODE_OPTIONS: "--require /tmp/not-allowed.js",
       HTTPS_PROXY: "https://proxy.example"
     },
     npmExecutable: "/tmp/npm",
     runner,
+    fetchImpl: fakeReleaseSums(),
     lockPath: path.join(path.dirname(install.prefix), "interrupted.lock"),
     randomToken: () => "interrupted-owner-abcdefghijkl",
     tempParent: path.dirname(install.prefix),
@@ -409,7 +424,8 @@ test("clears Router variables before npm and maps interrupted install to exit 13
   assert.equal(result.status, "failed-old-intact");
   assert.equal(result.exitCode, 130);
   assert.equal(observedEnvs.every((env) => !Object.hasOwn(env, "ANTHROPIC_AUTH_TOKEN")
-    && !Object.hasOwn(env, "ANTHROPIC_MODEL") && env.HTTPS_PROXY === "https://proxy.example"), true);
+    && !Object.hasOwn(env, "ANTHROPIC_MODEL") && !Object.hasOwn(env, "NODE_OPTIONS")
+    && env.HTTPS_PROXY === "https://proxy.example"), true);
   assert.doesNotMatch(errorOutput.value, /test-router-token|test-model/);
 });
 
@@ -525,6 +541,7 @@ test("cleanup failure is a warning and does not turn a successful no-op into a f
       async mkdir(directory, options) { return mkdir(directory, options); },
       async rm() { throw new Error("cleanup denied"); }
     },
+    fetchImpl: fakeReleaseSums(),
     lockPath: path.join(path.dirname(install.prefix), "cleanup.lock"),
     randomToken: () => "cleanup-owner-abcdefghijkl",
     tempParent: path.dirname(install.prefix),
@@ -579,4 +596,51 @@ test("invalid update arguments fail before a runner can be called and do not ech
   assert.match(errorOutput.value, /usage: cmr update/);
   assert.equal(called, false);
   assert.doesNotMatch(errorOutput.value, new RegExp(sentinel));
+});
+
+test("update refuses to install a release asset that fails SHA256SUMS verification", async (t) => {
+  const install = await createInstall(t);
+  const runner = transactionRunner();
+  runner.setPackageRoot(install.packageRoot);
+  const errorOutput = capture();
+  const result = await runUpdate([], {
+    entryPath: install.commandPath,
+    modulePath: install.modulePath,
+    currentVersion: "1.2.1",
+    platform: "darwin",
+    npmExecutable: "/fake/npm",
+    runner,
+    fetchImpl: async () => ({ ok: true, text: async () => `${"0".repeat(64)}  ${FAKE_CANDIDATE_FILENAME}\n` }),
+    lockPath: path.join(path.dirname(install.prefix), "integrity-mismatch.lock"),
+    randomToken: () => "integrity-owner-abcdefghijkl",
+    tempParent: path.dirname(install.prefix),
+    output: capture().output,
+    errorOutput: errorOutput.output
+  });
+  assert.equal(result.status, "failed");
+  assert.match(errorOutput.value, /does not match the published SHA256SUMS/);
+  assert.equal(runner.calls.filter((call) => call.args[0] === "install").length, 0);
+  assert.equal(JSON.parse(await readFile(path.join(install.packageRoot, "package.json"), "utf8")).version, "1.2.1");
+
+  const offline = await createInstall(t);
+  const offlineRunner = transactionRunner();
+  offlineRunner.setPackageRoot(offline.packageRoot);
+  const offlineError = capture();
+  const offlineResult = await runUpdate([], {
+    entryPath: offline.commandPath,
+    modulePath: offline.modulePath,
+    currentVersion: "1.2.1",
+    platform: "darwin",
+    npmExecutable: "/fake/npm",
+    runner: offlineRunner,
+    fetchImpl: async () => { throw new Error("offline"); },
+    lockPath: path.join(path.dirname(offline.prefix), "integrity-offline.lock"),
+    randomToken: () => "integrity-offline-owner-abcdefghijkl",
+    tempParent: path.dirname(offline.prefix),
+    output: capture().output,
+    errorOutput: offlineError.output
+  });
+  assert.equal(offlineResult.status, "failed");
+  assert.match(offlineError.value, /SHA256SUMS could not be fetched/);
+  assert.equal(offlineRunner.calls.filter((call) => call.args[0] === "install").length, 0);
 });

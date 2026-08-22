@@ -51,6 +51,8 @@ test("parses one npm pack metadata item and confines the tarball to the temp dir
   bad([{ name: CMR_PACKAGE_NAME, version: "1.3.0-beta.1", filename: tarballPath }]);
   bad([{ name: CMR_PACKAGE_NAME, version: "1.3.0", filename: path.join(directory, "..", "escape.tgz") }]);
   bad([{ name: CMR_PACKAGE_NAME, version: "1.3.0", filename: path.join(directory, "missing.tgz") }]);
+  bad([{ name: CMR_PACKAGE_NAME, version: "1.3.0", filename: "claude-model-router-1.3.0&calc.tgz" }]);
+  bad([{ name: CMR_PACKAGE_NAME, version: "1.3.0", filename: "claude-model-router-1.3.0%VAR%.tgz" }]);
   bad([{ name: CMR_PACKAGE_NAME, version: "1.3.0", filename: tarballPath }], { maxTarballBytes: 1 });
   bad([{
     name: CMR_PACKAGE_NAME,

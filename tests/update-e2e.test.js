@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { access, cp, mkdtemp, mkdir, readFile, rename, rm, symlink, writeFile } from "node:fs/promises";
 import { EventEmitter } from "node:events";
+import { createHash } from "node:crypto";
 import os from "node:os";
 import path from "node:path";
 import test from "node:test";
@@ -9,6 +10,34 @@ import { createCommandRunner, runCommand } from "../src/command-runner.js";
 import { runUpdate } from "../src/commands/update.js";
 import { findNpmExecutable } from "../src/platform.js";
 import { CMR_PACKAGE_NAME, LATEST_RELEASE_ASSET_URL } from "../src/updater.js";
+
+// SHA256SUMS answers for locally injected candidates: hash the tarball npm actually produced,
+// keyed by its basename, so integrity verification passes without network access.
+function makeCandidateSumsTracker(runner) {
+  const state = { lastPackedCandidate: null };
+  const wrapped = async (request) => {
+    const args = [...request.args];
+    if (args[0] === "pack" && args[1] === LATEST_RELEASE_ASSET_URL) args[1] = state.candidateTarball;
+    const early = state.intercept ? await state.intercept(args) : undefined;
+    if (early) return early;
+    const result = await runner.run({ ...request, args });
+    if (args[0] === "pack" && args[1] === state.candidateTarball) {
+      const metadata = JSON.parse(result.stdout)[0];
+      const destination = args[args.indexOf("--pack-destination") + 1];
+      state.lastPackedCandidate = path.isAbsolute(metadata.filename)
+        ? metadata.filename
+        : path.join(destination, metadata.filename);
+    }
+    if (state.onResult) state.onResult(args, result);
+    return result;
+  };
+  state.fetchImpl = async () => {
+    const bytes = await readFile(state.lastPackedCandidate);
+    return { ok: true, text: async () => `${createHash("sha256").update(bytes).digest("hex")}  ${path.basename(state.lastPackedCandidate)}\n` };
+  };
+  state.run = wrapped;
+  return state;
+}
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const nativePlatform = process.platform;
@@ -130,15 +159,12 @@ test(`${platformLabel} isolated prefix self-update uses real npm, exact prefix, 
   const lockPath = path.join(appData, "ClaudeModelRouter", "update.lock");
   const runner = createCommandRunner({ platform: nativePlatform });
   const observed = [];
-  const injectedRunner = {
-    async run(request) {
-      const args = [...request.args];
-      if (args[0] === "pack" && args[1] === LATEST_RELEASE_ASSET_URL) args[1] = candidateTarball;
-      const result = await runner.run({ ...request, args });
-      observed.push({ args, exitCode: result.exitCode, stdout: result.stdout, stderr: result.stderr });
-      return result;
-    }
+  const sumsTracker = makeCandidateSumsTracker(runner);
+  sumsTracker.candidateTarball = candidateTarball;
+  sumsTracker.onResult = (args, result) => {
+    observed.push({ args, exitCode: result.exitCode, stdout: result.stdout, stderr: result.stderr });
   };
+  const injectedRunner = { run: sumsTracker.run };
   const output = { value: "", write(chunk) { this.value += chunk; } };
   const errorOutput = { value: "", write(chunk) { this.value += chunk; } };
   const checkResult = await runUpdate(["--check"], {
@@ -164,6 +190,7 @@ test(`${platformLabel} isolated prefix self-update uses real npm, exact prefix, 
     env,
     npmExecutable,
     runner: injectedRunner,
+    fetchImpl: sumsTracker.fetchImpl,
     lockPath,
     tempParent: root,
     output,
@@ -299,22 +326,21 @@ test("Windows real npm install failure rolls back the damaged package", {
   await installFixture(npmExecutable, prefix, oldTarball, cache, env);
   const installation = installationPaths(prefix);
   const runner = createCommandRunner({ platform: nativePlatform });
+  const sumsTracker = makeCandidateSumsTracker(runner);
+  sumsTracker.candidateTarball = candidateTarball;
   let injectedFailure = false;
-  const injectedRunner = {
-    async run(request) {
-      const args = [...request.args];
-      if (args[0] === "pack" && args[1] === LATEST_RELEASE_ASSET_URL) args[1] = candidateTarball;
-      if (!injectedFailure && args[0] === "install") {
-        injectedFailure = true;
-        await writeFile(installation.packageJson, JSON.stringify({
-          name: CMR_PACKAGE_NAME,
-          version: "damaged"
-        }));
-        return { exitCode: 1, signal: null, stdout: "", stderr: "injected install failure" };
-      }
-      return runner.run({ ...request, args });
+  sumsTracker.intercept = async (args) => {
+    if (!injectedFailure && args[0] === "install") {
+      injectedFailure = true;
+      await writeFile(installation.packageJson, JSON.stringify({
+        name: CMR_PACKAGE_NAME,
+        version: "damaged"
+      }));
+      return { exitCode: 1, signal: null, stdout: "", stderr: "injected install failure" };
     }
+    return undefined;
   };
+  const injectedRunner = { run: sumsTracker.run };
   const errorOutput = { value: "", write(chunk) { this.value += chunk; } };
 
   const result = await runUpdate([], {
@@ -325,6 +351,7 @@ test("Windows real npm install failure rolls back the damaged package", {
     env,
     npmExecutable,
     runner: injectedRunner,
+    fetchImpl: sumsTracker.fetchImpl,
     lockPath: path.join(appData, "ClaudeModelRouter", "update.lock"),
     tempParent: root,
     output: { write() {} },

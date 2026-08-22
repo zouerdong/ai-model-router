@@ -159,8 +159,9 @@ export async function loadConfigSet(options = {}) {
     Promise.all(pricingIds.map((id) => loadPricing(id, { ...options, configRoot }))),
     Promise.all(entitlementIds.map((id) => loadEntitlement(id, { ...options, configRoot })))
   ]);
-  validateConfigSet({ providers, profiles, pricing, entitlements, now: options.now });
-  return { providers, profiles, pricing, entitlements };
+  const validated = validateConfigSet({ providers, profiles, pricing, entitlements, now: options.now });
+  // Staleness is advisory (validator warnings), never a launch blocker (docs/21 SC-5).
+  return { providers, profiles, pricing, entitlements, warnings: validated.warnings };
 }
 
 export function getDefaultConfigRoot() {

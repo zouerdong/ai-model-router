@@ -1,5 +1,6 @@
 import { chmod, copyFile, mkdir, mkdtemp, rm } from "node:fs/promises";
 import * as defaultFsSync from "node:fs";
+import { createHash } from "node:crypto";
 import os from "node:os";
 import path from "node:path";
 import { stderr, stdout } from "node:process";
@@ -11,6 +12,7 @@ import {
   CMR_PACKAGE_NAME,
   DEFAULT_PACK_METADATA_MAX_BYTES,
   LATEST_RELEASE_ASSET_URL,
+  LATEST_RELEASE_SUMS_URL,
   inspectCurrentInstallation,
   parseNpmPackMetadata,
   planUpdate
@@ -19,6 +21,7 @@ import {
 export const UPDATE_COMMAND_TIMEOUT_MS = 5 * 60 * 1000;
 export const UPDATE_COMMAND_MAX_OUTPUT_BYTES = 64 * 1024;
 export const UPDATE_VERIFY_TIMEOUT_MS = 30 * 1000;
+export const RELEASE_SUMS_MAX_BYTES = 64 * 1024;
 
 export class UpdateError extends Error {
   constructor(category, message, exitCode = 1) {
@@ -65,7 +68,55 @@ async function createTempWorkspace({ fsApi, tempParent = os.tmpdir() }) {
 }
 
 function commandEnvironment(options) {
-  return removeRouterEnvironmentVariables(options.env ?? process.env, ROUTER_MANAGED_ENV_VARS);
+  const environment = removeRouterEnvironmentVariables(options.env ?? process.env, ROUTER_MANAGED_ENV_VARS);
+  // NODE_OPTIONS would inject code into every npm/node child of the update chain.
+  delete environment.NODE_OPTIONS;
+  return environment;
+}
+
+function parseReleaseSumsEntry(text, filename) {
+  for (const rawLine of text.split(/\r?\n/)) {
+    const match = rawLine.match(/^([0-9a-fA-F]{64})\s+\*?(.+?)\s*$/);
+    if (match && match[2] === filename) return match[1].toLowerCase();
+  }
+  return null;
+}
+
+export async function verifyReleaseIntegrity({ tarballPath, options = {} }) {
+  const fetchImpl = options.fetchImpl ?? fetch;
+  let response;
+  try {
+    response = await fetchImpl(LATEST_RELEASE_SUMS_URL);
+  } catch {
+    throwUpdate("integrity check unavailable", "published SHA256SUMS could not be fetched");
+  }
+  if (!response || typeof response.ok !== "boolean" || !response.ok) {
+    throwUpdate("integrity check unavailable", "published SHA256SUMS could not be fetched");
+  }
+  let text;
+  try {
+    text = await response.text();
+  } catch {
+    throwUpdate("integrity check unavailable", "published SHA256SUMS could not be read");
+  }
+  if (typeof text !== "string" || text.length === 0 || text.length > (options.maxSumsBytes ?? RELEASE_SUMS_MAX_BYTES)) {
+    throwUpdate("integrity check unavailable", "published SHA256SUMS is invalid");
+  }
+  // SHA256SUMS entries name the release asset (a basename), while npm metadata may carry a path.
+  const expected = parseReleaseSumsEntry(text, path.basename(tarballPath));
+  if (!expected) throwUpdate("integrity check unavailable", "published SHA256SUMS has no entry for the release asset");
+  const fsApi = options.fsSync ?? defaultFsSync;
+  let bytes;
+  try {
+    bytes = fsApi.readFileSync(tarballPath);
+  } catch {
+    throwUpdate("integrity check unavailable", "downloaded release asset could not be read for verification");
+  }
+  const actual = createHash("sha256").update(bytes).digest("hex");
+  if (actual !== expected) {
+    throwUpdate("integrity verification failed", "downloaded release asset does not match the published SHA256SUMS; rerun cmr update");
+  }
+  return actual;
 }
 
 function getRunner(options, env) {
@@ -331,6 +382,10 @@ async function transactionalUpdate({ inspection, npmExecutable, options, workspa
     || beforeInstall.currentVersion !== inspection.currentVersion) {
     throwUpdate("current installation changed during update", "the active CMR installation changed before install");
   }
+
+  // The published SHA256SUMS is the only integrity control beyond TLS; verify the downloaded
+  // asset before any byte of it is installed or executed.
+  await verifyReleaseIntegrity({ tarballPath: candidate.tarballPath, options });
 
   const output = options.output ?? stdout;
   output.write(`Updating CMR ${inspection.currentVersion} -> ${candidate.version} from the official GitHub Release...\n`);

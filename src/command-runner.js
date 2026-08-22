@@ -1,6 +1,7 @@
 import { spawn as nodeSpawn } from "node:child_process";
 import { installSignalForwarding, signalExitCode } from "./launcher.js";
 import { buildCommandSpawnSpec } from "./platform.js";
+import { ROUTER_MANAGED_ENV_VARS, removeEnvironmentKeys } from "./environment.js";
 
 export class CommandRunnerError extends Error {
   constructor(message, { cause, exitCode, signal, code } = {}) {
@@ -12,13 +13,9 @@ export class CommandRunnerError extends Error {
   }
 }
 
-export function removeRouterEnvironmentVariables(parentEnv = process.env, managedKeys = []) {
-  const environment = { ...parentEnv };
+export function removeRouterEnvironmentVariables(parentEnv = process.env, managedKeys = ROUTER_MANAGED_ENV_VARS) {
   const managed = new Set(managedKeys.map((key) => key.toLowerCase()));
-  for (const key of Object.keys(environment)) {
-    if (managed.has(key.toLowerCase())) delete environment[key];
-  }
-  return environment;
+  return removeEnvironmentKeys(parentEnv, (key) => managed.has(key.toLowerCase()));
 }
 
 export function runCommand({

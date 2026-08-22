@@ -410,7 +410,11 @@ test("validator rejects unknown fields, missing required variables, and expired 
     environment: Object.fromEntries(Object.entries(config.profiles[0].environment).filter(([key]) => key !== "ANTHROPIC_DEFAULT_FABLE_MODEL"))
   };
   assert.throws(() => validateProfile(missingProfile, new Set(["kimi", "deepseek"])), /missing required variable/);
-  assert.throws(() => validateProvider(config.providers[0], { now: new Date("2027-02-01T00:00:00Z") }), /expired/);
+  // Stale facts warn instead of failing (docs/21 SC-5): every command keeps working.
+  const staleWarnings = [];
+  assert.doesNotThrow(() => validateProvider(config.providers[0], { now: new Date("2027-02-01T00:00:00Z"), warnings: staleWarnings }));
+  assert.equal(staleWarnings.length, 1);
+  assert.match(staleWarnings[0], /is stale/);
   assert.throws(
     () => validateProvider({ ...config.providers[0], verifiedOn: "2026-02-31" }, { now: new Date("2026-07-19T00:00:00Z") }),
     /not a valid date/
@@ -418,6 +422,9 @@ test("validator rejects unknown fields, missing required variables, and expired 
   assert.doesNotThrow(
     () => validateProvider({ ...config.providers[0], verifiedOn: "2026-07-19" }, { now: new Date(2026, 6, 19, 0, 1) })
   );
+  const farFuture = await loadConfigSet({ now: new Date("2027-03-01T00:00:00Z") });
+  assert.ok(farFuture.profiles.length > 0);
+  assert.ok((farFuture.warnings ?? []).length >= farFuture.providers.length + farFuture.pricing.length);
 });
 
 test("profile commercial metadata uses exactly one pricing or entitlement reference", async () => {
@@ -480,7 +487,10 @@ test("entitlement validation rejects unknown, insecure, stale and empty metadata
   assert.throws(() => validateEntitlement({ ...valid, unexpected: true }, { now }), /unknown field/);
   assert.throws(() => validateEntitlement({ ...valid, sourceUrl: "http://example.com/membership" }, { now }), /must use HTTPS/);
   assert.throws(() => validateEntitlement({ ...valid, verifiedOn: "2026-08-13" }, { now }), /cannot be in the future/);
-  assert.throws(() => validateEntitlement({ ...valid, verifiedOn: "2026-01-01" }, { now }), /is expired/);
+  const staleWarnings = [];
+  assert.doesNotThrow(() => validateEntitlement({ ...valid, verifiedOn: "2026-01-01" }, { now, warnings: staleWarnings }));
+  assert.equal(staleWarnings.length, 1);
+  assert.match(staleWarnings[0], /is stale/);
   assert.throws(() => validateEntitlement({ ...valid, quotaNotice: "" }, { now }), /quotaNotice must be a non-empty string/);
   assert.throws(() => validateEntitlement({ ...valid, quotaNotice: "   " }, { now }), /quotaNotice must be a non-empty string/);
 });

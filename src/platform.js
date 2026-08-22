@@ -1,4 +1,4 @@
-import { access, constants } from "node:fs/promises";
+import { access, constants, stat } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 
@@ -68,7 +68,8 @@ export function getProjectSettingsPaths(cwd = process.cwd()) {
 export async function isExecutable(file) {
   try {
     await access(file, constants.X_OK);
-    return true;
+    // access(X_OK) succeeds for directories on POSIX; only a regular file (symlinks followed) can run.
+    return (await stat(file)).isFile();
   } catch {
     return false;
   }

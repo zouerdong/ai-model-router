@@ -5,14 +5,14 @@ import path from "node:path";
 import { loadConfigSet } from "../config/loader.js";
 import { isRouterManagedEnvironmentVariable } from "../environment.js";
 import { SecretStore } from "../secret-store.js";
+import { getClaudeUserSettingsPath } from "../settings-conflict.js";
 import {
   findClaudeExecutable,
   buildSpawnSpec,
   getManagedSettingsPaths,
   getProjectSettingsPaths,
   getSecretStorePath,
-  getShellProfilePaths,
-  getUserSettingsPath
+  getShellProfilePaths
 } from "../platform.js";
 
 function line(status, message) {
@@ -51,6 +51,7 @@ async function readSettingsSummary(file, source) {
       if (isRouterManagedEnvironmentVariable(key)) keys.push(key);
     }
   }
+  if (typeof data.apiKeyHelper === "string" && data.apiKeyHelper.length > 0) keys.push("apiKeyHelper");
   if (Object.hasOwn(data, "model")) keys.push("model");
   const uniqueKeys = [...new Set(keys)].sort();
   const lines = uniqueKeys.length > 0
@@ -134,7 +135,7 @@ export async function runDoctor(options = {}) {
   const currentKeys = Object.keys(env).filter(isRouterManagedEnvironmentVariable).sort();
   details.environment = currentKeys;
   if (currentKeys.length > 0) {
-    const states = currentKeys.map((key) => `${key}=${env[key] ? "set" : "unset"}`);
+    const states = currentKeys.map((key) => `${key}=${env[key] === undefined ? "unset" : "set"}`);
     lines.push(line("WARN", `current process has router-related keys: ${states.join(", ")}`));
   }
   else lines.push(line("PASS", "current process has no router-related keys"));
@@ -143,7 +144,7 @@ export async function runDoctor(options = {}) {
   if (authKeys.length > 1) lines.push(line("WARN", "multiple non-empty Anthropic authentication variables are present"));
 
   const settingsFiles = [
-    [getUserSettingsPath({ platform, env, homedir: homeDir }), "user"],
+    [getClaudeUserSettingsPath({ platform, env, homedir: homeDir }), "user"],
     ...getProjectSettingsPaths(cwd).map((file, index) => [file, index === 0 ? "project" : "local"]),
     ...getManagedSettingsPaths({ platform }).map((file) => [file, "managed"])
   ];
@@ -155,9 +156,11 @@ export async function runDoctor(options = {}) {
   const settingsWithRouterKeys = details.settings.filter((item) => item.keys.length > 0);
   if (settingsWithRouterKeys.length > 0) lines.push(line("WARN", "settings env values can override inherited shell variables"));
   const userSettings = details.settings.find((item) => item.source === "user");
-  if (userSettings && (await getPermissions(userSettings.file)) !== null) {
+  if (userSettings) {
     const mode = await getPermissions(userSettings.file);
-    if (platform !== "win32" && (mode & 0o077) !== 0) lines.push(line("WARN", `user settings permissions are ${mode.toString(8).padStart(3, "0")}; review sensitive configuration exposure`));
+    if (mode !== null && platform !== "win32" && (mode & 0o077) !== 0) {
+      lines.push(line("WARN", `user settings permissions are ${mode.toString(8).padStart(3, "0")}; review sensitive configuration exposure`));
+    }
   }
 
   for (const file of getShellProfilePaths({ platform, env, homedir: homeDir })) {
@@ -174,8 +177,10 @@ export async function runDoctor(options = {}) {
     details.config = {
       profiles: config.profiles.map((profile) => profile.id),
       providers: config.providers.map((provider) => provider.id),
-      verifiedOn: [...config.providers, ...config.pricing, ...config.entitlements].map((item) => item.verifiedOn)
+      verifiedOn: [...config.providers, ...config.pricing, ...config.entitlements].map((item) => item.verifiedOn),
+      warnings: config.warnings ?? []
     };
+    for (const warning of config.warnings ?? []) lines.push(line("WARN", warning));
     const subscriptionRefs = new Set(
       config.profiles.filter((profile) => profile.costNotice === "subscription").map((profile) => profile.entitlementRef)
     );

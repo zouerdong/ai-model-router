@@ -3,6 +3,7 @@ import path from "node:path";
 
 export const CMR_PACKAGE_NAME = "claude-model-router";
 export const LATEST_RELEASE_ASSET_URL = "https://github.com/zouerdong/ai-model-router/releases/latest/download/claude-model-router.tgz";
+export const LATEST_RELEASE_SUMS_URL = "https://github.com/zouerdong/ai-model-router/releases/latest/download/SHA256SUMS";
 export const DEFAULT_PACK_METADATA_MAX_BYTES = 64 * 1024;
 export const DEFAULT_TARBALL_MAX_BYTES = 50 * 1024 * 1024;
 export const DEFAULT_UNPACKED_MAX_BYTES = 200 * 1024 * 1024;
@@ -10,6 +11,9 @@ export const MAX_VERSION_COMPONENT_DIGITS = 18;
 
 const VERSION_COMPONENT = `(?:0|[1-9]\\d{0,${MAX_VERSION_COMPONENT_DIGITS - 1}})`;
 const STABLE_VERSION_PATTERN = new RegExp(`^(${VERSION_COMPONENT})\\.(${VERSION_COMPONENT})\\.(${VERSION_COMPONENT})$`);
+// cmd.exe metacharacters (or %VAR% expansion) in an npm-reported filename would be reinterpreted
+// once the tarball path reaches npm on Windows; path separators and spaces stay allowed.
+const DANGEROUS_FILENAME_PATTERN = /[\u0000-\u001F\u007F&|^%!<>()'"=;,]/;
 
 function reject(message) {
   throw new TypeError(message);
@@ -165,7 +169,7 @@ export function parseNpmPackMetadata(
   if (typeof item.version !== "string") reject("npm pack metadata is missing a version");
   parseStableVersion(item.version);
   if (typeof item.filename !== "string" || item.filename.length === 0) reject("npm pack metadata is missing a filename");
-  if (/[\u0000-\u001F\u007F]/.test(item.filename) || !item.filename.toLowerCase().endsWith(".tgz")) {
+  if (DANGEROUS_FILENAME_PATTERN.test(item.filename) || !item.filename.toLowerCase().endsWith(".tgz")) {
     reject("npm pack metadata filename is invalid");
   }
 

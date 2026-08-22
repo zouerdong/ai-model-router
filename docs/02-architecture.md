@@ -656,3 +656,30 @@ readSecretsForRedaction()  必须包含未知 key 的值（错误脱敏完整性
 ```
 
 不变量：Schema v1、原子写入（临时文件 + rename）、目录 0700/文件 0600、已知 key 全部值校验、`get`/`set` 对未知请求 provider 的拒绝、密钥红线均不变。限制：已发布的 `1.4.0`/`1.5.0` 二进制无法追补本行为，仍会在含 `kimi-code` key 的 Store 上拒绝读取；修复随下一常规版本发布后，从该版本起的降级/混用场景获得保护。
+
+## 22. 公开发布安全加固架构（候选）
+
+绑定实施合同：`docs/21-security-hardening-implementation-guide.md`。
+
+### 22.1 settings 覆盖与启动前预检
+
+Claude Code 官方合同：settings 文件 `env` 块的值在启动时及文件每次变更时**替换**继承自进程环境的同名变量（含空字符串取消）。因此 CMR 注入的子进程环境会被 settings 覆盖——`ROUTER_MANAGED_ENV_VARS` 的进程内清理对此无效。供应商切换器（CC Switch 等）正是把 `ANTHROPIC_BASE_URL` 与鉴权变量持久写进 `~/.claude/settings.json` 的 `env` 块，构成对 CMR Profile 的静默劫持。
+
+```text
+cmr <profile>
+  └── launchProfile
+        └── assertNoSettingsConflicts（settings-conflict.js）
+              ├── 用户 settings（含 CLAUDE_CONFIG_DIR） / 项目 settings(.local) / managed（目录展开 .json）
+              ├── env 块命中 Router 管理变量（键存在即冲突，含空值）
+              └── 有冲突 → 列出文件/来源/变量并拒绝启动；无冲突 → 原启动链
+```
+
+`apiKeyHelper` 不阻断启动（官方认证优先级中 `ANTHROPIC_API_KEY`/`ANTHROPIC_AUTH_TOKEN` 高于它，CMR 恒注入其一），但 `doctor` 报告。doctor 的用户 settings 路径同样感知 `CLAUDE_CONFIG_DIR`。
+
+### 22.2 隐藏输入与密钥输出
+
+raw mode 隐藏输入按状态机吞掉 CSI/SS3/OSC 转义序列与游离控制字节（跨 chunk 有效，序列中 Ctrl+C/Ctrl+D 仍取消）；Ctrl+D 与 Ctrl+C 同为取消。误粘贴为 profile 参数的 token 形态输入在错误消息中脱敏为 `<redacted N-character input>`，普通 typo 原样展示。`set()` 前清扫超过 10 分钟的 `.secrets-*.tmp` 遗留（并发写者的新文件不动）。
+
+### 22.3 自更新完整性
+
+安装前对下载资产做 SHA256SUMS 校验（固定 `releases/latest/download/SHA256SUMS` 资产，按 tarball basename 匹配条目；拉取失败/无条目/不匹配一律 fail-closed 拒绝安装）。npm pack 元数据文件名拒绝 cmd.exe 元字符与 `%`。更新链子进程环境在 Router 变量清理之外剥离 `NODE_OPTIONS`；代理与 `npm_config_*` 保留。技术基线提升为 Node `>=18.20.0`（libuv BatBadBut `.cmd` 参数转义基线）。

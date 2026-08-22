@@ -761,3 +761,15 @@ test("compatibility aliases configure the correct Provider in place", async (t) 
     assert.equal(await store.get(provider), secret);
   }
 });
+
+test("unknown profile errors redact token-shaped input instead of echoing it", async () => {
+  const pastedKey = `sk-ant-api03-${"a".repeat(40)}`;
+  await assert.rejects(
+    () => launchProfile(pastedKey, [], { parentEnv: { PATH: process.env.PATH } }),
+    (error) => error.message.includes("<redacted 53-character input>") && !error.message.includes(pastedKey)
+  );
+  await assert.rejects(
+    () => launchProfile("kimi-code-typo", [], { parentEnv: { PATH: process.env.PATH } }),
+    /unknown profile: kimi-code-typo/
+  );
+});

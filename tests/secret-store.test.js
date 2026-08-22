@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { EventEmitter } from "node:events";
-import { chmod, cp, mkdtemp, readFile, readdir, rename, stat, unlink, writeFile } from "node:fs/promises";
+import { chmod, cp, mkdtemp, readFile, readdir, rename, stat, unlink, utimes, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import test from "node:test";
@@ -301,6 +301,41 @@ test("hidden secret input rejects multiline paste instead of accepting a truncat
   assert.equal(input.listenerCount("data"), 0);
 });
 
+test("hidden secret input drops escape sequences and stray control bytes; Ctrl+D cancels", async () => {
+  // Arrow keys and bracketed-paste wrappers fold into nothing.
+  const arrow = fakeTtyInput();
+  const arrowPending = readHiddenSecret({ input: arrow.input, output: { write: () => {} } });
+  arrow.input.emit("data", "\u001b[Dsk-te\u001b[1;5Cst\u001b[201~\n");
+  assert.equal(await arrowPending, "sk-test");
+  assert.deepEqual(arrow.rawModes, [true, false]);
+
+  // An OSC title sequence with a BEL terminator is ignored.
+  const osc = fakeTtyInput();
+  const oscPending = readHiddenSecret({ input: osc.input, output: { write: () => {} } });
+  osc.input.emit("data", "\u001b]0;window\u0007sk-test\n");
+  assert.equal(await oscPending, "sk-test");
+
+  // Stray control bytes (tab, NUL, C1) never reach the stored value.
+  const stray = fakeTtyInput();
+  const strayPending = readHiddenSecret({ input: stray.input, output: { write: () => {} } });
+  stray.input.emit("data", "sk\tt\u0000est\n");
+  assert.equal(await strayPending, "sktest");
+
+  // A sequence split across separate reads is still ignored.
+  const split = fakeTtyInput();
+  const splitPending = readHiddenSecret({ input: split.input, output: { write: () => {} } });
+  split.input.emit("data", "\u001b");
+  split.input.emit("data", "[A");
+  split.input.emit("data", "sk-test\n");
+  assert.equal(await splitPending, "sk-test");
+
+  // Ctrl+D cancels like Ctrl+C instead of appending a control byte.
+  const eof = fakeTtyInput();
+  const eofPending = readHiddenSecret({ input: eof.input, output: { write: () => {} } });
+  eof.input.emit("data", "sk-test\u0004");
+  await assert.rejects(eofPending, (error) => error.code === "CMR_CANCELLED");
+});
+
 test("hidden secret input cleans up when setEncoding or setRawMode initialization fails", async () => {
   const encodingInput = fakeTtyInput().input;
   encodingInput.setEncoding = () => { throw new Error("encoding failed"); };
@@ -359,4 +394,22 @@ test("secret replacement keeps the old file when write, chmod or rename fails", 
   });
   await assert.rejects(() => failTempChmod.set("kimi", "test-kimi-new"), /cannot write secret store/);
   assert.equal(await initial.get("kimi"), "test-kimi-old");
+});
+
+test("set sweeps stale secret-store temporary files but never fresh ones", async (t) => {
+  const directory = await mkdtemp(path.join(tmpdir(), "cmr-secret-sweep-"));
+  t.after(async () => {
+    const { rm } = await import("node:fs/promises");
+    await rm(directory, { recursive: true, force: true });
+  });
+  const stale = path.join(directory, ".secrets-stale.tmp");
+  const fresh = path.join(directory, ".secrets-fresh.tmp");
+  await writeFile(stale, "stale");
+  await writeFile(fresh, "fresh");
+  const old = new Date(Date.now() - 60 * 60 * 1000);
+  await utimes(stale, old, old);
+  const store = new SecretStore({ filePath: path.join(directory, "secrets.json") });
+  await store.set("kimi", "test-kimi-key");
+  await assert.rejects(() => readFile(stale), { code: "ENOENT" });
+  assert.equal(await readFile(fresh, "utf8"), "fresh");
 });

@@ -6,7 +6,8 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import test from "node:test";
-import { isMainModule, runCli } from "../src/cli.js";
+import { isMainModule, runCli, VERSION } from "../src/cli.js";
+import { readFileSync } from "node:fs";
 import { loadConfigSet } from "../src/config/loader.js";
 import { getApplicationDataDir, getSecretStorePath, getSetupStatePath } from "../src/platform.js";
 import { SecretStore } from "../src/secret-store.js";
@@ -32,7 +33,12 @@ function isolatedEnvironment(home) {
 test("version and list are non-interactive and do not expose secrets", async () => {
   const version = capture();
   assert.equal(await runCli(["version"], { output: version.output }), 0);
-  assert.equal(version.value, "1.6.0\n");
+  assert.equal(version.value, `${VERSION}\n`);
+  for (const alias of ["--version", "-v"]) {
+    const aliased = capture();
+    assert.equal(await runCli([alias], { output: aliased.output }), 0, alias);
+    assert.equal(aliased.value, `${VERSION}\n`, alias);
+  }
   const list = capture();
   assert.equal(await runCli(["list"], { output: list.output }), 0);
   assert.match(list.value, /kimi: Kimi K3/);
@@ -613,4 +619,12 @@ test("recognizes an npm symlink as the CLI entry point", () => {
   const resolveRealPath = (value) => value === linkPath ? sourcePath : value;
   assert.equal(isMainModule(linkPath, sourcePath, resolveRealPath), true);
   assert.equal(isMainModule("/other/cli.js", sourcePath, resolveRealPath), false);
+});
+
+test("CLI version constant matches package.json and -h aliases help", async () => {
+  const pkg = JSON.parse(readFileSync(new URL("../package.json", import.meta.url), "utf8"));
+  assert.equal(VERSION, pkg.version);
+  const captured = capture();
+  assert.equal(await runCli(["-h"], { output: captured.output }), 0);
+  assert.match(captured.value, /Usage:/);
 });
