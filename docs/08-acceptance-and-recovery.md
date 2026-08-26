@@ -656,3 +656,53 @@ Provider 真实验收由维护者确认；自动化、Node 18、Windows、打包
 | SSFC-A7 | Major | `npm test`、`npm run lint`、`git diff --check` 通过；现有七 Profile 行为零退化 |
 
 本轮无真实 Provider、无真实 Key、无发布门禁；最高结论是仓库实现候选完成。合并入哪个常规版本、commit、push、tag、Release 由项目负责人另行授权。
+
+## 19. GLM-5.3-Flash Auto 双通道升级验收矩阵
+
+绑定实施合同：`docs/22-glm-5.3-flash-auto-implementation-guide.md`。本节只覆盖 GFA-1 至 GFA-6 的仓库候选，不改变第 14、15、17 节对 `1.4.0`/`1.5.0` 历史 GLM 的验收记录。任务卡完成门槛见 `docs/22` §5；本节为对应判定矩阵。
+
+### GFA-A — 事实、规格与历史边界
+
+| ID | 级别 | 验收项 |
+|---|---|---|
+| GFA-A1 | Blocker | `docs/22` 已加入 `AGENTS.md` 阅读顺序；未发布候选已登记且未把稳定版 `1.7.0` 改写成 `1.8.0` 已发布 |
+| GFA-A2 | Blocker | 官方事实与 CMR 产品决策在文档中显式区分；混合映射未被写成智谱/Anthropic 官方 Auto 预设 |
+| GFA-A3 | Blocker | subscription/payg、`AUTH_TOKEN`/`API_KEY` 与 `glm`/`glm-api` 两个 Secret ID 的独立边界在文档中同时成立 |
+| GFA-A4 | Blocker | 文档不宣称主会话自动识图；`CLAUDE_CODE_SUBAGENT_MODEL` 强制覆盖语义被明确写出 |
+| GFA-A5 | Major | `docs/18`「标准 API 暂不升级」被标注为已被 `docs/22` supersede 的历史结论；`docs/14`–`docs/18` 证据正文未被改写 |
+| GFA-A6 | Major | `docs/22` §2 全部官方页面在实施日重开核验并记录日期 |
+
+### GFA-B — Pricing、配置与映射
+
+| ID | 级别 | 验收项 |
+|---|---|---|
+| GFA-B1 | Blocker | `glm-5.3` Pricing 为模型族价格树，仅含稳定公开原价（5.3: 2/8/28；Flash: 0.23/0.8/2.8 CNY/M）；0.115/0.4/1.4 促销价不出现在运行时配置 |
+| GFA-B2 | Blocker | `glm-5.2` Pricing 文件与 catalog 记录保留不删除；两个现行 GLM Profile 不再引用它 |
+| GFA-B3 | Blocker | 两个 GLM Profile 环境逐字节相同：Opus/Sonnet=`glm-5.3[1m]`，Haiku=`glm-5.3-flash[1m]`，Subagent=`glm-5.3-flash[1m]`，compact=1000000，traffic=1，timeout=3000000 |
+| GFA-B4 | Blocker | 两 Profile 均不含 `ANTHROPIC_MODEL`、Effort、Fable、Tool Search 或任何 §3.3 未绑定变量 |
+| GFA-B5 | Blocker | `glm` 仅 entitlement、`glm-api` 仅 Pricing；`glm-api.pricingRef=glm-5.3`；validator 锁定元数据/键序/精确值 |
+| GFA-B6 | Blocker | canonical 与全部 aliases 快照等价；`glm` 三别名与 `glm-payg` 不变，无新增 alias、onboarding 或 Secret 迁移 |
+| GFA-B7 | Major | Providers/entitlement 的核验日期与来源刷新为 2026-08-26 当前页面；quota notice 不承诺无限额度或无额外费用 |
+
+### GFA-C — 启动隔离与费用提示
+
+| ID | 级别 | 验收项 |
+|---|---|---|
+| GFA-C1 | Blocker | `glm` 子进程只有 `ANTHROPIC_AUTH_TOKEN`；`glm-api` 子进程只有 `ANTHROPIC_API_KEY`；两种混合大小写变体不残留 |
+| GFA-C2 | Blocker | `glm → glm-api` 与反向连续启动均无 auth/model/pricing 残留；其他六个 Profile 零退化 |
+| GFA-C3 | Blocker | payg 启动警告覆盖 GLM-5.3 与 GLM-5.3-Flash 两档稳定原价，值来自 Pricing JSON，不出现 GLM-5.2、促销价或会话费用估算 |
+| GFA-C4 | Blocker | opaque argv、cwd、TTY、信号、退出码、父环境隔离、settings 冲突预检不退化 |
+| GFA-C5 | Major | 不对 `glm-api` 增加确认提示、余额探测、自动回退或 API 重试 |
+| GFA-C6 | Major | 负向断言：Haiku/Subagent 不得回退 `glm-4.7`；`glm-api` 不得引用 `glm-5.2` |
+
+### GFA-D — 回归、真实验收与发布停止门
+
+| ID | 级别 | 验收项 |
+|---|---|---|
+| GFA-D1 | Blocker | `npm test`/`npm run lint`/`git diff --check`/`node src/cli.js list` 通过；diff 无真实 Key、版本号或无关重构 |
+| GFA-D2 | Blocker | GFA-5 完成只代表仓库实现候选通过；不得写成 Provider PASS 或发布完成 |
+| GFA-D3 | Blocker | GFA-6 真实验收（Coding Plan 5 项 + 标准 API 4 项 + 费用归属闭环）全部通过且证据脱敏 |
+| GFA-D4 | Blocker | 命中 `docs/22` GFA-6 任一停止条件时停止并更新 `docs/07` 与 `docs/22`，不得自动回退旧模型/换 Key/加代理层/绕过测试 |
+| GFA-D5 | Blocker | 版本号、commit、push、Windows CI、tag 与 Release 逐项获得项目负责人授权；本矩阵不授予任何 Git/发布权限 |
+
+GFA-D3 判定结论（2026-08-27）：功能与凭据隔离全部通过（Coding Plan 5/5、标准 API 原生 3/3 + CMR 端到端 3/3，证据见 `docs/22` 台账）；费用归属实测发现智谱积分制套餐在持有效套餐账号上跨通道抵扣标准 Key 请求（上游机制变更，`docs/07` §15.3），命中停止条件后按流程停止、更新文档，项目负责人于同日裁定方案 1（按原合同发布 + 文档化归属现实）。GFA-D3 以该裁定结案，`glm-api` 不宣称「实测现金扣费」，只承诺凭据/鉴权边界与标准 API 配置正确性。

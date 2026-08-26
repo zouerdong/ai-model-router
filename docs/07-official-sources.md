@@ -1,7 +1,7 @@
 # 07 — 官方参数与事实基线
 
-核验日期：2026-08-16
-实现状态：`1.5.0` 已公开发布（2026-08-18）：Kimi Code 官方事实已复核，真实 Provider 验收完成（三 Profile `PROVIDER PASS`），HighSpeed 按决策 2 文档化；`1.4.0` 历史发布证据见 `docs/16-v1.4-unified-glm-release.md`
+核验日期：2026-08-26（GLM-5.3-Flash 双通道增量见第 15 节；第 1–14 节各自的核验日期保留为历史记录）
+实现状态：`1.7.0` 已公开发布（2026-08-22）；未发布候选 `1.8.0`（`docs/22`）的官方事实见第 15 节
 用途：实现者不得用历史对话或记忆替代本文件中的官方来源；开始实现与发布前必须重新核验。
 
 ## 1. Kimi K3 Profile
@@ -474,3 +474,45 @@ Kimi Code 官方会员页给出以下事实：
 - `deepseek-vision` Profile：全部模型槽位 `deepseek-v4-flash-vision-exp` + `CLAUDE_CODE_EFFORT_LEVEL=max`。
 
 待验证（见 `docs/20` §6）：`deepseek-v4-flash-vision-exp[1m]` 选择值有效性；vision-exp 思考强度档位；`config/pricing/deepseek-v4.json` 的 USD 绝对值（verified 2026-07-23）与 2026-08-17 生效的峰谷 CNY 定价不一致，为独立存量登记项（vision-exp 与 flash 同价使 pricingRef 复用仍成立）。
+
+## 15. GLM-5.3-Flash 与标准 API 5.3 迁移事实（2026-08-26 复核）
+
+绑定实施合同：[docs/22-glm-5.3-flash-auto-implementation-guide.md](22-glm-5.3-flash-auto-implementation-guide.md)。本节是 2026-08-26 的当前事实增量；第 13 节的 2026-08-16 GLM-5.3 分界保留为历史证据——其「标准 API 暂不迁移」结论在当日正确，现已由本节与 `docs/22` supersede。
+
+主来源（实施日已全部重新打开）：
+
+- [智谱新模型发布](https://docs.bigmodel.cn/cn/update/new-releases)：2026-08-26 发布 GLM-5.3-Flash，声明原生多模态；另有 2026-08-25「轻量高速视觉模型上线」条目。
+- [GLM-5.3-Flash 模型页](https://docs.bigmodel.cn/cn/guide/models/vlm/glm-5.3-flash)：Model Code `glm-5.3-flash`；模型 API 已可用（Chat Completion，图片经 `image_url` 内容块）；支持文本、图片、视频与文件；1M 上下文；Function Calling、上下文缓存、结构化输出；`thinking.type` 仅支持 `enabled`（思考默认持续开启，不可关闭）。
+- [GLM Coding Plan 概览](https://docs.bigmodel.cn/cn/coding-plan/overview)：所有套餐（Lite/Pro/Max）均支持 GLM-5.3 与 GLM-5.3-Flash；套餐额度耗尽后等待下一 5 小时周期恢复，不消耗其他资源包/账户余额。积分抵扣系数：GLM-5.3 Input 6.9 / Cached 1.7 / Output 24，GLM-5.3-Flash Input 2.3 / Cached 0.5 / Output 8——Flash 的套餐额度消耗倍率低于完整模型；非高峰时段（周一至周五 14:00–18:00 UTC+8 以外）按 50% 抵扣。**官方同时声明：调用历史模型 GLM-5.2、GLM-5.1 自动切换至 GLM-5.3，调用 GLM-5-Turbo、GLM-4.7 自动切换至 GLM-5.3-Flash**（旧映射在上游已被官方收拢）。
+- [GLM Coding Plan 模型切换](https://docs.bigmodel.cn/cn/coding-plan/latest-model)：官方 Claude Code 全 Flash 映射为 Opus/Sonnet/Haiku 全部 `glm-5.3-flash[1m]` + `CLAUDE_CODE_AUTO_COMPACT_WINDOW=1000000`——证明 `glm-5.3-flash[1m]` 是官方 Claude Code 选择层值；Anthropic 兼容 Base URL 仍为 `https://open.bigmodel.cn/api/anthropic`；`/effort` 默认 max。
+- [GLM Coding Plan 快速开始](https://docs.bigmodel.cn/cn/coding-plan/quick-start)：Anthropic Message 协议 Base URL 为 `https://open.bigmodel.cn/api/anthropic`；个人版 Key 于套餐概览创建，团队 Key 与其他 API Key 不通用。
+- [智谱 Claude API 兼容](https://docs.bigmodel.cn/cn/guide/develop/claude/introduction)：cURL/Python/Java 示例均已使用 `model="glm-5.3"`（TypeScript 示例仍残留 `glm-5.2`），标准 API 建议环境变量 `ANTHROPIC_API_KEY`、请求 Header `x-api-key`——GLM-5.3 标准 API 已上线。
+- [智谱模型价格](https://bigmodel.cn/pricing)（2026-08-26 动态页回读）：GLM-5.3 输入 8 / 输出 28 / 缓存命中 2 CNY/百万 tokens，1M 上下文；GLM-5.3-Flash 稳定公开原价输入 0.8 / 输出 2.8 / 缓存命中 0.23，同页显示「5 折限时两周」促销价 0.4/1.4/0.115（促销价不写入长期配置）；GLM-5.2 价格与 5.3 相同（8/28/2）。缓存存储限时免费为活动事实。
+- [Claude Code 模型配置](https://code.claude.com/docs/en/model-config)：`CLAUDE_CODE_SUBAGENT_MODEL` 是全部子 Agent（含 agent teams 与 workflow agents）的模型，接受别名或完整模型名，**并覆盖单次调用的 `model` 参数与子 Agent 定义 frontmatter 的 `model`**；设为 `inherit` 才恢复常规解析。
+
+### 15.1 官方事实与 CMR 产品决策的边界
+
+可直接采用的官方事实：`glm-5.3-flash` 正式模型代码及其 API 可用性；`glm-5.3-flash[1m]` 是官方 Claude Code 选择层值；Coding Plan 全套餐支持两模型且 Flash 抵扣倍率更低；标准 API `glm-5.3` 已上线；两个 Provider 的 Base URL 与鉴权变量不变；`CLAUDE_CODE_SUBAGENT_MODEL` 的全局覆盖语义。
+
+属于 CMR 产品决策、不得写成「官方 Auto 模式」的部分：Opus/Sonnet=`glm-5.3[1m]` + Haiku/Subagent=`glm-5.3-flash[1m]` 的混合组合；两个现有 Profile 使用相同槽位分工。官方没有单页给出「标准 API Key + 本四槽混合映射」的完整配置；`glm-api` 发布前必须按 `docs/22` GFA-6 完成真实标准 API 验收。
+
+### 15.2 待验证
+
+- `glm-5.3-flash[1m]` 在标准 API Anthropic 兼容通道的实际接受情况（GFA-6）。
+- Claude Code 当前版本把图片传给 Flash 槽位的实际行为（显式 Haiku 或子 Agent 路径）。
+- `CLAUDE_CODE_SUBAGENT_MODEL` 强制覆盖在真实 Claude Code 会话中与官方说明的一致性。
+
+### 15.3 计费归属实测增量（2026-08-27，GFA-6 真实验收发现）
+
+背景：v1.4.0 时代（2026-07-28，`docs/16` AB8）曾实测标准 API Key 走现金按量、Coding Plan Key 走套餐，两费用通道分离。2026-08-27 GFA-6 双通道验收发现归属机制已变：
+
+实测事实（用户账号持有效个人 Coding Plan，积分制）：
+
+1. 标准 API Key（用户中心创建）经 Anthropic 兼容端点的原生 HTTP 请求与 Claude Code 会话全部成功（HTTP 200），Key 状态变为已使用。
+2. bigmodel.cn 费用明细中，上述全部请求（含非 Claude Code 环境的原生探针）的抵扣资源包归属均为 Coding Plan 套餐积分；账户现金余额（¥10）零扣减。
+3. [Coding Plan FAQ](https://docs.bigmodel.cn/cn/coding-plan/faq) 当前口径：归属查「费用明细-抵扣资源包」；套餐「仅限官方支持的指定工具中使用，除规定工具外调用 API 不可享用套餐额度」——但实测中非工具环境的原生请求同样被套餐积分抵扣，FAQ 口径与积分制实际行为存在偏差。
+4. [Coding Plan 概览](https://docs.bigmodel.cn/cn/coding-plan/overview)显示新版套餐为积分制：GLM-5.3 与 GLM-5.3-Flash 均有积分抵扣系数，套餐以资源包形态覆盖账号模型调用。
+
+结论：**在持有有效 Coding Plan 的账号上，智谱当前按账号级资源包优先以套餐积分抵扣全部 API 调用，与所用 Key 及客户端环境无关**。`glm` 与 `glm-api` 的凭据、鉴权变量、Secret 槽位与无 fallback 边界不受影响（GFA-6 实测成立）；受影响的是**费用语义**：`glm-api` 的「标准 API 现金按量」只在账号无有效套餐（或套餐机制不适用）时成为实际扣费方式。套餐积分耗尽后标准 Key 请求的行为（拒绝/转现金）官方未明确，未实测。
+
+本节为实测增量，不回写 v1.4.0 历史证据；后续发布前须按第 8 节流程重新核验。

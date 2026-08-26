@@ -1,0 +1,22 @@
+{
+  "id": "glm-5.3",
+  "displayName": "GLM-5.3 standard API family",
+  "model": "glm-5.3",
+  "currency": "CNY",
+  "unit": "per_million_tokens",
+  "prices": {
+    "glm-5.3": {
+      "inputCacheHit": 2,
+      "inputCacheMiss": 8,
+      "output": 28
+    },
+    "glm-5.3-flash": {
+      "inputCacheHit": 0.23,
+      "inputCacheMiss": 0.8,
+      "output": 2.8
+    }
+  },
+  "contextWindowTokens": 1000000,
+  "verifiedOn": "2026-08-26",
+  "sourceUrl": "https://bigmodel.cn/pricing"
+}

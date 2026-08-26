@@ -49,7 +49,7 @@ test("version and list are non-interactive and do not expose secrets", async () 
   assert.match(list.value, /aliases: deepseek-flash-vision/);
   assert.match(list.value, /glm: GLM-5\.3 Coding Plan/);
   assert.match(list.value, /aliases: glm-5\.3, glm-5\.2, glm-plan/);
-  assert.match(list.value, /glm-api: GLM-5\.2 API \(Pay-as-you-go\)/);
+  assert.match(list.value, /glm-api: GLM-5\.3 API \(Pay-as-you-go\)/);
   assert.match(list.value, /aliases: glm-payg/);
   assert.match(list.value, /provider: GLM Standard API \(Pay-as-you-go\)/);
   assert.match(list.value, /cost notice: payg/);
@@ -183,7 +183,7 @@ test("first interactive bare cmr shows the full dashboard, marks seen, then retu
   assert.match(prompter.calls[1].choices[0].label, /kimi — Kimi K3 \[missing\]/);
   assert.match(prompter.calls[1].choices[2].label, /deepseek-vision — DeepSeek V4 Flash Vision \[missing\]/);
   assert.match(prompter.calls[1].choices[3].label, /glm — GLM-5\.3 Coding Plan \[missing\]/);
-  assert.match(prompter.calls[1].choices[4].label, /glm-api — GLM-5\.2 API \(Pay-as-you-go\) \[missing\]/);
+  assert.match(prompter.calls[1].choices[4].label, /glm-api — GLM-5\.3 API \(Pay-as-you-go\) \[missing\]/);
   assert.match(prompter.calls[1].choices[5].label, /kimi-code — Kimi Code Membership \[missing\]/);
   assert.match(prompter.calls[1].choices[8].label, /setup — Configure or replace API Keys/);
   assert.deepEqual((await new SetupStateStore({

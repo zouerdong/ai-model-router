@@ -12,7 +12,7 @@ import {
   validateProvider
 } from "../src/config/validator.js";
 
-test("loads exactly the five providers, eight profiles, three pricing records and two entitlements", async () => {
+test("loads exactly the five providers, eight profiles, four pricing records and two entitlements", async () => {
   const config = await loadConfigSet();
   assert.deepEqual(config.profiles.map((profile) => profile.id), [
     "kimi",
@@ -25,7 +25,7 @@ test("loads exactly the five providers, eight profiles, three pricing records an
     "kimi-code-k3"
   ]);
   assert.deepEqual(config.providers.map((provider) => provider.id), ["kimi", "deepseek", "glm", "glm-api", "kimi-code"]);
-  assert.deepEqual(config.pricing.map((pricing) => pricing.id), ["kimi-k3", "deepseek-v4", "glm-5.2"]);
+  assert.deepEqual(config.pricing.map((pricing) => pricing.id), ["kimi-k3", "deepseek-v4", "glm-5.3", "glm-5.2"]);
   assert.deepEqual(config.entitlements.map((entitlement) => entitlement.id), ["kimi-code-membership", "glm-coding-plan-membership"]);
 });
 
@@ -43,7 +43,7 @@ test("derives the Provider collection from configuration files and appends a new
     sourceUrl: "https://third.example.com/docs"
   }));
   t.after(() => rm(root, { recursive: true, force: true }));
-  const config = await loadConfigSet({ configRoot: root, now: new Date("2026-08-21T00:00:00Z") });
+  const config = await loadConfigSet({ configRoot: root, now: new Date("2026-08-26T00:00:00Z") });
   assert.equal(config.providers.at(-1).id, "third-provider");
   assert.equal(config.providers.length, 6);
 });
@@ -186,21 +186,25 @@ test("DeepSeek Vision profile maps every slot to the multimodal vision model", a
   assert.deepEqual(profile.requiredEnvironment, Object.keys(profile.environment));
 });
 
-test("GLM profile contains the exact Coding Plan mapping and no unverified variables", async () => {
+test("GLM profile contains the exact 5.3 + 5.3-Flash Auto mapping and no unverified variables", async () => {
   const config = await loadConfigSet();
   const profile = config.profiles.find((item) => item.id === "glm");
   assert.deepEqual(profile.environment, {
     ANTHROPIC_DEFAULT_OPUS_MODEL: "glm-5.3[1m]",
     ANTHROPIC_DEFAULT_SONNET_MODEL: "glm-5.3[1m]",
-    ANTHROPIC_DEFAULT_HAIKU_MODEL: "glm-4.7",
+    ANTHROPIC_DEFAULT_HAIKU_MODEL: "glm-5.3-flash[1m]",
+    CLAUDE_CODE_SUBAGENT_MODEL: "glm-5.3-flash[1m]",
     CLAUDE_CODE_AUTO_COMPACT_WINDOW: "1000000",
     CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC: "1",
     API_TIMEOUT_MS: "3000000"
   });
+  assert.deepEqual(profile.requiredEnvironment, Object.keys(profile.environment));
+  // Negative guards (docs/22 GFA-5): neither lightweight slot may fall back to glm-4.7.
+  assert.notEqual(profile.environment.ANTHROPIC_DEFAULT_HAIKU_MODEL, "glm-4.7");
+  assert.notEqual(profile.environment.CLAUDE_CODE_SUBAGENT_MODEL, "glm-4.7");
   for (const key of [
     "ANTHROPIC_MODEL",
     "ANTHROPIC_DEFAULT_FABLE_MODEL",
-    "CLAUDE_CODE_SUBAGENT_MODEL",
     "CLAUDE_CODE_EFFORT_LEVEL",
     "ENABLE_TOOL_SEARCH"
   ]) {
@@ -221,7 +225,7 @@ test("GLM standard API profile has an isolated credential boundary and exact map
   assert.deepEqual(glm.aliases, ["glm-5.3", "glm-5.2", "glm-plan"]);
   assert.deepEqual(glmApi.aliases, ["glm-payg"]);
   assert.equal(glmApi.provider, "glm-api");
-  assert.equal(glmApi.pricingRef, "glm-5.2");
+  assert.equal(glmApi.pricingRef, "glm-5.3");
   assert.equal(glmApi.costNotice, "payg");
   assert.equal(glm.costNotice, "subscription");
   assert.equal(glm.entitlementRef, "glm-coding-plan-membership");
@@ -230,9 +234,13 @@ test("GLM standard API profile has an isolated credential boundary and exact map
   assert.match(glmEntitlement.quotaNotice, /GLM Coding Plan subscription quota/);
   assert.equal(glm.environment.ANTHROPIC_DEFAULT_OPUS_MODEL, "glm-5.3[1m]");
   assert.equal(glm.environment.ANTHROPIC_DEFAULT_SONNET_MODEL, "glm-5.3[1m]");
-  assert.equal(glmApi.environment.ANTHROPIC_DEFAULT_OPUS_MODEL, "glm-5.2[1m]");
-  assert.equal(glmApi.environment.ANTHROPIC_DEFAULT_SONNET_MODEL, "glm-5.2[1m]");
-  assert.equal(glmApi.environment.ANTHROPIC_DEFAULT_HAIKU_MODEL, "glm-4.7");
+  // The pay-as-you-go profile shares the exact same Auto hybrid mapping as the Coding
+  // Plan profile; only credentials, secrets and commercial metadata differ (docs/22 §3.2).
+  assert.deepEqual(glmApi.environment, glm.environment);
+  assert.equal(glmApi.environment.ANTHROPIC_DEFAULT_OPUS_MODEL, "glm-5.3[1m]");
+  assert.equal(glmApi.environment.ANTHROPIC_DEFAULT_SONNET_MODEL, "glm-5.3[1m]");
+  assert.equal(glmApi.environment.ANTHROPIC_DEFAULT_HAIKU_MODEL, "glm-5.3-flash[1m]");
+  assert.equal(glmApi.environment.CLAUDE_CODE_SUBAGENT_MODEL, "glm-5.3-flash[1m]");
   assert.equal(glmApi.environment.CLAUDE_CODE_AUTO_COMPACT_WINDOW, "1000000");
   assert.equal(glmApi.environment.CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC, "1");
   assert.equal(glmApi.environment.API_TIMEOUT_MS, "3000000");
@@ -240,6 +248,7 @@ test("GLM standard API profile has an isolated credential boundary and exact map
     "ANTHROPIC_DEFAULT_OPUS_MODEL",
     "ANTHROPIC_DEFAULT_SONNET_MODEL",
     "ANTHROPIC_DEFAULT_HAIKU_MODEL",
+    "CLAUDE_CODE_SUBAGENT_MODEL",
     "CLAUDE_CODE_AUTO_COMPACT_WINDOW",
     "CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC",
     "API_TIMEOUT_MS"
@@ -317,9 +326,8 @@ test("GLM standard API profile has an isolated credential boundary and exact map
   }
 
   for (const [key, value] of Object.entries({
-    ANTHROPIC_MODEL: "glm-5.2",
-    ANTHROPIC_DEFAULT_FABLE_MODEL: "glm-5.2",
-    CLAUDE_CODE_SUBAGENT_MODEL: "glm-4.7",
+    ANTHROPIC_MODEL: "glm-5.3",
+    ANTHROPIC_DEFAULT_FABLE_MODEL: "glm-5.3",
     CLAUDE_CODE_EFFORT_LEVEL: "max",
     ENABLE_TOOL_SEARCH: "false"
   })) {
@@ -327,6 +335,29 @@ test("GLM standard API profile has an isolated credential boundary and exact map
     extraEnvironment.profiles.find((item) => item.id === "glm-api").environment[key] = value;
     assert.throws(() => validateConfigSet(extraEnvironment), /glm-api profile environment mapping/, key);
   }
+
+  // Neither lightweight slot may fall back to glm-4.7 (docs/22 GFA-5).
+  for (const [key, value] of Object.entries({
+    ANTHROPIC_DEFAULT_HAIKU_MODEL: "glm-4.7",
+    CLAUDE_CODE_SUBAGENT_MODEL: "glm-4.7"
+  })) {
+    const legacySlot = structuredClone(config);
+    legacySlot.profiles.find((item) => item.id === "glm-api").environment[key] = value;
+    assert.throws(() => validateConfigSet(legacySlot), /glm-api profile environment mapping/, key);
+  }
+
+  // glm-api must not keep referencing the legacy glm-5.2 pricing record (docs/22 GFA-4/5).
+  const legacyPricing = structuredClone(config);
+  legacyPricing.profiles.find((item) => item.id === "glm-api").pricingRef = "glm-5.2";
+  assert.throws(() => validateConfigSet(legacyPricing), /glm-api profile must reference the glm-api provider, glm-5\.3 pricing/);
+
+  // The Coding Plan entitlement must never be wired into the pay-as-you-go profile (docs/22 GFA-4).
+  const entitlementCrossWired = structuredClone(config);
+  const crossWiredProfile = entitlementCrossWired.profiles.find((item) => item.id === "glm-api");
+  delete crossWiredProfile.pricingRef;
+  crossWiredProfile.entitlementRef = "glm-coding-plan-membership";
+  crossWiredProfile.costNotice = "subscription";
+  assert.throws(() => validateConfigSet(entitlementCrossWired), /glm-api profile must reference the glm-api provider, glm-5\.3 pricing/);
 
   const unknownCostNotice = structuredClone(config);
   unknownCostNotice.profiles.find((item) => item.id === "glm-api").costNotice = "metered";
@@ -376,13 +407,42 @@ test("provider endpoints, authentication and pricing records match the verified 
   assert.equal(glmPricing.contextWindowTokens, 1_000_000);
   assert.deepEqual(glmPricing.prices, { inputCacheHit: 2, inputCacheMiss: 8, output: 28 });
 
+  const glm53Pricing = config.pricing.find((item) => item.id === "glm-5.3");
+  assert.equal(glm53Pricing.displayName, "GLM-5.3 standard API family");
+  assert.equal(glm53Pricing.model, "glm-5.3");
+  assert.equal(glm53Pricing.currency, "CNY");
+  assert.equal(glm53Pricing.unit, "per_million_tokens");
+  assert.equal(glm53Pricing.contextWindowTokens, 1_000_000);
+  assert.equal(glm53Pricing.verifiedOn, "2026-08-26");
+  // Stable public list prices only; the two-week 50% promotion must not reach long-lived config.
+  assert.deepEqual(glm53Pricing.prices, {
+    "glm-5.3": { inputCacheHit: 2, inputCacheMiss: 8, output: 28 },
+    "glm-5.3-flash": { inputCacheHit: 0.23, inputCacheMiss: 0.8, output: 2.8 }
+  });
+  assert.equal(JSON.stringify(glm53Pricing).includes("0.115"), false);
+  assert.equal(JSON.stringify(glm53Pricing).includes("1.4,"), false);
+  for (const [model, value] of Object.entries({
+    "glm-5.3-flash": 0.115,
+    "glm-5.3": 4
+  })) {
+    const promoPricing = structuredClone(glm53Pricing);
+    promoPricing.prices[model].inputCacheHit = value;
+    assert.throws(() => validatePricing(promoPricing), /model prices are invalid/, model);
+  }
+  const missingFlashNode = structuredClone(glm53Pricing);
+  delete missingFlashNode.prices["glm-5.3-flash"];
+  assert.throws(() => validatePricing(missingFlashNode), /must contain exactly/);
+  const extraPriceNode = structuredClone(glm53Pricing);
+  extraPriceNode.prices["glm-4.7"] = { inputCacheHit: 1, inputCacheMiss: 1, output: 1 };
+  assert.throws(() => validatePricing(extraPriceNode), /must contain exactly/);
+
   const glmUsesPricing = structuredClone(config);
   const glmUsesPricingProfile = glmUsesPricing.profiles.find((item) => item.id === "glm");
   delete glmUsesPricingProfile.entitlementRef;
-  glmUsesPricingProfile.pricingRef = "glm-5.2";
+  glmUsesPricingProfile.pricingRef = "glm-5.3";
   glmUsesPricingProfile.costNotice = "payg";
   assert.throws(
-    () => validateConfigSet(glmUsesPricing, { now: new Date("2026-08-21T00:00:00Z") }),
+    () => validateConfigSet(glmUsesPricing, { now: new Date("2026-08-26T00:00:00Z") }),
     /glm profile must reference the glm provider and Coding Plan subscription entitlement/
   );
 

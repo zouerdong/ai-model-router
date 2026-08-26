@@ -1,7 +1,7 @@
 # 01 — 产品范围
 
-状态：`1.5.0` 公开 Latest 稳定发布（2026-08-18）；Kimi Code 会员 Provider 已真实验收并发布，GLM-5.3 Coding Plan 升级同版发布
-更新时间：2026-08-16
+状态：`1.7.0` 公开 Latest 稳定发布（2026-08-22）；另有未发布候选 `1.8.0`（GLM-5.3-Flash Auto 双通道升级，见第 17 节与 `docs/22`）
+更新时间：2026-08-26
 
 ## 1. 一句话定义
 
@@ -400,3 +400,16 @@ GLM Coding Plan 的启动提示只使用通用 subscription quota 话术，不�
 2. 新增规范 Profile `deepseek-vision`（兼容别名 `deepseek-flash-vision`）：主模型、Opus、Sonnet、Haiku、子 Agent 全部映射 `deepseek-v4-flash-vision-exp`，`CLAUDE_CODE_EFFORT_LEVEL=max`。复用 `deepseek` Provider、Secret 与 `ANTHROPIC_AUTH_TOKEN`，`costNotice: standard`，`pricingRef: deepseek-v4`（官方定价页 vision-exp 与 flash 同价）。不新增凭据边界，不触发新的 onboarding。
 
 CMR 仍不做模型能力检测与内容路由；vision 模型仅意味着该通道可接受图片输入，Claude Code 会话内实际多模态行为由上游决定。`[1m]` 后缀对 vision-exp 未经验证，本轮全部槽位使用不带后缀形式；vision-exp 思考强度档位官方未单独声明，按 flash 正式版同级使用 `max`；`deepseek-v4` Pricing 记录绝对值与官方 2026-08-17 峰谷 CNY 定价的偏差为存量登记项。以上三项均见 `docs/20` §6。
+
+## 17. GLM-5.3-Flash Auto 双通道升级候选（GFA-1 至 GFA-6）
+
+本节绑定 `docs/22-glm-5.3-flash-auto-implementation-guide.md`，只描述未发布候选 `1.8.0` 的增量，不改写第 12、13、15 节的 `1.4.0` 历史范围与发布证据。`docs/18` 在 2026-08-16 记录的「标准 API 暂不升级」在当时是正确结论；智谱官方已于 2026-08-26 发布 GLM-5.3-Flash 且标准 API 兼容示例已使用 `glm-5.3`，该结论由本节与 `docs/22` supersede。
+
+两项改动：
+
+1. `glm` Coding Plan Profile：`ANTHROPIC_DEFAULT_HAIKU_MODEL` 从 `glm-4.7` 改为 `glm-5.3-flash[1m]`，并新增 `CLAUDE_CODE_SUBAGENT_MODEL=glm-5.3-flash[1m]`；Opus/Sonnet 保持 `glm-5.3[1m]`，compact/timeout/traffic 运行参数不变。Profile 身份、三个别名、Provider、Secret 与 subscription entitlement 均不变。
+2. `glm-api` 标准 API Profile：模型/运行环境与 `glm` 完全相同（同一套 Auto 混合映射）；`pricingRef` 从 `glm-5.2` 改为新增的 `glm-5.3` 模型族价格（GLM-5.3 与 GLM-5.3-Flash 稳定公开原价，CNY 8/28/2 与 0.8/2.8/0.23 每百万 tokens；限时两周五折促销价不写入长期配置）。Provider、别名 `glm-payg`、Secret、`ANTHROPIC_API_KEY` 与 payg 费用提示语义不变。
+
+`CLAUDE_CODE_SUBAGENT_MODEL` 是强制的全局子 Agent 覆盖（Claude Code 官方语义：优先于子 Agent 定义 frontmatter 与单次调用参数），这是本轮预期行为而非副作用。主会话默认仍是文本模型 `glm-5.3[1m]`：向主会话附图不会自动切换到 Flash，显式 Haiku 档才命中 Flash；CMR 不检测消息内容、不重写请求、不做内容路由。Opus/Sonnet=5.3 + Haiku/Subagent=5.3-Flash 的组合是 CMR 产品决策，不是智谱或 Anthropic 官方发布的 Auto 预设；官方分别证明了模型、端点、Claude Code 选择值与两条费用通道可用。
+
+本轮不新增全 Flash Profile；如后续需要「主会话直接看图」，应单独立项。两条通道共享 Base URL，但不合并 Provider、Secret 或鉴权变量，不检测 Key 类型、不查询余额、不自动 fallback。真实 Provider 验收（GFA-6）与发布门禁须项目负责人逐项授权；发布前当前稳定版仍为 `1.7.0`。

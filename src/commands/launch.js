@@ -24,11 +24,21 @@ function formatPricing(pricing) {
   if (pricing.id === "deepseek-v4") {
     return "DeepSeek V4 Pro/Flash pricing is recorded in config/pricing/deepseek-v4.json";
   }
-  if (pricing.id === "glm-5.2") {
-    const { inputCacheHit, inputCacheMiss, output } = pricing.prices;
-    return `CNY/M GLM-5.2 tokens: cache hit ${inputCacheHit}, input ${inputCacheMiss}, output ${output}`;
+  if (pricing.id === "glm-5.3") {
+    const full = pricing.prices["glm-5.3"];
+    const flash = pricing.prices["glm-5.3-flash"];
+    return `CNY/M GLM-5.3 tokens: input ${full.inputCacheMiss}, output ${full.output}, cache hit ${full.inputCacheHit}; `
+      + `GLM-5.3-Flash: input ${flash.inputCacheMiss}, output ${flash.output}, cache hit ${flash.inputCacheHit}`;
   }
   throw new Error(`unsupported pricing configuration: ${pricing.id}`);
+}
+
+function formatPaygNotice(profile, pricing) {
+  // The glm-5.3 family record prices both models this profile maps, so the generic
+  // "other mapped models" caveat only applies to single-model pricing records.
+  const coversAllMappedModels = pricing.id === "glm-5.3";
+  const caveat = coversAllMappedModels ? "" : "; other mapped models may have different rates";
+  return `WARN  ${profile.displayName} uses direct standard API billing; ${formatPricing(pricing)}${caveat}; verified ${pricing.verifiedOn}.\n`;
 }
 
 export async function launchProfile(profileSelector, claudeArgs = [], options = {}) {
@@ -76,7 +86,7 @@ export async function launchProfile(profileSelector, claudeArgs = [], options = 
   if (profile.costNotice === "high") {
     output.write(`WARN  ${profile.displayName} is a high-cost profile; ${formatPricing(pricing)}; verified ${pricing.verifiedOn}.\n`);
   } else if (profile.costNotice === "payg") {
-    output.write(`WARN  ${profile.displayName} uses direct standard API billing; ${formatPricing(pricing)}; other mapped models may have different rates; verified ${pricing.verifiedOn}.\n`);
+    output.write(formatPaygNotice(profile, pricing));
   } else if (profile.costNotice === "subscription") {
     output.write(`WARN  ${profile.displayName} uses subscription quota; ${entitlement.quotaNotice}; verified ${entitlement.verifiedOn}.\n`);
   }

@@ -1,7 +1,7 @@
 # 02 — 系统架构
 
-状态：`1.5.0` 公开 Latest 稳定架构（2026-08-18 发布）；Kimi Code 会员 Provider 已真实验收并发布
-更新时间：2026-08-16
+状态：`1.7.0` 公开 Latest 稳定架构（2026-08-22 发布）；另有未发布候选 `1.8.0`（GLM-5.3-Flash Auto 双通道升级，见第 23 节与 `docs/22`）
+更新时间：2026-08-26
 
 ## 1. 架构结论
 
@@ -690,3 +690,27 @@ raw mode 隐藏输入按状态机吞掉 CSI/SS3/OSC 转义序列与游离控制�
 ### 22.3 自更新完整性
 
 安装前对下载资产做 SHA256SUMS 校验（固定 `releases/latest/download/SHA256SUMS` 资产，按 tarball basename 匹配条目；拉取失败/无条目/不匹配一律 fail-closed 拒绝安装）。npm pack 元数据文件名拒绝 cmd.exe 元字符与 `%`。更新链子进程环境在 Router 变量清理之外剥离 `NODE_OPTIONS`；代理与 `npm_config_*` 保留。技术基线提升为 Node `>=18.20.0`（libuv BatBadBut `.cmd` 参数转义基线）。
+
+## 23. GLM-5.3-Flash Auto 双通道升级架构（候选）
+
+绑定实施合同：`docs/22-glm-5.3-flash-auto-implementation-guide.md`。本节只描述未发布候选 `1.8.0` 的增量，不改写第 17、18、20 节的 GLM 历史架构。
+
+```text
+cmr glm / glm-5.3 / glm-5.2 / glm-plan
+  └── GLM Coding Plan ── AUTH_TOKEN ── glm-coding-plan-membership entitlement
+                              ├── Opus/Sonnet: glm-5.3[1m]
+                              ├── Haiku: glm-5.3-flash[1m]
+                              └── Subagent（强制覆盖）: glm-5.3-flash[1m]
+
+cmr glm-api / glm-payg
+  └── GLM standard API ── API_KEY ── glm-5.3 模型族 Pricing（5.3 + 5.3-Flash 稳定原价）
+                              └── 与 glm 完全相同的模型/运行映射
+```
+
+两个 Profile 的环境必须逐字节相同（含 `CLAUDE_CODE_SUBAGENT_MODEL=glm-5.3-flash[1m]`、compact `1000000`、traffic `1`、timeout `3000000`）；唯一差异来自 Provider/Profile 元数据——鉴权变量（`ANTHROPIC_AUTH_TOKEN` vs `ANTHROPIC_API_KEY`）、Secret 槽位与商业元数据（entitlement vs pricingRef）。`environment.js` 的通用数据流不变：仍按大小写不敏感清理全部 Router 管理变量后，只注入当前 Profile 的映射与恰好一个鉴权变量，`glm ↔ glm-api` 双向连续启动无残留。
+
+`glm-5.3-flash[1m]` 与 `glm-5.3[1m]` 都是 Claude Code 选择层值（官方 Coding Plan 模型切换页直接使用后者加 `[1m]` 后缀的形式），上游原生模型 ID 为 `glm-5.3-flash`/`glm-5.3`，CMR 不剥离 `[1m]`。`CLAUDE_CODE_SUBAGENT_MODEL` 按 Claude Code 官方语义覆盖全部子 Agent（含 frontmatter 声明的模型），是预期行为。
+
+Pricing 采用模型族价格树（与 `deepseek-v4` 相同结构）：`config/pricing/glm-5.3.json` 同时记录 `glm-5.3`（2/8/28）与 `glm-5.3-flash`（0.23/0.8/2.8）的 CNY/百万 tokens 稳定公开原价；限时促销价不进入长期配置。旧 `glm-5.2` Pricing 文件保留于 catalog，但两个现行 GLM Profile 不再引用。payg 启动警告由 `launch.js` 从 Pricing JSON 读取并覆盖两档模型价格，不硬编码数值。
+
+本映射不是内容路由器：主会话默认仍为文本模型，附图不自动切 Flash；CMR 不检查消息内容、不代理或重写 Anthropic 消息。

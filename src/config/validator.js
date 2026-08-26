@@ -300,6 +300,24 @@ export function validatePricing(pricing, { now = new Date(), warnings } = {}) {
       fail("glm-5.2 pricing values are invalid");
     }
   }
+  if (pricing.id === "glm-5.3") {
+    if (pricing.model !== "glm-5.3" || pricing.currency !== "CNY" || pricing.unit !== "per_million_tokens"
+      || pricing.contextWindowTokens !== 1_000_000) {
+      fail("glm-5.3 pricing metadata is invalid");
+    }
+    assertExactPriceKeys(pricing.prices, ["glm-5.3", "glm-5.3-flash"], "pricing.prices");
+    for (const model of ["glm-5.3", "glm-5.3-flash"]) {
+      assertExactPriceKeys(pricing.prices[model], ["inputCacheHit", "inputCacheMiss", "output"], `pricing.prices.${model}`);
+    }
+    const glm53 = pricing.prices["glm-5.3"];
+    if (glm53.inputCacheHit !== 2 || glm53.inputCacheMiss !== 8 || glm53.output !== 28) {
+      fail("glm-5.3 model prices are invalid");
+    }
+    const glm53Flash = pricing.prices["glm-5.3-flash"];
+    if (glm53Flash.inputCacheHit !== 0.23 || glm53Flash.inputCacheMiss !== 0.8 || glm53Flash.output !== 2.8) {
+      fail("glm-5.3-flash model prices are invalid");
+    }
+  }
   assertDate(pricing.verifiedOn, "pricing.verifiedOn", now, warnings);
   assertUrl(pricing.sourceUrl, "pricing.sourceUrl");
   return pricing;
@@ -359,7 +377,7 @@ export function validateConfigSet({ providers, profiles, pricing, entitlements =
   }
   const requiredProfiles = ["kimi", "deepseek", "deepseek-vision", "glm", "glm-api", "kimi-code", "kimi-code-k3-256k", "kimi-code-k3"];
   const requiredProviders = ["kimi", "deepseek", "glm", "glm-api", "kimi-code"];
-  const requiredPricing = ["kimi-k3", "deepseek-v4", "glm-5.2"];
+  const requiredPricing = ["kimi-k3", "deepseek-v4", "glm-5.3", "glm-5.2"];
   const requiredEntitlements = ["kimi-code-membership", "glm-coding-plan-membership"];
   if (!requiredProfiles.every((id) => profileIds.has(id))) {
     fail("configuration is missing one or more formal profiles");
@@ -459,8 +477,11 @@ export function validateConfigSet({ providers, profiles, pricing, entitlements =
   if (glmApi.aliases.length !== 1 || glmApi.aliases[0] !== "glm-payg") {
     fail("glm-api profile must contain exactly the glm-payg alias");
   }
-  if (glmApi.provider !== "glm-api" || glmApi.pricingRef !== "glm-5.2" || glmApi.costNotice !== "payg") {
-    fail("glm-api profile must reference the glm-api provider, glm-5.2 pricing and payg cost notice");
+  if (glmApi.provider !== "glm-api" || glmApi.pricingRef !== "glm-5.3" || glmApi.costNotice !== "payg") {
+    fail("glm-api profile must reference the glm-api provider, glm-5.3 pricing and payg cost notice");
+  }
+  if (Object.hasOwn(glmApi, "entitlementRef")) {
+    fail("glm-api profile must not reference a subscription entitlement");
   }
   if (glmApiProvider.baseUrl !== "https://open.bigmodel.cn/api/anthropic"
     || glmApiProvider.apiKeyUrl !== "https://bigmodel.cn/usercenter/proj-mgmt/apikeys"
@@ -475,7 +496,7 @@ export function validateConfigSet({ providers, profiles, pricing, entitlements =
   if (glmEntitlement.displayName !== "GLM Coding Plan"
     || glmEntitlement.billingType !== "subscription-quota"
     || glmEntitlement.quotaNotice !== "Consumes GLM Coding Plan subscription quota; quota availability and any additional usage charges follow the active subscription and official policy."
-    || glmEntitlement.sourceUrl !== "https://docs.bigmodel.cn/cn/guide/models/text/glm-5.3") {
+    || glmEntitlement.sourceUrl !== "https://docs.bigmodel.cn/cn/coding-plan/overview") {
     fail("glm Coding Plan entitlement contract is invalid");
   }
   if (kimiCodeProvider.displayName !== "Kimi Code Membership"
@@ -498,16 +519,13 @@ export function validateConfigSet({ providers, profiles, pricing, entitlements =
   const expectedGlmEnvironment = {
     ANTHROPIC_DEFAULT_OPUS_MODEL: "glm-5.3[1m]",
     ANTHROPIC_DEFAULT_SONNET_MODEL: "glm-5.3[1m]",
-    ANTHROPIC_DEFAULT_HAIKU_MODEL: "glm-4.7",
+    ANTHROPIC_DEFAULT_HAIKU_MODEL: "glm-5.3-flash[1m]",
+    CLAUDE_CODE_SUBAGENT_MODEL: "glm-5.3-flash[1m]",
     CLAUDE_CODE_AUTO_COMPACT_WINDOW: "1000000",
     CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC: "1",
     API_TIMEOUT_MS: "3000000"
   };
-  const expectedGlmApiEnvironment = {
-    ...expectedGlmEnvironment,
-    ANTHROPIC_DEFAULT_OPUS_MODEL: "glm-5.2[1m]",
-    ANTHROPIC_DEFAULT_SONNET_MODEL: "glm-5.2[1m]"
-  };
+  const expectedGlmApiEnvironment = expectedGlmEnvironment;
   if (JSON.stringify(glm.environment) !== JSON.stringify(expectedGlmEnvironment)
     || JSON.stringify(glm.requiredEnvironment) !== JSON.stringify(Object.keys(expectedGlmEnvironment))) {
     fail("glm profile environment mapping is invalid");

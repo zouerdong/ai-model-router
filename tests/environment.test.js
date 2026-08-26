@@ -74,13 +74,13 @@ test("builds GLM Coding Plan with its exact public mapping and no inherited auth
   assert.equal(Object.hasOwn(child, "Claude_Code_Disable_Nonessential_Traffic"), false);
   assert.equal(child.ANTHROPIC_DEFAULT_OPUS_MODEL, "glm-5.3[1m]");
   assert.equal(child.ANTHROPIC_DEFAULT_SONNET_MODEL, "glm-5.3[1m]");
-  assert.equal(child.ANTHROPIC_DEFAULT_HAIKU_MODEL, "glm-4.7");
+  assert.equal(child.ANTHROPIC_DEFAULT_HAIKU_MODEL, "glm-5.3-flash[1m]");
+  assert.equal(child.CLAUDE_CODE_SUBAGENT_MODEL, "glm-5.3-flash[1m]");
   assert.equal(child.CLAUDE_CODE_AUTO_COMPACT_WINDOW, "1000000");
   assert.equal(child.API_TIMEOUT_MS, "3000000");
   assert.equal(child.CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC, "1");
   assert.equal(Object.hasOwn(child, "ANTHROPIC_MODEL"), false);
   assert.equal(Object.hasOwn(child, "ANTHROPIC_DEFAULT_FABLE_MODEL"), false);
-  assert.equal(Object.hasOwn(child, "CLAUDE_CODE_SUBAGENT_MODEL"), false);
   assert.equal(Object.hasOwn(child, "CLAUDE_CODE_EFFORT_LEVEL"), false);
   assert.equal(Object.hasOwn(child, "ENABLE_TOOL_SEARCH"), false);
   const snapshot = getEnvironmentSnapshot(child);
@@ -110,16 +110,16 @@ test("builds GLM standard API with API key authentication only and no mixed-case
   for (const key of ["ANTHROPIC_AUTH_TOKEN", "Anthropic_Api_Key", "aNtHrOpIc_AuTh_ToKeN", "Claude_Code_Disable_Nonessential_Traffic"]) {
     assert.equal(Object.hasOwn(child, key), false, key);
   }
-  assert.equal(child.ANTHROPIC_DEFAULT_OPUS_MODEL, "glm-5.2[1m]");
-  assert.equal(child.ANTHROPIC_DEFAULT_SONNET_MODEL, "glm-5.2[1m]");
-  assert.equal(child.ANTHROPIC_DEFAULT_HAIKU_MODEL, "glm-4.7");
+  assert.equal(child.ANTHROPIC_DEFAULT_OPUS_MODEL, "glm-5.3[1m]");
+  assert.equal(child.ANTHROPIC_DEFAULT_SONNET_MODEL, "glm-5.3[1m]");
+  assert.equal(child.ANTHROPIC_DEFAULT_HAIKU_MODEL, "glm-5.3-flash[1m]");
+  assert.equal(child.CLAUDE_CODE_SUBAGENT_MODEL, "glm-5.3-flash[1m]");
   assert.equal(child.CLAUDE_CODE_AUTO_COMPACT_WINDOW, "1000000");
   assert.equal(child.API_TIMEOUT_MS, "3000000");
   assert.equal(child.CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC, "1");
   for (const key of [
     "ANTHROPIC_MODEL",
     "ANTHROPIC_DEFAULT_FABLE_MODEL",
-    "CLAUDE_CODE_SUBAGENT_MODEL",
     "CLAUDE_CODE_EFFORT_LEVEL",
     "ENABLE_TOOL_SEARCH"
   ]) {

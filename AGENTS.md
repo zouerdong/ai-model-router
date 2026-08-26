@@ -23,6 +23,8 @@
 
 Profile 只决定 Claude Code 子进程启动时使用哪套 Provider 环境。Kimi 适合规划、DeepSeek 适合执行只是推荐工作流，不是功能限制；用户可用任一 Profile 进行规划、编码、续聊或其他 Claude Code 支持的操作。两个 GLM Profile 不自动互相 fallback，也不共享或识别 Key 类型。
 
+未发布候选登记（2026-08-26，合同见 `docs/22-glm-5.3-flash-auto-implementation-guide.md`，GFA-1~6，候选版本 `1.8.0`）：在保持两条费用/凭据通道完全独立的前提下，`glm`（Coding Plan）与 `glm-api`（标准 API 按量）同步升级为同一套 Auto 混合映射——Opus/Sonnet 使用 `glm-5.3[1m]`，Haiku 档与全部子 Agent 使用原生多模态轻量模型 `glm-5.3-flash[1m]`（经 `CLAUDE_CODE_SUBAGENT_MODEL` 强制覆盖）；`glm-api` 的 `pricingRef` 由 `glm-5.2` 迁移到新模型族价格 `glm-5.3`（稳定公开原价，限时促销价不写入长期配置），Provider、Secret、鉴权变量、Base URL 与别名均不变。该混合组合是 CMR 产品决策，不是智谱或 Anthropic 官方发布的预设；真实 Provider 验收（GFA-6）须项目负责人授权后执行。发布前当前稳定版仍为 `1.7.0`，本条不得写成 `1.8.0` 已发布。
+
 ## 2. 规范优先级
 
 开始工作前按以下顺序阅读：
@@ -30,12 +32,12 @@ Profile 只决定 Claude Code 子进程启动时使用哪套 Provider 环境。K
 1. 本文件。
 2. `docs/01-product-scope.md`。
 3. `docs/02-architecture.md`。
-4. 当前阶段的执行文档；实施首次运行向导时必须读取 `docs/11-v1.1-first-run-setup-implementation-brief.md`，实施自更新时必须读取 `docs/13-v1.3-self-update-implementation-brief.md`，实施或发布 GLM 时必须读取 `docs/14`、`docs/15` 与 `docs/16`，实施 Kimi Code 会员 Provider 时必须读取 `docs/17-v1.5-kimi-code-membership-implementation-guide.md`，修改 Secret Store 行为时必须读取 `docs/19-secret-store-forward-compatibility-implementation-guide.md`，实施或发布 DeepSeek Vision 接入时必须读取 `docs/20-deepseek-v4-flash-vision-implementation-guide.md`，实施安全加固（settings 预检、隐藏输入、自更新完整性、密钥回显）时必须读取 `docs/21-security-hardening-implementation-guide.md`。
+4. 当前阶段的执行文档；实施首次运行向导时必须读取 `docs/11-v1.1-first-run-setup-implementation-brief.md`，实施自更新时必须读取 `docs/13-v1.3-self-update-implementation-brief.md`，实施或发布 GLM 时必须读取 `docs/14`、`docs/15` 与 `docs/16`，实施 Kimi Code 会员 Provider 时必须读取 `docs/17-v1.5-kimi-code-membership-implementation-guide.md`，修改 Secret Store 行为时必须读取 `docs/19-secret-store-forward-compatibility-implementation-guide.md`，实施或发布 DeepSeek Vision 接入时必须读取 `docs/20-deepseek-v4-flash-vision-implementation-guide.md`，实施安全加固（settings 预检、隐藏输入、自更新完整性、密钥回显）时必须读取 `docs/21-security-hardening-implementation-guide.md`，实施或发布 GLM-5.3-Flash Auto 双通道升级（`glm`/`glm-api`）时必须读取 `docs/22-glm-5.3-flash-auto-implementation-guide.md`。
 5. `docs/07-official-sources.md`。
 6. `docs/08-acceptance-and-recovery.md`。
 7. `docs/09-phase-1-acceptance.md`，用于核对已完成的 Mac 基线。
 
-`docs/10-v0.2-transparent-profile-launcher-implementation-brief.md` 是 `1.0.0` 稳定运行时的历史实施与验收依据。`docs/11-v1.1-first-run-setup-implementation-brief.md` 是 `1.1.0` 的实施与验收依据。`docs/12-v1.2.1-windows-compatibility-patch.md` 是 `1.2.1` 的发布依据。`docs/13-v1.3-self-update-implementation-brief.md` 是自更新功能的实施、验收与首次发布依据。`docs/14` 与 `docs/15` 分别记录两个 GLM Profile 的实施合同，`docs/16` 是二者统一进入 `1.4.0` 的版本决策、验收与发布依据。`docs/17` 是 `1.5.0` Kimi Code 会员 Provider 的逐卡实施、审阅与发布门禁依据。`docs/19` 是 `1.5.1` Secret Store 前向兼容修复的实施合同与发布门禁依据。GitHub 与 Windows 阶段分别按 `docs/04-phase-2-github.md` 和 `docs/05-phase-3-windows.md` 执行。
+`docs/10-v0.2-transparent-profile-launcher-implementation-brief.md` 是 `1.0.0` 稳定运行时的历史实施与验收依据。`docs/11-v1.1-first-run-setup-implementation-brief.md` 是 `1.1.0` 的实施与验收依据。`docs/12-v1.2.1-windows-compatibility-patch.md` 是 `1.2.1` 的发布依据。`docs/13-v1.3-self-update-implementation-brief.md` 是自更新功能的实施、验收与首次发布依据。`docs/14` 与 `docs/15` 分别记录两个 GLM Profile 的实施合同，`docs/16` 是二者统一进入 `1.4.0` 的版本决策、验收与发布依据。`docs/17` 是 `1.5.0` Kimi Code 会员 Provider 的逐卡实施、审阅与发布门禁依据。`docs/19` 是 `1.5.1` Secret Store 前向兼容修复的实施合同与发布门禁依据。`docs/22` 是未发布候选「GLM-5.3-Flash Auto 双通道升级」（GFA-1~6，候选版本 `1.8.0`）的现行合同。GitHub 与 Windows 阶段分别按 `docs/04-phase-2-github.md` 和 `docs/05-phase-3-windows.md` 执行。
 
 冲突时，以编号更靠前的现行文档为准。发现规范需要改变时，先修改对应文档并说明理由，再修改实现。
 
