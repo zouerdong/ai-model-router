@@ -1,9 +1,9 @@
 # 06 — 操作说明手册
 
-状态：当前公开 Latest 稳定版为 `1.7.0`（2026-08-22 发布）；本仓库含未发布候选 `1.8.0`（GLM-5.3-Flash Auto 双通道升级，第 17/18 节描述的映射为该候选行为）
+状态：当前公开 Latest 稳定版为 `1.8.0`（2026-08-27 发布）；第 17/18 节描述的 GLM 映射为该版本行为
 适用范围：Mac 与原生 Windows/WSL
 
-The current public Latest stable release is v1.7.0 (security hardening). This repository carries the unreleased v1.8.0 candidate whose GLM mappings are described in sections 17 and 18.
+The current public Latest stable release is v1.8.0 (GLM-5.3-Flash Auto dual-channel upgrade).
 
 CMR 只在启动 Claude Code 前选择 Provider/Profile，并注入临时子进程环境。进入 Claude Code 后，任务用途、权限模式、会话和参数都遵循 Claude Code 原生行为。
 
@@ -279,9 +279,9 @@ cmr update
 
 `--check` 只读检查固定 Release asset。`update` 只处理当前活动入口对应的实体 npm global package，使用临时 cache、exact prefix、`--ignore-scripts`、`--no-audit`、`--no-fund`，并执行 backup、install、verify、rollback。源码链接、checkout、junction、Homebrew、WinGet 或无法唯一识别来源的安装不自动替换；请按原来源手工维护。
 
-## 17. GLM-5.3 + GLM-5.3-Flash Auto Coding Plan（`1.8.0` 候选）
+## 17. GLM-5.3 + GLM-5.3-Flash Auto Coding Plan（`1.8.0`）
 
-当前仓库候选提供：
+`1.8.0` 提供：
 
 ```bash
 cmr glm [claude args...]
@@ -290,15 +290,15 @@ cmr glm-5.2 [claude args...]
 cmr glm-plan [claude args...]
 ```
 
-四种入口等价。候选 `glm` Coding Plan 使用 Auto 混合映射：Opus/Sonnet 为 `glm-5.3[1m]`（1M 上下文），Haiku 档与全部子 Agent 为 `glm-5.3-flash[1m]`（2026-08-26 官方发布的原生多模态轻量模型，套餐额度消耗低于完整模型）。`CLAUDE_CODE_SUBAGENT_MODEL` 会强制覆盖所有子 Agent 的模型声明（含 Agent 定义 frontmatter），这是预期行为。它只使用 `ANTHROPIC_AUTH_TOKEN`、`https://open.bigmodel.cn/api/anthropic` 和独立 `glm` Secret Store 槽位；费用提示使用通用 subscription quota 话术，不显示标准 API 单价。它不是 `glm-api`、`glm-payg` 或标准按量 API；CMR 不识别 Key 类型、不查询余额，也不会在套餐额度耗尽、401、1113 或任何失败后自动切换到按量 API。
+四种入口等价。`1.8.0` 起 `glm` Coding Plan 使用 Auto 混合映射：Opus/Sonnet 为 `glm-5.3[1m]`（1M 上下文），Haiku 档与全部子 Agent 为 `glm-5.3-flash[1m]`（2026-08-26 官方发布的原生多模态轻量模型，套餐额度消耗低于完整模型）。`CLAUDE_CODE_SUBAGENT_MODEL` 会强制覆盖所有子 Agent 的模型声明（含 Agent 定义 frontmatter），这是预期行为。它只使用 `ANTHROPIC_AUTH_TOKEN`、`https://open.bigmodel.cn/api/anthropic` 和独立 `glm` Secret Store 槽位；费用提示使用通用 subscription quota 话术，不显示标准 API 单价。它不是 `glm-api`、`glm-payg` 或标准按量 API；CMR 不识别 Key 类型、不查询余额，也不会在套餐额度耗尽、401、1113 或任何失败后自动切换到按量 API。
 
 多模态边界：主会话默认仍使用文本模型 `glm-5.3[1m]`，直接向主会话附图不会自动切换到 Flash；显式选择 Haiku 档（`/model haiku` 或后台任务）才命中 Flash。该混合组合是 CMR 产品决策，不是智谱官方 Auto 预设。
 
-`configured` 只表示 GLM Key 已保存到本机 Store，不表示 CMR 会持续联网验证有效性、套餐状态或费用通道。`1.4.0` GLM-5.2 Coding Plan 与 `1.5.0` GLM-5.3 升级的发布历史见 `docs/16` 与 `docs/18`；当前 `1.8.0` 候选尚未执行真实 Provider 或发布门禁。
+`configured` 只表示 GLM Key 已保存到本机 Store，不表示 CMR 会持续联网验证有效性、套餐状态或费用通道。`1.4.0` GLM-5.2 Coding Plan 与 `1.5.0` GLM-5.3 升级的发布历史见 `docs/16` 与 `docs/18`；`1.8.0` 的双通道真实验收证据见 `docs/22` GFA-6 台账。
 
-## 18. GLM 标准 API 按量付费（`1.8.0` 候选同步升级）
+## 18. GLM 标准 API 按量付费（`1.8.0` 同步升级）
 
-稳定版 `1.4.0` 引入，`1.8.0` 候选将其模型映射与 `glm` 同步升级：
+稳定版 `1.4.0` 引入，`1.8.0` 将其模型映射与 `glm` 同步升级：
 
 ```bash
 cmr glm-api [claude args...]
@@ -312,7 +312,7 @@ cmr glm-payg [claude args...]
 | `cmr glm` | `ANTHROPIC_AUTH_TOKEN` | `glm` | Coding Plan |
 | `cmr glm-api` / `cmr glm-payg` | `ANTHROPIC_API_KEY` | `glm-api` | 智谱标准 API 按量计费 |
 
-`1.8.0` 候选中 `glm-api` 与 `glm` 使用完全相同的模型/运行映射（Opus/Sonnet=`glm-5.3[1m]`，Haiku 与子 Agent=`glm-5.3-flash[1m]`）。启动前会显示一行标准 API 直接计费提示，同时列出 GLM-5.3 与 GLM-5.3-Flash 的稳定公开原价（CNY/百万 tokens：5.3 输入 8 / 输出 28 / 缓存命中 2；5.3-Flash 输入 0.8 / 输出 2.8 / 缓存命中 0.23）；参考价从公开配置读取，不估算会话费用、不查询余额，也不要求 CMR 二次确认，限时促销价不写入长期配置。Claude Code 自己首次检测到 API Key 时可能出现原生确认提示，CMR 不拦截或代答。
+`1.8.0` 起 `glm-api` 与 `glm` 使用完全相同的模型/运行映射（Opus/Sonnet=`glm-5.3[1m]`，Haiku 与子 Agent=`glm-5.3-flash[1m]`）。启动前会显示一行标准 API 直接计费提示，同时列出 GLM-5.3 与 GLM-5.3-Flash 的稳定公开原价（CNY/百万 tokens：5.3 输入 8 / 输出 28 / 缓存命中 2；5.3-Flash 输入 0.8 / 输出 2.8 / 缓存命中 0.23）；参考价从公开配置读取，不估算会话费用、不查询余额，也不要求 CMR 二次确认，限时促销价不写入长期配置。Claude Code 自己首次检测到 API Key 时可能出现原生确认提示，CMR 不拦截或代答。
 
 计费归属提示（2026-08-27 实测，见 `docs/07` §15.3）：账号持有效 GLM Coding Plan 时，智谱积分制套餐会优先以套餐积分抵扣本通道的请求，现金余额不扣减；标准 API 现金按量在账号无有效套餐（或套餐机制不适用）时成为实际计费方式。CMR 只维护 Key、Secret 与鉴权边界，上游钱包归属由智谱机制决定。
 

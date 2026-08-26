@@ -1,10 +1,10 @@
 # Claude Model Router
 
-Current public Latest stable version: **`1.7.0`** (released 2026-08-22).
+Current public Latest stable version: **`1.8.0`** (released 2026-08-27).
 
-Version `1.7.0` hardens the public release: Claude Code settings `env` conflicts (e.g. keys persisted by provider switchers such as CC Switch) now refuse to launch, self-update verifies release assets against `SHA256SUMS`, hidden key input and key echo are hardened, and stale config freshness degrades to a doctor warning. Binding contract and evidence: `docs/21`.
+Version `1.8.0` upgrades both GLM profiles to the same Auto hybrid mapping — Opus/Sonnet use `glm-5.3[1m]`, while the Haiku slot and all sub-agents use the natively multimodal light model `glm-5.3-flash[1m]` (released 2026-08-26) through a mandatory `CLAUDE_CODE_SUBAGENT_MODEL` override. `glm-api` moves to the `glm-5.3` pricing family at stable list prices. Real dual-channel provider acceptance passed under owner authorization; binding contract, decision records, and release evidence: `docs/22`.
 
-This repository also carries an unreleased `1.8.0` candidate (binding contract `docs/22`): both GLM profiles upgrade to the same Auto hybrid mapping — Opus/Sonnet use `glm-5.3[1m]`, while the Haiku slot and all sub-agents use the natively multimodal light model `glm-5.3-flash[1m]` (released 2026-08-26) through a mandatory `CLAUDE_CODE_SUBAGENT_MODEL` override. `glm-api` moves to the `glm-5.3` pricing family at stable list prices. The hybrid combination is a CMR product decision, not an official Zhipu or Anthropic preset; real-provider acceptance and release gates are pending owner authorization.
+Version `1.7.0` hardened the public release: Claude Code settings `env` conflicts (e.g. keys persisted by provider switchers such as CC Switch) now refuse to launch, self-update verifies release assets against `SHA256SUMS`, hidden key input and key echo are hardened, and stale config freshness degrades to a doctor warning. Binding contract and evidence: `docs/21`.
 
 Version `1.6.0` integrated the multimodal model DeepSeek released on 2026-08-21: the `deepseek` Auto profile now uses `deepseek-v4-flash-vision-exp` for its Haiku slot and sub-agents, and a new `deepseek-vision` profile maps every model slot to that model. No new providers, secrets, or credential boundaries; binding contract and evidence: `docs/20`.
 
@@ -35,10 +35,10 @@ Prerequisites:
 - For GLM, use a Coding Plan Key with `cmr glm` or a distinct standard API Key with `cmr glm-api`. CMR does not identify Key types, combine slots, or switch between them.
 - Kimi Code is intended only for the personal interactive development scenarios allowed by Kimi's official policy. Enterprise integrations, commercial services, and non-interactive batch use require a separate policy and product evaluation.
 
-Install the reproducible `v1.7.0` Release asset:
+Install the reproducible `v1.8.0` Release asset:
 
 ```bash
-npm install --global "https://github.com/zouerdong/ai-model-router/releases/download/v1.7.0/claude-model-router.tgz"
+npm install --global "https://github.com/zouerdong/ai-model-router/releases/download/v1.8.0/claude-model-router.tgz"
 cmr version
 cmr
 ```
@@ -48,7 +48,7 @@ Existing `1.3.0` and newer entity npm-global installations can run `cmr update`;
 If the existing installation uses a custom npm prefix, specify that same prefix so your terminal does not continue resolving an older copy:
 
 ```bash
-npm install --global --prefix <current-prefix> "https://github.com/zouerdong/ai-model-router/releases/download/v1.7.0/claude-model-router.tgz"
+npm install --global --prefix <current-prefix> "https://github.com/zouerdong/ai-model-router/releases/download/v1.8.0/claude-model-router.tgz"
 ```
 
 You can also install the latest stable fixed asset:
@@ -57,7 +57,7 @@ You can also install the latest stable fixed asset:
 npm install --global "https://github.com/zouerdong/ai-model-router/releases/latest/download/claude-model-router.tgz"
 ```
 
-For reproducible installation, prefer the exact `releases/download/v1.7.0/claude-model-router.tgz` URL over `latest`.
+For reproducible installation, prefer the exact `releases/download/v1.8.0/claude-model-router.tgz` URL over `latest`.
 
 To inspect and install from source:
 
@@ -124,13 +124,13 @@ cmr glm-payg [claude args...]
 
 `deepseek-vision` (alias `deepseek-flash-vision`) maps every model slot — main, Opus, Sonnet, Haiku, and sub-agent — to the multimodal experimental model `deepseek-v4-flash-vision-exp` released by DeepSeek on 2026-08-21. It reuses the `deepseek` Provider, Secret Store slot, `ANTHROPIC_AUTH_TOKEN`, and the DeepSeek V4 pricing record (the vision model is priced identically to `deepseek-v4-flash` on the official pricing page). The plain `deepseek` Auto profile keeps `deepseek-v4-pro[1m]` for its main/Opus/Sonnet slots and uses `deepseek-v4-flash-vision-exp` for Haiku and sub-agents. The model is experimental; official capability or availability changes propagate through config updates only.
 
-`glm`, `glm-5.3`, `glm-5.2`, and `glm-plan` all resolve to the GLM Coding Plan Profile. In the stable `1.5.0`–`1.7.0` releases it uses `glm-5.3[1m]` for Opus/Sonnet and `glm-4.7` for Haiku; in the unreleased `1.8.0` candidate (contract `docs/22`) it upgrades to the Auto hybrid mapping: Opus/Sonnet stay on `glm-5.3[1m]` while the Haiku slot and every sub-agent use the natively multimodal light model `glm-5.3-flash[1m]` via `CLAUDE_CODE_SUBAGENT_MODEL`. That variable is a mandatory global override — sub-agent frontmatter model declarations are intentionally superseded. Attaching an image to the main session does not switch it to Flash; only the explicit Haiku slot hits the multimodal model. `glm-api` is the only standard API pay-as-you-go entry, and `glm-payg` is its only alias; the candidate moves it to the same mapping and to the `glm-5.3` pricing family (stable list prices: GLM-5.3 2/8/28 and GLM-5.3-Flash 0.23/0.8/2.8 CNY per million tokens; limited-time promotional prices are not persisted). The hybrid combination is a CMR product decision assembled from official Zhipu capabilities, not an official preset. Billing attribution note (measured 2026-08-27, `docs/07` §15.3): on accounts with an active GLM Coding Plan, Zhipu's points-based plan currently deducts requests on both entries from plan quota first; the cash pay-as-you-go balance applies when no active plan covers the account. CMR maintains the credential, Secret, and authentication boundaries — upstream wallet attribution is Zhipu's mechanism. The two profiles share an Anthropic-compatible Base URL but use separate Secret Store slots and authentication variables. CMR never detects Key types, injects both variables, or automatically falls back between them.
+`glm`, `glm-5.3`, `glm-5.2`, and `glm-plan` all resolve to the GLM Coding Plan Profile. Since `1.8.0` it uses the Auto hybrid mapping: Opus/Sonnet stay on `glm-5.3[1m]` while the Haiku slot and every sub-agent use the natively multimodal light model `glm-5.3-flash[1m]` via `CLAUDE_CODE_SUBAGENT_MODEL` (through `1.7.0` the Haiku slot was `glm-4.7`). That variable is a mandatory global override — sub-agent frontmatter model declarations are intentionally superseded. Attaching an image to the main session does not switch it to Flash; only the explicit Haiku slot hits the multimodal model. `glm-api` is the only standard API pay-as-you-go entry, and `glm-payg` is its only alias; since `1.8.0` it shares the same mapping and references the `glm-5.3` pricing family (stable list prices: GLM-5.3 2/8/28 and GLM-5.3-Flash 0.23/0.8/2.8 CNY per million tokens; limited-time promotional prices are not persisted). The hybrid combination is a CMR product decision assembled from official Zhipu capabilities, not an official preset. Billing attribution note (measured 2026-08-27, `docs/07` §15.3): on accounts with an active GLM Coding Plan, Zhipu's points-based plan currently deducts requests on both entries from plan quota first; the cash pay-as-you-go balance applies when no active plan covers the account. CMR maintains the credential, Secret, and authentication boundaries — upstream wallet attribution is Zhipu's mechanism. The two profiles share an Anthropic-compatible Base URL but use separate Secret Store slots and authentication variables. CMR never detects Key types, injects both variables, or automatically falls back between them.
 
 Cross-provider `--continue` or `--resume` is always an explicit user choice. CMR does not modify project files or Claude Code session records. Plain-text and tool sessions can usually be resumed directly; sessions containing content blocks unsupported by the new provider may be rejected by Claude Code or that provider.
 
 CMR does not prescribe a handoff workflow or document name. You can keep using a project-level `CLAUDE.md`, any task document you prefer, or the original Claude Code session.
 
-The Kimi Code and GLM Coding Plan profiles print subscription-quota awareness notices when they start. `glm-api` prints a one-line direct standard API billing notice whose reference prices come from the bundled pricing record (in the `1.8.0` candidate it covers both GLM-5.3 and GLM-5.3-Flash). Neither adds a CMR confirmation. CMR does not record prompts, session IDs, or forwarded arguments.
+The Kimi Code and GLM Coding Plan profiles print subscription-quota awareness notices when they start. `glm-api` prints a one-line direct standard API billing notice whose reference prices come from the bundled pricing record (since `1.8.0` it covers both GLM-5.3 and GLM-5.3-Flash). Neither adds a CMR confirmation. CMR does not record prompts, session IDs, or forwarded arguments.
 
 ## Kimi Code membership (`v1.5.0`)
 
@@ -243,4 +243,4 @@ API keys are written through hidden local TTY input to the Secret Store outside 
 21. [Security hardening implementation guide](docs/21-security-hardening-implementation-guide.md)
 22. [GLM-5.3-Flash Auto dual-channel upgrade implementation guide](docs/22-glm-5.3-flash-auto-implementation-guide.md)
 
-The runtime has no third-party dependencies. The public repository uses `main` as its default branch; the current public stable tag is `v1.7.0`, published as an immutable Release with the fixed `claude-model-router.tgz` asset and `SHA256SUMS`.
+The runtime has no third-party dependencies. The public repository uses `main` as its default branch; the current public stable tag is `v1.8.0`, published as an immutable Release with the fixed `claude-model-router.tgz` asset and `SHA256SUMS`.

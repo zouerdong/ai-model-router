@@ -1,7 +1,7 @@
 # 02 — 系统架构
 
-状态：`1.7.0` 公开 Latest 稳定架构（2026-08-22 发布）；另有未发布候选 `1.8.0`（GLM-5.3-Flash Auto 双通道升级，见第 23 节与 `docs/22`）
-更新时间：2026-08-26
+状态：`1.8.0` 公开 Latest 稳定架构（2026-08-27 发布）；GLM-5.3-Flash Auto 双通道升级见第 23 节与 `docs/22`
+更新时间：2026-08-27
 
 ## 1. 架构结论
 
@@ -691,9 +691,9 @@ raw mode 隐藏输入按状态机吞掉 CSI/SS3/OSC 转义序列与游离控制�
 
 安装前对下载资产做 SHA256SUMS 校验（固定 `releases/latest/download/SHA256SUMS` 资产，按 tarball basename 匹配条目；拉取失败/无条目/不匹配一律 fail-closed 拒绝安装）。npm pack 元数据文件名拒绝 cmd.exe 元字符与 `%`。更新链子进程环境在 Router 变量清理之外剥离 `NODE_OPTIONS`；代理与 `npm_config_*` 保留。技术基线提升为 Node `>=18.20.0`（libuv BatBadBut `.cmd` 参数转义基线）。
 
-## 23. GLM-5.3-Flash Auto 双通道升级架构（候选）
+## 23. GLM-5.3-Flash Auto 双通道升级架构（已随 `1.8.0` 发布）
 
-绑定实施合同：`docs/22-glm-5.3-flash-auto-implementation-guide.md`。本节只描述未发布候选 `1.8.0` 的增量，不改写第 17、18、20 节的 GLM 历史架构。
+绑定实施合同：`docs/22-glm-5.3-flash-auto-implementation-guide.md`。本节描述 `1.8.0`（2026-08-27 发布）的增量，不改写第 17、18、20 节的 GLM 历史架构。
 
 ```text
 cmr glm / glm-5.3 / glm-5.2 / glm-plan
