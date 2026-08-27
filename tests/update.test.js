@@ -106,11 +106,16 @@ function transactionRunner({ installOutcome = "success", verifyOutput = null, mu
 }
 
 const FAKE_PACKAGE_SHA256 = createHash("sha256").update("fake package").digest("hex");
-// The published sums name the fixed release asset, while the fake npm runner above reports a
-// versioned copy filename — mirroring the real-world divergence the verifier must tolerate.
+// Published-format sums since 1.8.1: the asset entry plus a same-digest alias under npm's
+// versioned copy name (docs/23 HF-4), so pre-1.8.1 updaters looking up npm's filename pass
+// the byte-for-byte check and self-heal; the current verifier keys on the asset name.
 const RELEASE_ASSET_FILENAME = path.basename(LATEST_RELEASE_ASSET_URL);
 function fakeReleaseSums() {
-  return async () => ({ ok: true, text: async () => `${FAKE_PACKAGE_SHA256}  ${RELEASE_ASSET_FILENAME}\n` });
+  return async () => ({
+    ok: true,
+    text: async () => `${FAKE_PACKAGE_SHA256}  ${RELEASE_ASSET_FILENAME}\n`
+      + `${FAKE_PACKAGE_SHA256}  claude-model-router-1.3.0-candidate.tgz\n`
+  });
 }
 
 test("update accepts only the explicit check form", () => {
