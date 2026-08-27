@@ -1,8 +1,8 @@
 # Claude Model Router
 
-Current public Latest stable version: **`1.8.0`** (released 2026-08-27).
+Current public Latest stable version: **`1.8.1`** (released 2026-08-27).
 
-This repository carries an unreleased `1.8.1` hotfix candidate (binding contract `docs/23`): since `1.7.0`, a real full `cmr update` (not `cmr update --check`) fails on every platform with `ERROR integrity check unavailable: published SHA256SUMS has no entry for the release asset`, because the verifier looked up npm's versioned tarball copy filename instead of the fixed release asset name in `SHA256SUMS`. Installed versions remain intact (fail-closed before install). The `1.8.1` release also publishes a same-digest alias entry in `SHA256SUMS` under npm's copy name, so existing `1.7.0`–`1.8.0` installations self-heal with a plain `cmr update` — no manual reinstall (fallback command in `docs/23` §6).
+Version `1.8.1` is a hotfix restoring the automatic update channel: since `1.7.0`, a real full `cmr update` (not `cmr update --check`) failed on every platform with `ERROR integrity check unavailable: published SHA256SUMS has no entry for the release asset`, because the verifier looked up npm's versioned tarball copy filename instead of the fixed release asset name in `SHA256SUMS`. Installed versions were never damaged (fail-closed before install). The release also publishes a same-digest alias entry in `SHA256SUMS` under npm's copy name, so existing `1.7.0`–`1.8.0` installations self-heal with a plain `cmr update` — no manual reinstall (fallback command in `docs/23` §6). Binding contract and evidence: `docs/23`.
 
 Version `1.8.0` upgrades both GLM profiles to the same Auto hybrid mapping — Opus/Sonnet use `glm-5.3[1m]`, while the Haiku slot and all sub-agents use the natively multimodal light model `glm-5.3-flash[1m]` (released 2026-08-26) through a mandatory `CLAUDE_CODE_SUBAGENT_MODEL` override. `glm-api` moves to the `glm-5.3` pricing family at stable list prices. Real dual-channel provider acceptance passed under owner authorization; binding contract, decision records, and release evidence: `docs/22`.
 
@@ -37,10 +37,10 @@ Prerequisites:
 - For GLM, use a Coding Plan Key with `cmr glm` or a distinct standard API Key with `cmr glm-api`. CMR does not identify Key types, combine slots, or switch between them.
 - Kimi Code is intended only for the personal interactive development scenarios allowed by Kimi's official policy. Enterprise integrations, commercial services, and non-interactive batch use require a separate policy and product evaluation.
 
-Install the reproducible `v1.8.0` Release asset:
+Install the reproducible `v1.8.1` Release asset:
 
 ```bash
-npm install --global "https://github.com/zouerdong/ai-model-router/releases/download/v1.8.0/claude-model-router.tgz"
+npm install --global "https://github.com/zouerdong/ai-model-router/releases/download/v1.8.1/claude-model-router.tgz"
 cmr version
 cmr
 ```
@@ -50,7 +50,7 @@ Existing `1.3.0` and newer entity npm-global installations can run `cmr update`;
 If the existing installation uses a custom npm prefix, specify that same prefix so your terminal does not continue resolving an older copy:
 
 ```bash
-npm install --global --prefix <current-prefix> "https://github.com/zouerdong/ai-model-router/releases/download/v1.8.0/claude-model-router.tgz"
+npm install --global --prefix <current-prefix> "https://github.com/zouerdong/ai-model-router/releases/download/v1.8.1/claude-model-router.tgz"
 ```
 
 You can also install the latest stable fixed asset:
@@ -59,7 +59,7 @@ You can also install the latest stable fixed asset:
 npm install --global "https://github.com/zouerdong/ai-model-router/releases/latest/download/claude-model-router.tgz"
 ```
 
-For reproducible installation, prefer the exact `releases/download/v1.8.0/claude-model-router.tgz` URL over `latest`.
+For reproducible installation, prefer the exact `releases/download/v1.8.1/claude-model-router.tgz` URL over `latest`.
 
 To inspect and install from source:
 
@@ -245,4 +245,4 @@ API keys are written through hidden local TTY input to the Secret Store outside 
 21. [Security hardening implementation guide](docs/21-security-hardening-implementation-guide.md)
 22. [GLM-5.3-Flash Auto dual-channel upgrade implementation guide](docs/22-glm-5.3-flash-auto-implementation-guide.md)
 
-The runtime has no third-party dependencies. The public repository uses `main` as its default branch; the current public stable tag is `v1.8.0`, published as an immutable Release with the fixed `claude-model-router.tgz` asset and `SHA256SUMS`.
+The runtime has no third-party dependencies. The public repository uses `main` as its default branch; the current public stable tag is `v1.8.1`, published as an immutable Release with the fixed `claude-model-router.tgz` asset and a two-entry `SHA256SUMS` (asset name plus a same-digest alias under npm's copy name so pre-1.8.1 updaters keep verifying).
