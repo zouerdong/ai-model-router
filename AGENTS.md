@@ -23,7 +23,7 @@
 
 Profile 只决定 Claude Code 子进程启动时使用哪套 Provider 环境。Kimi 适合规划、DeepSeek 适合执行只是推荐工作流，不是功能限制；用户可用任一 Profile 进行规划、编码、续聊或其他 Claude Code 支持的操作。两个 GLM Profile 不自动互相 fallback，也不共享或识别 Key 类型。
 
-未发布候选登记：无。原 `1.8.0` 候选（`docs/22` GFA-1~6，2026-08-26 登记）已于 2026-08-27 随 `1.8.0` 公开发布并完成全部门禁；其计费归属决策记录与发布证据见 `docs/22` §9。
+未发布候选登记：`1.8.1` 热修复候选（`docs/23` HF-1~3，2026-08-27 登记）——修复自 `1.7.0` 起真实完整 `cmr update` 全平台必然失败的 SHA256SUMS 条目查找键回归（按 npm 版本化文件名查找，应为固定资产名）；无 Provider/Profile/配置变更；发布门禁含 HF-3 新增的旧版→新版真实完整 `cmr update` 回读。原 `1.8.0` 候选（`docs/22` GFA-1~6，2026-08-26 登记）已于 2026-08-27 随 `1.8.0` 公开发布并完成全部门禁；其计费归属决策记录与发布证据见 `docs/22` §9。
 
 ## 2. 规范优先级
 
@@ -37,7 +37,7 @@ Profile 只决定 Claude Code 子进程启动时使用哪套 Provider 环境。K
 6. `docs/08-acceptance-and-recovery.md`。
 7. `docs/09-phase-1-acceptance.md`，用于核对已完成的 Mac 基线。
 
-`docs/10-v0.2-transparent-profile-launcher-implementation-brief.md` 是 `1.0.0` 稳定运行时的历史实施与验收依据。`docs/11-v1.1-first-run-setup-implementation-brief.md` 是 `1.1.0` 的实施与验收依据。`docs/12-v1.2.1-windows-compatibility-patch.md` 是 `1.2.1` 的发布依据。`docs/13-v1.3-self-update-implementation-brief.md` 是自更新功能的实施、验收与首次发布依据。`docs/14` 与 `docs/15` 分别记录两个 GLM Profile 的实施合同，`docs/16` 是二者统一进入 `1.4.0` 的版本决策、验收与发布依据。`docs/17` 是 `1.5.0` Kimi Code 会员 Provider 的逐卡实施、审阅与发布门禁依据。`docs/19` 是 `1.5.1` Secret Store 前向兼容修复的实施合同与发布门禁依据。`docs/22` 是 `1.8.0` GLM-5.3-Flash Auto 双通道升级（GFA-1~6）的实施合同与发布证据（已发布）。GitHub 与 Windows 阶段分别按 `docs/04-phase-2-github.md` 和 `docs/05-phase-3-windows.md` 执行。
+`docs/10-v0.2-transparent-profile-launcher-implementation-brief.md` 是 `1.0.0` 稳定运行时的历史实施与验收依据。`docs/11-v1.1-first-run-setup-implementation-brief.md` 是 `1.1.0` 的实施与验收依据。`docs/12-v1.2.1-windows-compatibility-patch.md` 是 `1.2.1` 的发布依据。`docs/13-v1.3-self-update-implementation-brief.md` 是自更新功能的实施、验收与首次发布依据。`docs/14` 与 `docs/15` 分别记录两个 GLM Profile 的实施合同，`docs/16` 是二者统一进入 `1.4.0` 的版本决策、验收与发布依据。`docs/17` 是 `1.5.0` Kimi Code 会员 Provider 的逐卡实施、审阅与发布门禁依据。`docs/19` 是 `1.5.1` Secret Store 前向兼容修复的实施合同与发布门禁依据。`docs/22` 是 `1.8.0` GLM-5.3-Flash Auto 双通道升级（GFA-1~6）的实施合同与发布证据（已发布）。`docs/23` 是 `1.8.1` 自更新完整性校验查找修复（HF-1~3）的实施合同与发布门禁依据。GitHub 与 Windows 阶段分别按 `docs/04-phase-2-github.md` 和 `docs/05-phase-3-windows.md` 执行。
 
 冲突时，以编号更靠前的现行文档为准。发现规范需要改变时，先修改对应文档并说明理由，再修改实现。
 

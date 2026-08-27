@@ -12,7 +12,8 @@ import { findNpmExecutable } from "../src/platform.js";
 import { CMR_PACKAGE_NAME, LATEST_RELEASE_ASSET_URL } from "../src/updater.js";
 
 // SHA256SUMS answers for locally injected candidates: hash the tarball npm actually produced,
-// keyed by its basename, so integrity verification passes without network access.
+// but key the entry by the fixed release asset name — npm's copy carries a versioned filename
+// while the published sums name the asset, mirroring the real release layout.
 function makeCandidateSumsTracker(runner) {
   const state = { lastPackedCandidate: null };
   const wrapped = async (request) => {
@@ -33,7 +34,7 @@ function makeCandidateSumsTracker(runner) {
   };
   state.fetchImpl = async () => {
     const bytes = await readFile(state.lastPackedCandidate);
-    return { ok: true, text: async () => `${createHash("sha256").update(bytes).digest("hex")}  ${path.basename(state.lastPackedCandidate)}\n` };
+    return { ok: true, text: async () => `${createHash("sha256").update(bytes).digest("hex")}  ${path.basename(LATEST_RELEASE_ASSET_URL)}\n` };
   };
   state.run = wrapped;
   return state;

@@ -6,7 +6,7 @@ import path from "node:path";
 import test from "node:test";
 import { parseUpdateArgs, runUpdate } from "../src/commands/update.js";
 import { createHash } from "node:crypto";
-import { CMR_PACKAGE_NAME } from "../src/updater.js";
+import { CMR_PACKAGE_NAME, LATEST_RELEASE_ASSET_URL } from "../src/updater.js";
 
 function capture() {
   let value = "";
@@ -106,9 +106,11 @@ function transactionRunner({ installOutcome = "success", verifyOutput = null, mu
 }
 
 const FAKE_PACKAGE_SHA256 = createHash("sha256").update("fake package").digest("hex");
-const FAKE_CANDIDATE_FILENAME = "claude-model-router-1.3.0-candidate.tgz";
+// The published sums name the fixed release asset, while the fake npm runner above reports a
+// versioned copy filename — mirroring the real-world divergence the verifier must tolerate.
+const RELEASE_ASSET_FILENAME = path.basename(LATEST_RELEASE_ASSET_URL);
 function fakeReleaseSums() {
-  return async () => ({ ok: true, text: async () => `${FAKE_PACKAGE_SHA256}  ${FAKE_CANDIDATE_FILENAME}\n` });
+  return async () => ({ ok: true, text: async () => `${FAKE_PACKAGE_SHA256}  ${RELEASE_ASSET_FILENAME}\n` });
 }
 
 test("update accepts only the explicit check form", () => {
@@ -610,7 +612,7 @@ test("update refuses to install a release asset that fails SHA256SUMS verificati
     platform: "darwin",
     npmExecutable: "/fake/npm",
     runner,
-    fetchImpl: async () => ({ ok: true, text: async () => `${"0".repeat(64)}  ${FAKE_CANDIDATE_FILENAME}\n` }),
+    fetchImpl: async () => ({ ok: true, text: async () => `${"0".repeat(64)}  ${RELEASE_ASSET_FILENAME}\n` }),
     lockPath: path.join(path.dirname(install.prefix), "integrity-mismatch.lock"),
     randomToken: () => "integrity-owner-abcdefghijkl",
     tempParent: path.dirname(install.prefix),
@@ -643,4 +645,31 @@ test("update refuses to install a release asset that fails SHA256SUMS verificati
   assert.equal(offlineResult.status, "failed");
   assert.match(offlineError.value, /SHA256SUMS could not be fetched/);
   assert.equal(offlineRunner.calls.filter((call) => call.args[0] === "install").length, 0);
+});
+
+test("update fails closed when SHA256SUMS only names npm's versioned tarball copy", async (t) => {
+  const install = await createInstall(t);
+  const runner = transactionRunner();
+  runner.setPackageRoot(install.packageRoot);
+  const errorOutput = capture();
+  const result = await runUpdate([], {
+    entryPath: install.commandPath,
+    modulePath: install.modulePath,
+    currentVersion: "1.2.1",
+    platform: "darwin",
+    npmExecutable: "/fake/npm",
+    runner,
+    // Regression guard for the pre-1.8.1 bug: the lookup must key on the release asset name,
+    // not on the versioned filename npm reports for its local copy.
+    fetchImpl: async () => ({ ok: true, text: async () => `${FAKE_PACKAGE_SHA256}  claude-model-router-1.3.0-candidate.tgz\n` }),
+    lockPath: path.join(path.dirname(install.prefix), "sums-npm-named.lock"),
+    randomToken: () => "sums-npm-named-owner-abcdefghijkl",
+    tempParent: path.dirname(install.prefix),
+    output: capture().output,
+    errorOutput: errorOutput.output
+  });
+  assert.equal(result.status, "failed");
+  assert.match(errorOutput.value, /SHA256SUMS has no entry for the release asset/);
+  assert.equal(runner.calls.filter((call) => call.args[0] === "install").length, 0);
+  assert.equal(JSON.parse(await readFile(path.join(install.packageRoot, "package.json"), "utf8")).version, "1.2.1");
 });

@@ -2,6 +2,8 @@
 
 Current public Latest stable version: **`1.8.0`** (released 2026-08-27).
 
+This repository carries an unreleased `1.8.1` hotfix candidate (binding contract `docs/23`): since `1.7.0`, a real full `cmr update` (not `cmr update --check`) fails on every platform with `ERROR integrity check unavailable: published SHA256SUMS has no entry for the release asset`, because the verifier looked up npm's versioned tarball copy filename instead of the fixed release asset name in `SHA256SUMS`. Installed versions remain intact (fail-closed before install). Release gates are pending owner authorization; after release, affected machines need a one-time manual install (see `docs/23` §6).
+
 Version `1.8.0` upgrades both GLM profiles to the same Auto hybrid mapping — Opus/Sonnet use `glm-5.3[1m]`, while the Haiku slot and all sub-agents use the natively multimodal light model `glm-5.3-flash[1m]` (released 2026-08-26) through a mandatory `CLAUDE_CODE_SUBAGENT_MODEL` override. `glm-api` moves to the `glm-5.3` pricing family at stable list prices. Real dual-channel provider acceptance passed under owner authorization; binding contract, decision records, and release evidence: `docs/22`.
 
 Version `1.7.0` hardened the public release: Claude Code settings `env` conflicts (e.g. keys persisted by provider switchers such as CC Switch) now refuse to launch, self-update verifies release assets against `SHA256SUMS`, hidden key input and key echo are hardened, and stale config freshness degrades to a doctor warning. Binding contract and evidence: `docs/21`.

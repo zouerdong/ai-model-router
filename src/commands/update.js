@@ -102,8 +102,10 @@ export async function verifyReleaseIntegrity({ tarballPath, options = {} }) {
   if (typeof text !== "string" || text.length === 0 || text.length > (options.maxSumsBytes ?? RELEASE_SUMS_MAX_BYTES)) {
     throwUpdate("integrity check unavailable", "published SHA256SUMS is invalid");
   }
-  // SHA256SUMS entries name the release asset (a basename), while npm metadata may carry a path.
-  const expected = parseReleaseSumsEntry(text, path.basename(tarballPath));
+  // npm names its local copy of a remote tarball after the manifest (<name>-<version>.tgz) while
+  // the published SHA256SUMS entry names the fixed release asset; npm writes the asset bytes
+  // verbatim, so look up the asset's entry and hash npm's copy against it.
+  const expected = parseReleaseSumsEntry(text, path.basename(LATEST_RELEASE_ASSET_URL));
   if (!expected) throwUpdate("integrity check unavailable", "published SHA256SUMS has no entry for the release asset");
   const fsApi = options.fsSync ?? defaultFsSync;
   let bytes;

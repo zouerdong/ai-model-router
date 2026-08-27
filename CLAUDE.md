@@ -9,7 +9,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## 常用命令
 
 ```bash
-npm test                                  # 全量测试（node --test；macOS 上 166 中 3 个 Windows-only 自动 skip）
+npm test                                  # 全量测试（node --test；macOS 上 185 中 3 个 Windows-only 自动 skip）
 npm run lint                              # 语法检查（scripts/lint.js 对 src/tests/scripts 做 node --check，无 ESLint）
 node --test tests/launch.test.js          # 运行单个测试文件
 node src/cli.js <profile|命令>            # 直接运行本仓库候选 CLI（不经全局安装）
@@ -40,5 +40,7 @@ CMR 是零依赖 Node.js ESM CLI（Node ≥18，仅标准库），职责是 Clau
 - **治理模式**（2026-08-18 起）：单一执行者 + 自动化验证 + 项目负责人对 push/tag/Release 逐项授权（Luna/Sol 双角色已撤销，历史记录见 docs/17 页首）。
 
 ## 当前状态
+
+仓库内 `v1.8.1` 热修复候选（2026-08-27 登记，`docs/23` HF-1~3，待发布授权）：修复自 `v1.7.0` 起真实完整 `cmr update` 全平台必然失败的回归——SHA256SUMS 条目查找误用 npm 版本化 tarball 文件名（`claude-model-router-<version>.tgz`），应为固定资产名（`claude-model-router.tgz`）；`--check` 不走该校验故历次发布门禁未拦截；发布门禁已补「旧版→新版真实完整 `cmr update`」回读；已装 ≤1.8.0 机器升级需一次性手动 npm install（docs/23 §6）。
 
 `v1.8.0` 已于 2026-08-27 发布（Latest，tag `v1.8.0` 指向门禁 commit 7929582；内容：`docs/22` GFA-1~6 GLM-5.3-Flash Auto 双通道升级——`glm` 与 `glm-api` 同步升级为同一套混合映射（Opus/Sonnet=`glm-5.3[1m]`，Haiku 与全部子 Agent=`glm-5.3-flash[1m]` 强制覆盖，真实会话验证），新增 `glm-5.3` 模型族 Pricing（稳定原价，促销价不入配置）；双通道真实验收通过；智谱积分制套餐在持有效套餐账号上跨通道抵扣两通道请求（上游机制变更），经项目负责人裁定按原合同发布并文档化（docs/07 §15.3））。`v1.7.0`（2026-08-22）：`docs/21` SC-1~5 公开发布安全加固——settings 冲突预检拒绝启动（CC Switch 劫持防御）、自更新 SHA256SUMS 校验、隐藏输入加固、密钥回显脱敏、freshness 降级为 WARN、Node `>=18.20.0`。`v1.6.0`（2026-08-21）：`docs/20` DSV-1~4 DeepSeek-V4-Flash-Vision 接入——deepseek Auto 的 Haiku/子 Agent 槽位 + 新增 `deepseek-vision` Profile，并入原 1.5.2 候选的内部清理。`v1.5.1`（2026-08-18）：`docs/19` SSFC-1~3 Secret Store 前向兼容修复。`v1.5.0`（同日早些时候发布）新增 Kimi Code 会员三 Profile 与 GLM-5.3 Coding Plan。已登记未做的候选项：智谱积分耗尽后标准 Key 行为确认（见 docs/07 §15.3）、HighSpeed 显式 Profile、Claude Code `/fast` 行为实测、Kimi 混合档位映射（2026-08-18 评估后暂缓，见 docs/01 §14.2）、vision-exp `[1m]` 后缀验证、deepseek-v4 pricing 记录与 2026-08-17 峰谷 CNY 定价的口径更新（见 docs/20 §6）、docs/21 §9 的登记项（Windows ACL、set() 并发、fsync、formatPricing 数据驱动化、migrate.js 死代码删除等）。
