@@ -45,6 +45,7 @@ test("builds DeepSeek Auto without Kimi-only leftovers", async () => {
   assert.equal(child.ANTHROPIC_MODEL, "deepseek-v4-pro[1m]");
   assert.equal(child.ANTHROPIC_DEFAULT_HAIKU_MODEL, "deepseek-v4-flash-vision-exp");
   assert.equal(child.CLAUDE_CODE_SUBAGENT_MODEL, "deepseek-v4-flash-vision-exp");
+  assert.equal(child.CLAUDE_CODE_MAX_CONTEXT_TOKENS, "1048576");
   assert.equal(Object.hasOwn(child, "ANTHROPIC_DEFAULT_FABLE_MODEL"), false);
   assert.equal(child.ANTHROPIC_AUTH_TOKEN, "test-deepseek-key");
   assert.equal(Object.hasOwn(child, "ANTHROPIC_API_KEY"), false);
@@ -180,7 +181,7 @@ test("all eight formal profiles clear inherited max-context variants without mut
       profile,
       secret: `test-${profile.provider}-key`
     });
-    if (profile.provider === "kimi-code") {
+    if (profile.provider === "kimi-code" || profile.provider === "deepseek") {
       assert.equal(child.CLAUDE_CODE_MAX_CONTEXT_TOKENS, profile.environment.CLAUDE_CODE_MAX_CONTEXT_TOKENS, profile.id);
     } else {
       assert.equal(Object.hasOwn(child, "CLAUDE_CODE_MAX_CONTEXT_TOKENS"), false, profile.id);
@@ -226,7 +227,7 @@ test("sequential GLM, GLM API, Kimi and DeepSeek launches do not retain Router v
   assert.equal(Object.hasOwn(deepseek, "ANTHROPIC_DEFAULT_FABLE_MODEL"), false);
   assert.equal(deepseek.ANTHROPIC_AUTH_TOKEN, "test-deepseek-key");
   assert.equal(Object.hasOwn(deepseek, "ANTHROPIC_API_KEY"), false);
-  assert.equal(Object.hasOwn(deepseek, "CLAUDE_CODE_MAX_CONTEXT_TOKENS"), false);
+  assert.equal(deepseek.CLAUDE_CODE_MAX_CONTEXT_TOKENS, "1048576");
   assert.equal(glmApi.ANTHROPIC_API_KEY, "test-glm-api-key");
   assert.equal(Object.hasOwn(glmApi, "ANTHROPIC_AUTH_TOKEN"), false);
   assert.equal(Object.hasOwn(glmApi, "CLAUDE_CODE_MAX_CONTEXT_TOKENS"), false);

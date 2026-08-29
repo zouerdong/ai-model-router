@@ -1,7 +1,7 @@
 # 01 — 产品范围
 
-状态：`1.8.0` 公开 Latest 稳定发布（2026-08-27）；GLM-5.3-Flash Auto 双通道升级见第 17 节与 `docs/22`
-更新时间：2026-08-27
+状态：公开 Latest 为 `1.8.1`；未发布的 `1.8.2` DeepSeek 上下文与 Pricing 仓库候选已完成，见第 18 节与 `docs/24`
+更新时间：2026-08-29
 
 ## 1. 一句话定义
 
@@ -413,3 +413,9 @@ CMR 仍不做模型能力检测与内容路由；vision 模型仅意味着该通
 `CLAUDE_CODE_SUBAGENT_MODEL` 是强制的全局子 Agent 覆盖（Claude Code 官方语义：优先于子 Agent 定义 frontmatter 与单次调用参数），这是本轮预期行为而非副作用。主会话默认仍是文本模型 `glm-5.3[1m]`：向主会话附图不会自动切换到 Flash，显式 Haiku 档才命中 Flash；CMR 不检测消息内容、不重写请求、不做内容路由。Opus/Sonnet=5.3 + Haiku/Subagent=5.3-Flash 的组合是 CMR 产品决策，不是智谱或 Anthropic 官方发布的 Auto 预设；官方分别证明了模型、端点、Claude Code 选择值与两条费用通道可用。
 
 本轮不新增全 Flash Profile；如后续需要「主会话直接看图」，应单独立项。两条通道共享 Base URL，但不合并 Provider、Secret 或鉴权变量，不检测 Key 类型、不查询余额、不自动 fallback。真实 Provider 验收（GFA-6）与发布门禁须项目负责人逐项授权；发布前当前稳定版仍为 `1.7.0`。
+
+## 18. DeepSeek 1M 上下文与峰谷 Pricing 刷新（DCP-1 至 DCP-4）
+
+本节绑定 `docs/24-v1.8.2-deepseek-context-pricing-refresh.md`，只描述未发布 `1.8.2` 候选的增量。`deepseek` 与 `deepseek-vision` 都新增 `CLAUDE_CODE_MAX_CONTEXT_TOKENS=1048576`，让 Claude Code 对裸 ID 的 `deepseek-v4-flash-vision-exp` 按官方 1M 窗口管理；Pro 槽继续使用 `deepseek-v4-pro[1m]`，所有模型 ID 与槽位分工不变。
+
+`deepseek-v4` Pricing 同步为 Pro、Flash、Flash Vision 三模型的工作日峰谷 USD 价格树。CMR 不按时间自动选价、不估算会话费用，也不新增 Provider、Profile、Secret、自动压缩或内容路由。该实现 supersede `docs/20` §6 的 Vision `[1m]` 与旧 Pricing 待办，但不改写 `v1.6.0` 历史证据。

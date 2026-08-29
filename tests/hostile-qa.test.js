@@ -92,25 +92,25 @@ test("all eight profiles isolate auth, models and managed variables sequentially
     await rm(root, { recursive: true, force: true });
   });
   const cases = [
-    ["kimi", "test-kimi-key", "kimi-k3[1m]", "ANTHROPIC_AUTH_TOKEN", false],
-    ["deepseek", "test-deepseek-key", "deepseek-v4-pro[1m]", "ANTHROPIC_AUTH_TOKEN", false],
-    ["deepseek-vision", "test-deepseek-key", "deepseek-v4-flash-vision-exp", "ANTHROPIC_AUTH_TOKEN", false],
-    ["glm", "test-glm-key", null, "ANTHROPIC_AUTH_TOKEN", false],
-    ["glm-api", "test-glm-api-key", null, "ANTHROPIC_API_KEY", false],
-    ["kimi-code", "test-kimi-code-key", "kimi-for-coding", "ANTHROPIC_API_KEY", true],
-    ["kimi-code-k3-256k", "test-kimi-code-k3-256k-key", "k3-256k", "ANTHROPIC_API_KEY", true],
-    ["kimi-code-k3", "test-kimi-code-k3-key", "k3[1m]", "ANTHROPIC_API_KEY", true]
+    ["kimi", "test-kimi-key", "kimi-k3[1m]", "ANTHROPIC_AUTH_TOKEN", null],
+    ["deepseek", "test-deepseek-key", "deepseek-v4-pro[1m]", "ANTHROPIC_AUTH_TOKEN", "1048576"],
+    ["deepseek-vision", "test-deepseek-key", "deepseek-v4-flash-vision-exp", "ANTHROPIC_AUTH_TOKEN", "1048576"],
+    ["glm", "test-glm-key", null, "ANTHROPIC_AUTH_TOKEN", null],
+    ["glm-api", "test-glm-api-key", null, "ANTHROPIC_API_KEY", null],
+    ["kimi-code", "test-kimi-code-key", "kimi-for-coding", "ANTHROPIC_API_KEY", "262144"],
+    ["kimi-code-k3-256k", "test-kimi-code-k3-256k-key", "k3-256k", "ANTHROPIC_API_KEY", "262144"],
+    ["kimi-code-k3", "test-kimi-code-k3-key", "k3[1m]", "ANTHROPIC_API_KEY", "1048576"]
   ];
   const config = await loadConfigSet();
 
-  const verify = (result, [selector, , model, authVariable, hasMaxContext]) => {
+  const verify = (result, [selector, , model, authVariable, maxContext]) => {
     const profile = config.profiles.find((item) => item.id === selector);
     assert.equal(result.code, 0, selector);
     assert.equal(result.snapshot.model, model, `${selector} model`);
     assert.deepEqual(result.snapshot.anthropicAuthVariables, [authVariable], `${selector} auth`);
     assert.equal(result.snapshot.hasApiKey, authVariable === "ANTHROPIC_API_KEY", `${selector} api key`);
     assert.equal(result.snapshot.hasAuthToken, authVariable === "ANTHROPIC_AUTH_TOKEN", `${selector} auth token`);
-    assert.equal(result.snapshot.maxContext !== null, hasMaxContext, `${selector} max context`);
+    assert.equal(result.snapshot.maxContext, maxContext, `${selector} max context`);
     assert.deepEqual(
       result.snapshot.routerEnvironmentKeys,
       ["ANTHROPIC_BASE_URL", authVariable, ...Object.keys(profile.environment)].sort(),

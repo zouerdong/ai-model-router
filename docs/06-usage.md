@@ -1,9 +1,9 @@
 # 06 — 操作说明手册
 
-状态：当前公开 Latest 稳定版为 `1.8.0`（2026-08-27 发布）；第 17/18 节描述的 GLM 映射为该版本行为
+状态：当前公开 Latest 稳定版为 `1.8.1`；本仓库 `1.8.2` 候选的 DeepSeek 行为见第 21 节
 适用范围：Mac 与原生 Windows/WSL
 
-The current public Latest stable release is v1.8.0 (GLM-5.3-Flash Auto dual-channel upgrade).
+The current public Latest stable release is v1.8.1. The repository's unreleased v1.8.2 candidate is documented in section 21.
 
 CMR 只在启动 Claude Code 前选择 Provider/Profile，并注入临时子进程环境。进入 Claude Code 后，任务用途、权限模式、会话和参数都遵循 Claude Code 原生行为。
 
@@ -15,7 +15,7 @@ CMR 只在启动 Claude Code 前选择 Provider/Profile，并注入临时子进�
 cmr version
 ```
 
-公开稳定 Release 应输出 `1.6.0`；从本仓库源代码运行时 `cmr version` 同样输出 `1.6.0`。`1.3.0` 用户可运行 `cmr update`；`1.2.1` 或更旧版本先按 README 的 exact-release bootstrap 升级。然后在交互式终端执行：
+公开稳定 Release 应输出 `1.8.1`；从本仓库候选源代码运行时 `cmr version` 输出 `1.8.2`。`1.3.0` 用户可运行 `cmr update`；`1.2.1` 或更旧版本先按 README 的 exact-release bootstrap 升级。然后在交互式终端执行：
 
 ```bash
 cmr
@@ -376,7 +376,7 @@ Windows, GitHub, and release gates all closed; public readback verified.
 
 ## 20. DeepSeek V4 Flash Vision（`v1.6.0`）
 
-2026-08-21 官方上线多模态视觉理解实验模型 `deepseek-v4-flash-vision-exp`（详见 `docs/20`）。仓库候选提供两个入口：
+2026-08-21 官方上线多模态视觉理解实验模型 `deepseek-v4-flash-vision-exp`（详见 `docs/20`）。`v1.6.0` 起提供两个入口：
 
 | 规范 Profile | 兼容别名 | 主模型/Opus/Sonnet | Haiku/子 Agent | Secret |
 |---|---|---|---|---|
@@ -388,4 +388,12 @@ cmr deepseek-vision            # 全部映射使用多模态实验模型
 cmr deepseek-vision --continue # 与其他 Profile 相同的透传语义
 ```
 
-两个入口共用 `deepseek` Secret 与 `ANTHROPIC_AUTH_TOKEN`，价格与 `deepseek-v4-flash` 相同（官方定价页同列同价）。`deepseek-vision` 面向需要图片输入的会话；`deepseek` Auto 的主会话仍由 V4 Pro 承担。该模型为实验性质，官方可能调整能力或下线；`[1m]` 后缀与思考档位待验证项见 `docs/20` §6。
+两个入口共用 `deepseek` Secret 与 `ANTHROPIC_AUTH_TOKEN`，价格与 `deepseek-v4-flash` 相同（官方定价页同列同价）。`deepseek-vision` 面向需要图片输入的会话；`deepseek` Auto 的主会话仍由 V4 Pro 承担。该模型为实验性质，官方可能调整能力或下线。
+
+## 21. DeepSeek 1M 上下文声明与峰谷价格（`v1.8.2` 候选）
+
+本仓库候选为 `deepseek` 与 `deepseek-vision` 都注入 `CLAUDE_CODE_MAX_CONTEXT_TOKENS=1048576`。这不会改变模型映射：Pro 槽仍为 `deepseek-v4-pro[1m]`，Vision 槽仍为裸 ID `deepseek-v4-flash-vision-exp`；作用是让 Claude Code 对无法从名称识别窗口的 Vision ID 按官方 1M 能力管理上下文。
+
+DeepSeek 价格配置现覆盖 Pro、Flash、Flash Vision 三模型的工作日峰谷 USD 单价；Flash Vision 与 Flash 同价。CMR 不按当前时间替用户选择或展示某一档、不估算会话费用，也不查询余额。完整费率与 UTC 峰值时段见 `docs/24` §2.2。
+
+此节描述尚未发布的仓库候选。通过公开安装命令得到的 `v1.8.1` 尚不包含该变更。

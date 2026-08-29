@@ -1,22 +1,48 @@
 {
   "id": "deepseek-v4",
-  "displayName": "DeepSeek V4",
+  "displayName": "DeepSeek V4 family",
   "model": "deepseek-v4",
   "currency": "USD",
   "unit": "per_million_tokens",
   "prices": {
     "deepseek-v4-pro": {
-      "inputCacheHit": 0.003625,
-      "inputCacheMiss": 0.435,
-      "output": 0.87
+      "offPeak": {
+        "inputCacheHit": 0.022,
+        "inputCacheMiss": 0.66,
+        "output": 1.98
+      },
+      "peak": {
+        "inputCacheHit": 0.044,
+        "inputCacheMiss": 1.32,
+        "output": 3.96
+      }
     },
     "deepseek-v4-flash": {
-      "inputCacheHit": 0.0028,
-      "inputCacheMiss": 0.14,
-      "output": 0.28
+      "offPeak": {
+        "inputCacheHit": 0.007,
+        "inputCacheMiss": 0.22,
+        "output": 0.66
+      },
+      "peak": {
+        "inputCacheHit": 0.014,
+        "inputCacheMiss": 0.44,
+        "output": 1.32
+      }
+    },
+    "deepseek-v4-flash-vision-exp": {
+      "offPeak": {
+        "inputCacheHit": 0.007,
+        "inputCacheMiss": 0.22,
+        "output": 0.66
+      },
+      "peak": {
+        "inputCacheHit": 0.014,
+        "inputCacheMiss": 0.44,
+        "output": 1.32
+      }
     }
   },
   "contextWindowTokens": 1048576,
-  "verifiedOn": "2026-07-23",
-  "sourceUrl": "https://api-docs.deepseek.com/quick_start/pricing"
+  "verifiedOn": "2026-08-29",
+  "sourceUrl": "https://api-docs.deepseek.com/quick_start/pricing/"
 }

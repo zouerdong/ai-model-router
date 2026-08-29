@@ -6,15 +6,17 @@
 
 当前稳定版为 `1.8.1`（2026-08-27 发布，Latest，tag `v1.8.1` 指向门禁 commit `61cd77f`）：`docs/23` HF-1~4 自更新完整性校验查找热修复——修复自 `1.7.0` 起真实完整 `cmr update` 全平台必然失败的回归（SHA256SUMS 条目查找误用 npm 版本化文件名，改为固定资产名；`--check` 不走该校验故历次门禁未拦截）；HF-4 自本版起 SHA256SUMS 常设同摘要别名条目（npm 落盘名），存量 `1.7.0`–`1.8.0` 用户 `cmr update` 一次即自愈（隔离 prefix `1.8.0` 真实完整更新自愈至 `1.8.1` 实测通过）；无 Provider/Profile/配置变更；发布门禁新增旧版→新版真实完整 `cmr update` 回读（`docs/23` §5）。前一稳定版 `1.8.0`（2026-08-27 早些时候发布，tag `v1.8.0` 指向门禁 commit `7929582`；Windows T4 run 32989908842 双档全绿）：`docs/22` GFA-1~6 GLM-5.3-Flash Auto 双通道升级——`glm` 与 `glm-api` 同步升级为同一套混合映射（Opus/Sonnet=`glm-5.3[1m]`，Haiku 档与全部子 Agent=原生多模态 `glm-5.3-flash[1m]`，`CLAUDE_CODE_SUBAGENT_MODEL` 强制覆盖经真实会话验证），新增 `glm-5.3` 模型族 Pricing（稳定公开原价，促销价不入配置），`glm-api.pricingRef` 迁移；双通道真实验收通过，费用归属停止条件（智谱积分制套餐在持有效套餐账号上跨通道抵扣，上游机制变更）经项目负责人裁定方案 1 结案并文档化（`docs/07` §15.3）；发布说明含中英双语计费归属提示与 CC Switch 兼容提醒。前一稳定版 `1.7.0`（2026-08-22）：`docs/21` SC-1~5 公开发布安全加固——Claude Code settings `env` 冲突预检拒绝启动（CC Switch 等切换器劫持防御，`CLAUDE_CONFIG_DIR`/项目/managed 感知）、自更新 SHA256SUMS 资产完整性校验（fail-closed）与 `NODE_OPTIONS` 剥离、隐藏输入转义序列加固与密钥回显脱敏、freshness 过期降级为 doctor WARN（不再变砖）、Node 基线 `>=18.20.0`。前一稳定版 `1.6.0`（2026-08-21）：`docs/20` DSV-1~4 DeepSeek-V4-Flash-Vision 接入——`deepseek` Auto 的 Haiku/子 Agent 槽切换为 `deepseek-v4-flash-vision-exp`（多模态实验模型，官方与 flash 同价），新增 `deepseek-vision` Profile 全槽位该模型；并入原未发布 `1.5.2` 候选的内部启动路径清理。前一稳定版 `1.5.1`（2026-08-18）：`1.5.0` 同日的 Secret Store 前向兼容补丁——旧版读取密钥库时忽略并原样保留较新版本写入的未知 Provider Key，恢复「旧版可继续使用旧通道」合同（`docs/19` SSFC-1~3）；无新增 Provider/Profile/价格。前一稳定版 `1.5.0`（2026-08-18 公开发布）：在 `1.4.0` 基线上新增 Kimi Code 会员三 Profile（真实验收通过）与 GLM-5.3 Coding Plan 升级。`1.4.0` 在 `1.3.0` GitHub Release 自更新基线上，一次发布 GLM Coding Plan 与 GLM 标准 API 按量付费两个显式 Profile，并保持独立的凭据、鉴权和费用边界。`1.1.0` 的 Mac 独立验收见 `docs/11-v1.1-first-run-setup-implementation-brief.md` 第 17 节；`1.2.1` 发布证据见 `docs/12-v1.2.1-windows-compatibility-patch.md`；`1.3.0` 发布与公开回读证据见 `docs/13-v1.3-self-update-implementation-brief.md` 第 19 节；`1.4.0` 统一发布证据见 `docs/16-v1.4-unified-glm-release.md`。
 
+当前仓库版本为未发布的 `1.8.2` 候选（`docs/24` DCP-1~4）：两个 DeepSeek Profile 统一注入 `CLAUDE_CODE_MAX_CONTEXT_TOKENS=1048576`，使裸 ID 的 Flash Vision 槽位在 Claude Code 中按真实 1M 窗口管理；DeepSeek Pricing 同步为当前三模型、工作日峰谷 USD 价格。公开稳定版、安装 URL 与 tag 仍为 `v1.8.1`。
+
 `1.5.0` 已于 2026-08-18 完成 `docs/17` 全部九张任务卡并公开发布（Windows 实机 9.1 run 32112918053 全绿；GitHub 候选 9.2 通过；9.3 发布与公开回读闭环：exact/latest 双 URL 字节一致、隔离 prefix 安装 `1.5.0`、真机 `cmr update --check` 正确探测 1.5.0）。Kimi Code 三个首批 Profile 均真实验收 `PROVIDER PASS`（2026-08-18 用户授权，Allegretto+ 档，Extra Usage 关闭，脱敏回读；归属闭环：会员 Console 0%→1%，开放平台当日零请求）；HighSpeed 按决策 2 处理（仅文档化显式 `--model` 切换，不新增 Profile，`/fast` 不是入口）。治理模式：项目负责人于 2026-08-18 指令撤销 Luna/Sol 双角色审阅循环，改为单一执行者 + 自动化验证（全量 `npm test`/`npm run lint` + 脱敏证据记录）+ 项目负责人门禁（commit/push/tag/Release 逐项授权）。`docs/17-v1.5-kimi-code-membership-implementation-guide.md` 为 Kimi Code 绑定执行指导，`docs/18-v1.5-glm-5.3-upgrade-implementation-guide.md` 为 GLM-5.3 绑定执行指导，`docs/20-deepseek-v4-flash-vision-implementation-guide.md` 为 DeepSeek Vision 绑定执行指导。
 
 `1.3.0` 引入的 GitHub Release 自更新继续作为 `1.4.0` 的稳定更新通道。PowerShell、CMD、Git Bash 的隔离 prefix、自替换、回滚、junction 与中断场景均已通过；固定 Release 资产、checksum、tag、immutable 发布、exact/latest 下载、临时 prefix bootstrap 与公开 `cmr update --check` 已闭环。
 
-`1.8.0` 提供八个数据化 Profile（前七个自 `1.5.0`，`deepseek-vision` 自 `1.6.0`；`1.8.0` 无新增，`glm`/`glm-api` 映射升级）：
+`1.8.2` 候选继续提供八个数据化 Profile（公开稳定版仍为 `1.8.1`，本轮不新增 Profile）：
 
 - `kimi`：Kimi K3 的完整 Claude Code 模型映射。
-- `deepseek`：DeepSeek Auto；主会话由 V4 Pro 承担，Haiku 档与子 Agent 由 V4 Flash Vision 实验模型（`deepseek-v4-flash-vision-exp`，多模态）承担。
-- `deepseek-vision`：DeepSeek V4 Flash Vision；全部模型映射使用 `deepseek-v4-flash-vision-exp`，复用 `deepseek` Provider 与 Secret。
+- `deepseek`：DeepSeek Auto；主会话由 V4 Pro 承担，Haiku 档与子 Agent 由 V4 Flash Vision 实验模型（`deepseek-v4-flash-vision-exp`，多模态）承担；候选统一声明 1,048,576 token 客户端窗口。
+- `deepseek-vision`：DeepSeek V4 Flash Vision；全部模型映射使用 `deepseek-v4-flash-vision-exp`，复用 `deepseek` Provider 与 Secret；候选统一声明 1,048,576 token 客户端窗口。
 - `glm`：GLM-5.3 + 5.3-Flash Auto Coding Plan；Opus/Sonnet=`glm-5.3[1m]`，Haiku 档与全部子 Agent=`glm-5.3-flash[1m]`（原生多模态）；独立 `glm` Secret、`ANTHROPIC_AUTH_TOKEN` 与订阅额度提示。
 - `glm-api`：GLM-5.3 + 5.3-Flash Auto 标准 API 按量付费；与 `glm` 相同映射，`glm-5.3` 模型族 Pricing；独立 `glm-api` Secret 与 `ANTHROPIC_API_KEY`。持有效套餐账号的上游计费归属见 `docs/07` §15.3。
 - `kimi-code`：Kimi Code 会员（`kimi-for-coding`，256K）。
@@ -23,7 +25,7 @@
 
 Profile 只决定 Claude Code 子进程启动时使用哪套 Provider 环境。Kimi 适合规划、DeepSeek 适合执行只是推荐工作流，不是功能限制；用户可用任一 Profile 进行规划、编码、续聊或其他 Claude Code 支持的操作。两个 GLM Profile 不自动互相 fallback，也不共享或识别 Key 类型。
 
-未发布候选登记：无。原 `1.8.1` 热修复候选（`docs/23` HF-1~4，2026-08-27 登记）已于同日经项目负责人授权随 `1.8.1` 公开发布并完成全部门禁（含 HF-3 自愈门禁）；发布证据见 `docs/23` §5。原 `1.8.0` 候选（`docs/22` GFA-1~6，2026-08-26 登记）已于 2026-08-27 随 `1.8.0` 公开发布并完成全部门禁；其计费归属决策记录与发布证据见 `docs/22` §9。
+未发布候选登记：`1.8.2`（`docs/24` DCP-1~4，2026-08-29 登记），范围仅为 DeepSeek 1M 客户端窗口声明与三模型峰谷 Pricing 刷新；仓库候选门禁已通过，尚未 tag、未发布。原 `1.8.1` 热修复候选（`docs/23` HF-1~4，2026-08-27 登记）已于同日经项目负责人授权随 `1.8.1` 公开发布并完成全部门禁（含 HF-3 自愈门禁）；发布证据见 `docs/23` §5。原 `1.8.0` 候选（`docs/22` GFA-1~6，2026-08-26 登记）已于 2026-08-27 随 `1.8.0` 公开发布并完成全部门禁；其计费归属决策记录与发布证据见 `docs/22` §9。
 
 ## 2. 规范优先级
 
@@ -32,12 +34,12 @@ Profile 只决定 Claude Code 子进程启动时使用哪套 Provider 环境。K
 1. 本文件。
 2. `docs/01-product-scope.md`。
 3. `docs/02-architecture.md`。
-4. 当前阶段的执行文档；实施首次运行向导时必须读取 `docs/11-v1.1-first-run-setup-implementation-brief.md`，实施自更新时必须读取 `docs/13-v1.3-self-update-implementation-brief.md`，实施或发布 GLM 时必须读取 `docs/14`、`docs/15` 与 `docs/16`，实施 Kimi Code 会员 Provider 时必须读取 `docs/17-v1.5-kimi-code-membership-implementation-guide.md`，修改 Secret Store 行为时必须读取 `docs/19-secret-store-forward-compatibility-implementation-guide.md`，实施或发布 DeepSeek Vision 接入时必须读取 `docs/20-deepseek-v4-flash-vision-implementation-guide.md`，实施安全加固（settings 预检、隐藏输入、自更新完整性、密钥回显）时必须读取 `docs/21-security-hardening-implementation-guide.md`，实施或发布 GLM-5.3-Flash Auto 双通道升级（`glm`/`glm-api`）时必须读取 `docs/22-glm-5.3-flash-auto-implementation-guide.md`。
+4. 当前阶段的执行文档；实施首次运行向导时必须读取 `docs/11-v1.1-first-run-setup-implementation-brief.md`，实施自更新时必须读取 `docs/13-v1.3-self-update-implementation-brief.md`，实施或发布 GLM 时必须读取 `docs/14`、`docs/15` 与 `docs/16`，实施 Kimi Code 会员 Provider 时必须读取 `docs/17-v1.5-kimi-code-membership-implementation-guide.md`，修改 Secret Store 行为时必须读取 `docs/19-secret-store-forward-compatibility-implementation-guide.md`，实施或发布 DeepSeek Vision 接入时必须读取 `docs/20-deepseek-v4-flash-vision-implementation-guide.md`，实施安全加固（settings 预检、隐藏输入、自更新完整性、密钥回显）时必须读取 `docs/21-security-hardening-implementation-guide.md`，实施或发布 GLM-5.3-Flash Auto 双通道升级（`glm`/`glm-api`）时必须读取 `docs/22-glm-5.3-flash-auto-implementation-guide.md`；实施 DeepSeek 1M 上下文声明或峰谷 Pricing 刷新时必须读取 `docs/24-v1.8.2-deepseek-context-pricing-refresh.md`。
 5. `docs/07-official-sources.md`。
 6. `docs/08-acceptance-and-recovery.md`。
 7. `docs/09-phase-1-acceptance.md`，用于核对已完成的 Mac 基线。
 
-`docs/10-v0.2-transparent-profile-launcher-implementation-brief.md` 是 `1.0.0` 稳定运行时的历史实施与验收依据。`docs/11-v1.1-first-run-setup-implementation-brief.md` 是 `1.1.0` 的实施与验收依据。`docs/12-v1.2.1-windows-compatibility-patch.md` 是 `1.2.1` 的发布依据。`docs/13-v1.3-self-update-implementation-brief.md` 是自更新功能的实施、验收与首次发布依据。`docs/14` 与 `docs/15` 分别记录两个 GLM Profile 的实施合同，`docs/16` 是二者统一进入 `1.4.0` 的版本决策、验收与发布依据。`docs/17` 是 `1.5.0` Kimi Code 会员 Provider 的逐卡实施、审阅与发布门禁依据。`docs/19` 是 `1.5.1` Secret Store 前向兼容修复的实施合同与发布门禁依据。`docs/22` 是 `1.8.0` GLM-5.3-Flash Auto 双通道升级（GFA-1~6）的实施合同与发布证据（已发布）。`docs/23` 是 `1.8.1` 自更新完整性校验查找修复（HF-1~4）的实施合同与发布证据（已发布）。GitHub 与 Windows 阶段分别按 `docs/04-phase-2-github.md` 和 `docs/05-phase-3-windows.md` 执行。
+`docs/10-v0.2-transparent-profile-launcher-implementation-brief.md` 是 `1.0.0` 稳定运行时的历史实施与验收依据。`docs/11-v1.1-first-run-setup-implementation-brief.md` 是 `1.1.0` 的实施与验收依据。`docs/12-v1.2.1-windows-compatibility-patch.md` 是 `1.2.1` 的发布依据。`docs/13-v1.3-self-update-implementation-brief.md` 是自更新功能的实施、验收与首次发布依据。`docs/14` 与 `docs/15` 分别记录两个 GLM Profile 的实施合同，`docs/16` 是二者统一进入 `1.4.0` 的版本决策、验收与发布依据。`docs/17` 是 `1.5.0` Kimi Code 会员 Provider 的逐卡实施、审阅与发布门禁依据。`docs/19` 是 `1.5.1` Secret Store 前向兼容修复的实施合同与发布门禁依据。`docs/22` 是 `1.8.0` GLM-5.3-Flash Auto 双通道升级（GFA-1~6）的实施合同与发布证据（已发布）。`docs/23` 是 `1.8.1` 自更新完整性校验查找修复（HF-1~4）的实施合同与发布证据（已发布）。`docs/24` 是 `1.8.2` DeepSeek 上下文与 Pricing 刷新的现行候选合同。GitHub 与 Windows 阶段分别按 `docs/04-phase-2-github.md` 和 `docs/05-phase-3-windows.md` 执行。
 
 冲突时，以编号更靠前的现行文档为准。发现规范需要改变时，先修改对应文档并说明理由，再修改实现。
 

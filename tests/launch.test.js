@@ -103,6 +103,7 @@ test("launchProfile injects the selected profile and passes Claude args unchange
   assert.deepEqual(buildSnapshot.args, deepseekArgs);
   assert.equal(buildSnapshot.model, "deepseek-v4-pro[1m]");
   assert.equal(buildSnapshot.haiku, "deepseek-v4-flash-vision-exp");
+  assert.equal(buildSnapshot.maxContext, "1048576");
   assert.equal(buildSnapshot.fable, null);
   assert.equal(buildSnapshot.hasAuthToken, true);
   assert.doesNotMatch(buildOutput.text, /test-deepseek-key/);

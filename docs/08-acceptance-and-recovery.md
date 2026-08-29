@@ -706,3 +706,17 @@ Provider 真实验收由维护者确认；自动化、Node 18、Windows、打包
 | GFA-D5 | Blocker | 版本号、commit、push、Windows CI、tag 与 Release 逐项获得项目负责人授权；本矩阵不授予任何 Git/发布权限 |
 
 GFA-D3 判定结论（2026-08-27）：功能与凭据隔离全部通过（Coding Plan 5/5、标准 API 原生 3/3 + CMR 端到端 3/3，证据见 `docs/22` 台账）；费用归属实测发现智谱积分制套餐在持有效套餐账号上跨通道抵扣标准 Key 请求（上游机制变更，`docs/07` §15.3），命中停止条件后按流程停止、更新文档，项目负责人于同日裁定方案 1（按原合同发布 + 文档化归属现实）。GFA-D3 以该裁定结案，`glm-api` 不宣称「实测现金扣费」，只承诺凭据/鉴权边界与标准 API 配置正确性。
+
+## 20. DeepSeek 上下文与 Pricing 刷新验收矩阵（`1.8.2` 候选）
+
+绑定实施合同：`docs/24-v1.8.2-deepseek-context-pricing-refresh.md`。
+
+| ID | 级别 | 验收项 |
+|---|---|---|
+| DCP-A1 | Blocker | 两个 DeepSeek Profile 都精确注入 `CLAUDE_CODE_MAX_CONTEXT_TOKENS=1048576`，并先清除继承环境的大小写变体 |
+| DCP-A2 | Blocker | Pro `[1m]` 与 Vision 裸 ID、槽位分工、Provider、Secret、鉴权变量和别名保持不变；不新增 auto-compact/Fable/timeout/路由 |
+| DCP-A3 | Blocker | Pricing 恰含 Pro、Flash、Vision 三模型；每个模型恰含 `offPeak`/`peak` 与三种 token 价格，精确值符合 `docs/24` §2.2 |
+| DCP-A4 | Blocker | validator 拒绝缺模型、缺时段、额外字段、错误价格和非 `1048576` 窗口 |
+| DCP-A5 | Blocker | config/environment/launch/hostile QA 覆盖两个 Profile 的 max-context 注入与跨 Profile 清理；父环境不变 |
+| DCP-A6 | Blocker | `npm test`、`npm run lint`、`git diff --check`、CLI version/list、pack dry-run 全部通过 |
+| DCP-A7 | Blocker | 公开安装 URL 与 tag 保持 `v1.8.1`；不把假 Claude 验证写成真实 Provider 1M 长会话 PASS；commit/push/tag/Release 另行授权 |

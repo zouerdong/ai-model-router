@@ -282,12 +282,34 @@ export function validatePricing(pricing, { now = new Date(), warnings } = {}) {
     assertExactPriceKeys(pricing.prices, ["inputCacheHit", "inputCacheMiss", "output"], "pricing.prices");
   }
   if (pricing.id === "deepseek-v4") {
-    if (pricing.model !== "deepseek-v4" || pricing.currency !== "USD" || pricing.unit !== "per_million_tokens") {
+    if (pricing.model !== "deepseek-v4" || pricing.currency !== "USD" || pricing.unit !== "per_million_tokens"
+      || pricing.contextWindowTokens !== 1_048_576) {
       fail("deepseek-v4 pricing metadata is invalid");
     }
-    assertExactPriceKeys(pricing.prices, ["deepseek-v4-pro", "deepseek-v4-flash"], "pricing.prices");
-    for (const model of ["deepseek-v4-pro", "deepseek-v4-flash"]) {
-      assertExactPriceKeys(pricing.prices[model], ["inputCacheHit", "inputCacheMiss", "output"], `pricing.prices.${model}`);
+    const expectedDeepseekPrices = {
+      "deepseek-v4-pro": {
+        offPeak: { inputCacheHit: 0.022, inputCacheMiss: 0.66, output: 1.98 },
+        peak: { inputCacheHit: 0.044, inputCacheMiss: 1.32, output: 3.96 }
+      },
+      "deepseek-v4-flash": {
+        offPeak: { inputCacheHit: 0.007, inputCacheMiss: 0.22, output: 0.66 },
+        peak: { inputCacheHit: 0.014, inputCacheMiss: 0.44, output: 1.32 }
+      },
+      "deepseek-v4-flash-vision-exp": {
+        offPeak: { inputCacheHit: 0.007, inputCacheMiss: 0.22, output: 0.66 },
+        peak: { inputCacheHit: 0.014, inputCacheMiss: 0.44, output: 1.32 }
+      }
+    };
+    assertExactPriceKeys(pricing.prices, Object.keys(expectedDeepseekPrices), "pricing.prices");
+    for (const [model, expectedPeriods] of Object.entries(expectedDeepseekPrices)) {
+      assertExactPriceKeys(pricing.prices[model], ["offPeak", "peak"], `pricing.prices.${model}`);
+      for (const [period, expectedPrices] of Object.entries(expectedPeriods)) {
+        const actualPrices = pricing.prices[model][period];
+        assertExactPriceKeys(actualPrices, ["inputCacheHit", "inputCacheMiss", "output"], `pricing.prices.${model}.${period}`);
+        if (JSON.stringify(actualPrices) !== JSON.stringify(expectedPrices)) {
+          fail(`deepseek-v4 ${model} ${period} prices are invalid`);
+        }
+      }
     }
   }
   if (pricing.id === "glm-5.2") {
@@ -434,6 +456,7 @@ export function validateConfigSet({ providers, profiles, pricing, entitlements =
     ANTHROPIC_DEFAULT_SONNET_MODEL: "deepseek-v4-pro[1m]",
     ANTHROPIC_DEFAULT_HAIKU_MODEL: "deepseek-v4-flash-vision-exp",
     CLAUDE_CODE_SUBAGENT_MODEL: "deepseek-v4-flash-vision-exp",
+    CLAUDE_CODE_MAX_CONTEXT_TOKENS: "1048576",
     CLAUDE_CODE_EFFORT_LEVEL: "max"
   };
   const expectedDeepseekVisionEnvironment = {
@@ -442,6 +465,7 @@ export function validateConfigSet({ providers, profiles, pricing, entitlements =
     ANTHROPIC_DEFAULT_SONNET_MODEL: "deepseek-v4-flash-vision-exp",
     ANTHROPIC_DEFAULT_HAIKU_MODEL: "deepseek-v4-flash-vision-exp",
     CLAUDE_CODE_SUBAGENT_MODEL: "deepseek-v4-flash-vision-exp",
+    CLAUDE_CODE_MAX_CONTEXT_TOKENS: "1048576",
     CLAUDE_CODE_EFFORT_LEVEL: "max"
   };
   if (JSON.stringify(deepseek.environment) !== JSON.stringify(expectedDeepseekEnvironment)

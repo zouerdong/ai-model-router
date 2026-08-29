@@ -43,7 +43,7 @@ test("derives the Provider collection from configuration files and appends a new
     sourceUrl: "https://third.example.com/docs"
   }));
   t.after(() => rm(root, { recursive: true, force: true }));
-  const config = await loadConfigSet({ configRoot: root, now: new Date("2026-08-26T00:00:00Z") });
+  const config = await loadConfigSet({ configRoot: root, now: new Date("2026-08-29T00:00:00Z") });
   assert.equal(config.providers.at(-1).id, "third-provider");
   assert.equal(config.providers.length, 6);
 });
@@ -164,6 +164,7 @@ test("DeepSeek profile stays on the official Auto Pro mapping with vision Flash 
   assert.equal(profile.environment.ANTHROPIC_DEFAULT_SONNET_MODEL, "deepseek-v4-pro[1m]");
   assert.equal(profile.environment.ANTHROPIC_DEFAULT_HAIKU_MODEL, "deepseek-v4-flash-vision-exp");
   assert.equal(profile.environment.CLAUDE_CODE_SUBAGENT_MODEL, "deepseek-v4-flash-vision-exp");
+  assert.equal(profile.environment.CLAUDE_CODE_MAX_CONTEXT_TOKENS, "1048576");
   assert.equal(Object.hasOwn(profile.environment, "ANTHROPIC_DEFAULT_FABLE_MODEL"), false);
   assert.equal(Object.hasOwn(profile.environment, "CLAUDE_CODE_AUTO_COMPACT_WINDOW"), false);
 });
@@ -181,6 +182,7 @@ test("DeepSeek Vision profile maps every slot to the multimodal vision model", a
     ANTHROPIC_DEFAULT_SONNET_MODEL: "deepseek-v4-flash-vision-exp",
     ANTHROPIC_DEFAULT_HAIKU_MODEL: "deepseek-v4-flash-vision-exp",
     CLAUDE_CODE_SUBAGENT_MODEL: "deepseek-v4-flash-vision-exp",
+    CLAUDE_CODE_MAX_CONTEXT_TOKENS: "1048576",
     CLAUDE_CODE_EFFORT_LEVEL: "max"
   });
   assert.deepEqual(profile.requiredEnvironment, Object.keys(profile.environment));
@@ -397,10 +399,35 @@ test("provider endpoints, authentication and pricing records match the verified 
   const kimiPricing = config.pricing.find((item) => item.id === "kimi-k3");
   assert.deepEqual(kimiPricing.prices, { inputCacheHit: 2, inputCacheMiss: 20, output: 100 });
   const deepseekPricing = config.pricing.find((item) => item.id === "deepseek-v4");
+  assert.equal(deepseekPricing.displayName, "DeepSeek V4 family");
+  assert.equal(deepseekPricing.model, "deepseek-v4");
+  assert.equal(deepseekPricing.currency, "USD");
+  assert.equal(deepseekPricing.unit, "per_million_tokens");
+  assert.equal(deepseekPricing.contextWindowTokens, 1_048_576);
+  assert.equal(deepseekPricing.verifiedOn, "2026-08-29");
   assert.deepEqual(deepseekPricing.prices, {
-    "deepseek-v4-pro": { inputCacheHit: 0.003625, inputCacheMiss: 0.435, output: 0.87 },
-    "deepseek-v4-flash": { inputCacheHit: 0.0028, inputCacheMiss: 0.14, output: 0.28 }
+    "deepseek-v4-pro": {
+      offPeak: { inputCacheHit: 0.022, inputCacheMiss: 0.66, output: 1.98 },
+      peak: { inputCacheHit: 0.044, inputCacheMiss: 1.32, output: 3.96 }
+    },
+    "deepseek-v4-flash": {
+      offPeak: { inputCacheHit: 0.007, inputCacheMiss: 0.22, output: 0.66 },
+      peak: { inputCacheHit: 0.014, inputCacheMiss: 0.44, output: 1.32 }
+    },
+    "deepseek-v4-flash-vision-exp": {
+      offPeak: { inputCacheHit: 0.007, inputCacheMiss: 0.22, output: 0.66 },
+      peak: { inputCacheHit: 0.014, inputCacheMiss: 0.44, output: 1.32 }
+    }
   });
+  const missingVisionPrice = structuredClone(deepseekPricing);
+  delete missingVisionPrice.prices["deepseek-v4-flash-vision-exp"];
+  assert.throws(() => validatePricing(missingVisionPrice), /must contain exactly/);
+  const missingPeakPrice = structuredClone(deepseekPricing);
+  delete missingPeakPrice.prices["deepseek-v4-pro"].peak;
+  assert.throws(() => validatePricing(missingPeakPrice), /must contain exactly/);
+  const wrongPeakPrice = structuredClone(deepseekPricing);
+  wrongPeakPrice.prices["deepseek-v4-pro"].peak.output = 3.95;
+  assert.throws(() => validatePricing(wrongPeakPrice), /prices are invalid/);
   const glmPricing = config.pricing.find((item) => item.id === "glm-5.2");
   assert.equal(glmPricing.displayName, "GLM-5.2 standard API reference");
   assert.equal(glmPricing.model, "glm-5.2");

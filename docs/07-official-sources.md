@@ -1,7 +1,7 @@
 # 07 — 官方参数与事实基线
 
-核验日期：2026-08-27（GLM-5.3-Flash 双通道增量与计费归属实测见第 15 节；第 1–14 节各自的核验日期保留为历史记录）
-实现状态：`1.8.0` 已公开发布（2026-08-27）；本轮官方事实与实测增量见第 15 节
+核验日期：2026-08-29（DeepSeek 1M 上下文与峰谷 Pricing 增量见第 16 节；第 1–15 节各自的核验日期保留为历史记录）
+实现状态：公开 Latest 为 `1.8.1`；未发布 `1.8.2` 候选见第 16 节与 `docs/24`
 用途：实现者不得用历史对话或记忆替代本文件中的官方来源；开始实现与发布前必须重新核验。
 
 ## 1. Kimi K3 Profile
@@ -516,3 +516,15 @@ Kimi Code 官方会员页给出以下事实：
 结论：**在持有有效 Coding Plan 的账号上，智谱当前按账号级资源包优先以套餐积分抵扣全部 API 调用，与所用 Key 及客户端环境无关**。`glm` 与 `glm-api` 的凭据、鉴权变量、Secret 槽位与无 fallback 边界不受影响（GFA-6 实测成立）；受影响的是**费用语义**：`glm-api` 的「标准 API 现金按量」只在账号无有效套餐（或套餐机制不适用）时成为实际扣费方式。套餐积分耗尽后标准 Key 请求的行为（拒绝/转现金）官方未明确，未实测。
 
 本节为实测增量，不回写 v1.4.0 历史证据；后续发布前须按第 8 节流程重新核验。
+
+## 16. DeepSeek 1M 上下文与峰谷价格复核（2026-08-29）
+
+绑定实施合同：[docs/24-v1.8.2-deepseek-context-pricing-refresh.md](24-v1.8.2-deepseek-context-pricing-refresh.md)。本节 supersede 第 14 节末尾关于 Vision `[1m]` 与旧 Pricing 的待办，不改写 `v1.6.0` 历史证据。
+
+- [DeepSeek Models & Pricing](https://api-docs.deepseek.com/quick_start/pricing/) 当前把 `deepseek-v4-pro`、`deepseek-v4-flash`、`deepseek-v4-flash-vision-exp` 同列为 1M 上下文、最大输出 384K、支持 Anthropic API；Vision 与 Flash 同价。
+- [DeepSeek Claude Code 接入](https://api-docs.deepseek.com/zh-cn/guides/coding_agents/) 仍给 Pro 使用 `[1m]`，Flash 使用裸模型 ID，因此不能据此自行给 Vision ID 拼接后缀。
+- [Claude Code model configuration](https://code.claude.com/docs/en/model-config#correct-the-window-for-a-gateway-or-custom-model-id) 明确允许用 `CLAUDE_CODE_MAX_CONTEXT_TOKENS` 为网关或自定义模型 ID 声明真实窗口；对无法识别的裸 ID 直接生效并保留主动压缩。
+
+官方 USD/百万 tokens 价格：Flash 与 Vision 的非峰值为 0.007/0.22/0.66、峰值为 0.014/0.44/1.32；Pro 非峰值为 0.022/0.66/1.98、峰值为 0.044/1.32/3.96（顺序均为缓存命中/未命中输入/输出）。峰值时段为 UTC 工作日 01:00–04:00、06:00–10:00。
+
+据此两个 DeepSeek Profile 都声明 `CLAUDE_CODE_MAX_CONTEXT_TOKENS=1048576`，模型映射保持不变；Pricing 改为三模型峰谷树。该变量解决 Claude Code 客户端预算，不证明已完成真实 1M 长会话验收。

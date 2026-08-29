@@ -2,6 +2,8 @@
 
 Current public Latest stable version: **`1.8.1`** (released 2026-08-27).
 
+Repository candidate **`1.8.2`** declares the full 1,048,576-token window to Claude Code for both DeepSeek profiles and refreshes the DeepSeek pricing record to the current Pro/Flash/Flash Vision weekday peak/off-peak USD rates. It is not yet released; public installation URLs remain pinned to `v1.8.1`. Binding contract: `docs/24`.
+
 Version `1.8.1` is a hotfix restoring the automatic update channel: since `1.7.0`, a real full `cmr update` (not `cmr update --check`) failed on every platform with `ERROR integrity check unavailable: published SHA256SUMS has no entry for the release asset`, because the verifier looked up npm's versioned tarball copy filename instead of the fixed release asset name in `SHA256SUMS`. Installed versions were never damaged (fail-closed before install). The release also publishes a same-digest alias entry in `SHA256SUMS` under npm's copy name, so existing `1.7.0`–`1.8.0` installations self-heal with a plain `cmr update` — no manual reinstall (fallback command in `docs/23` §6). Binding contract and evidence: `docs/23`.
 
 Version `1.8.0` upgrades both GLM profiles to the same Auto hybrid mapping — Opus/Sonnet use `glm-5.3[1m]`, while the Haiku slot and all sub-agents use the natively multimodal light model `glm-5.3-flash[1m]` (released 2026-08-26) through a mandatory `CLAUDE_CODE_SUBAGENT_MODEL` override. `glm-api` moves to the `glm-5.3` pricing family at stable list prices. Real dual-channel provider acceptance passed under owner authorization; binding contract, decision records, and release evidence: `docs/22`.
@@ -15,7 +17,7 @@ Version `1.5.1` is a patch release: reading the Secret Store now ignores and pre
 Kimi Code membership is part of the public stable release.
 Real membership Provider validation passed on 2026-08-18 (all three profiles).
 
-Version `1.4.0` added two explicit GLM profiles in one release: GLM-5.2 Coding Plan and the GLM standard API pay-as-you-go channel. They remain separate Provider, authentication, billing, and Secret Store boundaries. Version `1.5.0` upgrades the Coding Plan to GLM-5.3; `glm-api` intentionally remains GLM-5.2.
+Version `1.4.0` added two explicit GLM profiles in one release: GLM-5.2 Coding Plan and the GLM standard API pay-as-you-go channel. They remain separate Provider, authentication, billing, and Secret Store boundaries. Version `1.5.0` upgraded the Coding Plan to GLM-5.3; version `1.8.0` upgraded both GLM profiles to the GLM-5.3/5.3-Flash mapping.
 
 Version `1.5.0` adds three Kimi Code membership profiles. Their real membership Provider validation passed on 2026-08-18 (redacted evidence in `docs/17` §14 and `docs/08` §16), and the Windows, GitHub, and release gates all closed the same day.
 
@@ -244,5 +246,7 @@ API keys are written through hidden local TTY input to the Secret Store outside 
 20. [DeepSeek-V4-Flash-Vision implementation guide](docs/20-deepseek-v4-flash-vision-implementation-guide.md)
 21. [Security hardening implementation guide](docs/21-security-hardening-implementation-guide.md)
 22. [GLM-5.3-Flash Auto dual-channel upgrade implementation guide](docs/22-glm-5.3-flash-auto-implementation-guide.md)
+23. [Version 1.8.1 update-integrity lookup hotfix](docs/23-v1.8.1-update-integrity-lookup-hotfix.md)
+24. [Version 1.8.2 DeepSeek context and pricing refresh](docs/24-v1.8.2-deepseek-context-pricing-refresh.md)
 
 The runtime has no third-party dependencies. The public repository uses `main` as its default branch; the current public stable tag is `v1.8.1`, published as an immutable Release with the fixed `claude-model-router.tgz` asset and a two-entry `SHA256SUMS` (asset name plus a same-digest alias under npm's copy name so pre-1.8.1 updaters keep verifying).

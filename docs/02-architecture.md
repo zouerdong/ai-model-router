@@ -1,7 +1,7 @@
 # 02 — 系统架构
 
-状态：`1.8.0` 公开 Latest 稳定架构（2026-08-27 发布）；GLM-5.3-Flash Auto 双通道升级见第 23 节与 `docs/22`
-更新时间：2026-08-27
+状态：公开 Latest 为 `1.8.1`；未发布 `1.8.2` DeepSeek 上下文与 Pricing 增量见第 24 节与 `docs/24`
+更新时间：2026-08-29
 
 ## 1. 架构结论
 
@@ -714,3 +714,24 @@ cmr glm-api / glm-payg
 Pricing 采用模型族价格树（与 `deepseek-v4` 相同结构）：`config/pricing/glm-5.3.json` 同时记录 `glm-5.3`（2/8/28）与 `glm-5.3-flash`（0.23/0.8/2.8）的 CNY/百万 tokens 稳定公开原价；限时促销价不进入长期配置。旧 `glm-5.2` Pricing 文件保留于 catalog，但两个现行 GLM Profile 不再引用。payg 启动警告由 `launch.js` 从 Pricing JSON 读取并覆盖两档模型价格，不硬编码数值。
 
 本映射不是内容路由器：主会话默认仍为文本模型，附图不自动切 Flash；CMR 不检查消息内容、不代理或重写 Anthropic 消息。
+
+## 24. DeepSeek 1M 客户端窗口与峰谷 Pricing 架构（`1.8.2` 候选）
+
+绑定实施合同：`docs/24-v1.8.2-deepseek-context-pricing-refresh.md`。
+
+两个 DeepSeek Profile 共用同一个客户端窗口声明：
+
+```text
+deepseek
+  ├── Pro slots: deepseek-v4-pro[1m]
+  ├── Haiku/Subagent: deepseek-v4-flash-vision-exp
+  └── CLAUDE_CODE_MAX_CONTEXT_TOKENS=1048576
+
+deepseek-vision
+  ├── all slots: deepseek-v4-flash-vision-exp
+  └── CLAUDE_CODE_MAX_CONTEXT_TOKENS=1048576
+```
+
+`[1m]` 继续是 Pro 的 Claude Code 选择层标记；全局 max-context 变量为无法从名称识别窗口的 Vision 自定义 ID 提供同一 1M 声明。CMR 不改写模型 ID、不设置 proactive compact 阈值，也不把 Pricing 的 `contextWindowTokens` 当成运行时环境变量。
+
+Pricing 仍由数据化配置承载，但 `deepseek-v4` 改为三模型 × `offPeak`/`peak` × 三类 token 价格的树。validator 同时锁定模型集合、时段集合、字段集合、精确值和 `1048576` 窗口；运行时不根据时区或请求时间计算费用。

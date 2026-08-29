@@ -12,6 +12,7 @@
     "ANTHROPIC_DEFAULT_SONNET_MODEL",
     "ANTHROPIC_DEFAULT_HAIKU_MODEL",
     "CLAUDE_CODE_SUBAGENT_MODEL",
+    "CLAUDE_CODE_MAX_CONTEXT_TOKENS",
     "CLAUDE_CODE_EFFORT_LEVEL"
   ],
   "environment": {
@@ -20,6 +21,7 @@
     "ANTHROPIC_DEFAULT_SONNET_MODEL": "deepseek-v4-flash-vision-exp",
     "ANTHROPIC_DEFAULT_HAIKU_MODEL": "deepseek-v4-flash-vision-exp",
     "CLAUDE_CODE_SUBAGENT_MODEL": "deepseek-v4-flash-vision-exp",
+    "CLAUDE_CODE_MAX_CONTEXT_TOKENS": "1048576",
     "CLAUDE_CODE_EFFORT_LEVEL": "max"
   }
 }

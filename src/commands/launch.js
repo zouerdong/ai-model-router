@@ -22,7 +22,7 @@ function formatPricing(pricing) {
     return `CNY/M tokens: cache hit ${inputCacheHit}, cache miss ${inputCacheMiss}, output ${output}`;
   }
   if (pricing.id === "deepseek-v4") {
-    return "DeepSeek V4 Pro/Flash pricing is recorded in config/pricing/deepseek-v4.json";
+    return "DeepSeek V4 Pro/Flash/Vision peak and off-peak pricing is recorded in config/pricing/deepseek-v4.json";
   }
   if (pricing.id === "glm-5.3") {
     const full = pricing.prices["glm-5.3"];
