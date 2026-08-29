@@ -1,6 +1,6 @@
 # 01 — 产品范围
 
-状态：公开 Latest 为 `1.8.1`；未发布的 `1.8.2` DeepSeek 上下文与 Pricing 仓库候选已完成，见第 18 节与 `docs/24`
+状态：`1.8.2` 已于 2026-08-29 公开发布为 Latest；DeepSeek 上下文与 Pricing 刷新见第 18 节与 `docs/24`
 更新时间：2026-08-29
 
 ## 1. 一句话定义
@@ -416,6 +416,6 @@ CMR 仍不做模型能力检测与内容路由；vision 模型仅意味着该通
 
 ## 18. DeepSeek 1M 上下文与峰谷 Pricing 刷新（DCP-1 至 DCP-4）
 
-本节绑定 `docs/24-v1.8.2-deepseek-context-pricing-refresh.md`，只描述未发布 `1.8.2` 候选的增量。`deepseek` 与 `deepseek-vision` 都新增 `CLAUDE_CODE_MAX_CONTEXT_TOKENS=1048576`，让 Claude Code 对裸 ID 的 `deepseek-v4-flash-vision-exp` 按官方 1M 窗口管理；Pro 槽继续使用 `deepseek-v4-pro[1m]`，所有模型 ID 与槽位分工不变。
+本节绑定 `docs/24-v1.8.2-deepseek-context-pricing-refresh.md`，描述已发布 `1.8.2` 的增量。`deepseek` 与 `deepseek-vision` 都新增 `CLAUDE_CODE_MAX_CONTEXT_TOKENS=1048576`，让 Claude Code 对裸 ID 的 `deepseek-v4-flash-vision-exp` 按官方 1M 窗口管理；Pro 槽继续使用 `deepseek-v4-pro[1m]`，所有模型 ID 与槽位分工不变。
 
 `deepseek-v4` Pricing 同步为 Pro、Flash、Flash Vision 三模型的工作日峰谷 USD 价格树。CMR 不按时间自动选价、不估算会话费用，也不新增 Provider、Profile、Secret、自动压缩或内容路由。该实现 supersede `docs/20` §6 的 Vision `[1m]` 与旧 Pricing 待办，但不改写 `v1.6.0` 历史证据。

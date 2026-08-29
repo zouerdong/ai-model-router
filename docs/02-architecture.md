@@ -1,6 +1,6 @@
 # 02 — 系统架构
 
-状态：公开 Latest 为 `1.8.1`；未发布 `1.8.2` DeepSeek 上下文与 Pricing 增量见第 24 节与 `docs/24`
+状态：`1.8.2` 已于 2026-08-29 公开发布为 Latest；DeepSeek 上下文与 Pricing 增量见第 24 节与 `docs/24`
 更新时间：2026-08-29
 
 ## 1. 架构结论
@@ -715,7 +715,7 @@ Pricing 采用模型族价格树（与 `deepseek-v4` 相同结构）：`config/p
 
 本映射不是内容路由器：主会话默认仍为文本模型，附图不自动切 Flash；CMR 不检查消息内容、不代理或重写 Anthropic 消息。
 
-## 24. DeepSeek 1M 客户端窗口与峰谷 Pricing 架构（`1.8.2` 候选）
+## 24. DeepSeek 1M 客户端窗口与峰谷 Pricing 架构（已随 `1.8.2` 发布）
 
 绑定实施合同：`docs/24-v1.8.2-deepseek-context-pricing-refresh.md`。
 

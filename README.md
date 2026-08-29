@@ -1,8 +1,8 @@
 # Claude Model Router
 
-Current public Latest stable version: **`1.8.1`** (released 2026-08-27).
+Current public Latest stable version: **`1.8.2`** (released 2026-08-29).
 
-Repository candidate **`1.8.2`** declares the full 1,048,576-token window to Claude Code for both DeepSeek profiles and refreshes the DeepSeek pricing record to the current Pro/Flash/Flash Vision weekday peak/off-peak USD rates. It is not yet released; public installation URLs remain pinned to `v1.8.1`. Binding contract: `docs/24`.
+Version **`1.8.2`** declares the full 1,048,576-token window to Claude Code for both DeepSeek profiles and refreshes the DeepSeek pricing record to the current Pro/Flash/Flash Vision weekday peak/off-peak USD rates. Windows Server 2025 passed the Node 18.20.8 and Node 24 release gates. Binding contract and release evidence: `docs/24`.
 
 Version `1.8.1` is a hotfix restoring the automatic update channel: since `1.7.0`, a real full `cmr update` (not `cmr update --check`) failed on every platform with `ERROR integrity check unavailable: published SHA256SUMS has no entry for the release asset`, because the verifier looked up npm's versioned tarball copy filename instead of the fixed release asset name in `SHA256SUMS`. Installed versions were never damaged (fail-closed before install). The release also publishes a same-digest alias entry in `SHA256SUMS` under npm's copy name, so existing `1.7.0`–`1.8.0` installations self-heal with a plain `cmr update` — no manual reinstall (fallback command in `docs/23` §6). Binding contract and evidence: `docs/23`.
 
@@ -39,10 +39,10 @@ Prerequisites:
 - For GLM, use a Coding Plan Key with `cmr glm` or a distinct standard API Key with `cmr glm-api`. CMR does not identify Key types, combine slots, or switch between them.
 - Kimi Code is intended only for the personal interactive development scenarios allowed by Kimi's official policy. Enterprise integrations, commercial services, and non-interactive batch use require a separate policy and product evaluation.
 
-Install the reproducible `v1.8.1` Release asset:
+Install the reproducible `v1.8.2` Release asset:
 
 ```bash
-npm install --global "https://github.com/zouerdong/ai-model-router/releases/download/v1.8.1/claude-model-router.tgz"
+npm install --global "https://github.com/zouerdong/ai-model-router/releases/download/v1.8.2/claude-model-router.tgz"
 cmr version
 cmr
 ```
@@ -52,7 +52,7 @@ Existing `1.3.0` and newer entity npm-global installations can run `cmr update`;
 If the existing installation uses a custom npm prefix, specify that same prefix so your terminal does not continue resolving an older copy:
 
 ```bash
-npm install --global --prefix <current-prefix> "https://github.com/zouerdong/ai-model-router/releases/download/v1.8.1/claude-model-router.tgz"
+npm install --global --prefix <current-prefix> "https://github.com/zouerdong/ai-model-router/releases/download/v1.8.2/claude-model-router.tgz"
 ```
 
 You can also install the latest stable fixed asset:
@@ -61,7 +61,7 @@ You can also install the latest stable fixed asset:
 npm install --global "https://github.com/zouerdong/ai-model-router/releases/latest/download/claude-model-router.tgz"
 ```
 
-For reproducible installation, prefer the exact `releases/download/v1.8.1/claude-model-router.tgz` URL over `latest`.
+For reproducible installation, prefer the exact `releases/download/v1.8.2/claude-model-router.tgz` URL over `latest`.
 
 To inspect and install from source:
 
@@ -249,4 +249,4 @@ API keys are written through hidden local TTY input to the Secret Store outside 
 23. [Version 1.8.1 update-integrity lookup hotfix](docs/23-v1.8.1-update-integrity-lookup-hotfix.md)
 24. [Version 1.8.2 DeepSeek context and pricing refresh](docs/24-v1.8.2-deepseek-context-pricing-refresh.md)
 
-The runtime has no third-party dependencies. The public repository uses `main` as its default branch; the current public stable tag is `v1.8.1`, published as an immutable Release with the fixed `claude-model-router.tgz` asset and a two-entry `SHA256SUMS` (asset name plus a same-digest alias under npm's copy name so pre-1.8.1 updaters keep verifying).
+The runtime has no third-party dependencies. The public repository uses `main` as its default branch; the current public stable tag is `v1.8.2`, published as an immutable Release with the fixed `claude-model-router.tgz` asset and a two-entry `SHA256SUMS` (asset name plus a same-digest alias under npm's copy name so pre-1.8.1 updaters keep verifying).

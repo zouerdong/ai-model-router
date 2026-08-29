@@ -707,7 +707,7 @@ Provider 真实验收由维护者确认；自动化、Node 18、Windows、打包
 
 GFA-D3 判定结论（2026-08-27）：功能与凭据隔离全部通过（Coding Plan 5/5、标准 API 原生 3/3 + CMR 端到端 3/3，证据见 `docs/22` 台账）；费用归属实测发现智谱积分制套餐在持有效套餐账号上跨通道抵扣标准 Key 请求（上游机制变更，`docs/07` §15.3），命中停止条件后按流程停止、更新文档，项目负责人于同日裁定方案 1（按原合同发布 + 文档化归属现实）。GFA-D3 以该裁定结案，`glm-api` 不宣称「实测现金扣费」，只承诺凭据/鉴权边界与标准 API 配置正确性。
 
-## 20. DeepSeek 上下文与 Pricing 刷新验收矩阵（`1.8.2` 候选）
+## 20. DeepSeek 上下文与 Pricing 刷新验收矩阵（已随 `1.8.2` 发布）
 
 绑定实施合同：`docs/24-v1.8.2-deepseek-context-pricing-refresh.md`。
 
@@ -720,3 +720,5 @@ GFA-D3 判定结论（2026-08-27）：功能与凭据隔离全部通过（Coding
 | DCP-A5 | Blocker | config/environment/launch/hostile QA 覆盖两个 Profile 的 max-context 注入与跨 Profile 清理；父环境不变 |
 | DCP-A6 | Blocker | `npm test`、`npm run lint`、`git diff --check`、CLI version/list、pack dry-run 全部通过 |
 | DCP-A7 | Blocker | 公开安装 URL 与 tag 保持 `v1.8.1`；不把假 Claude 验证写成真实 Provider 1M 长会话 PASS；commit/push/tag/Release 另行授权 |
+
+判定结论（2026-08-29）：DCP-A1~A7 全部关闭。项目负责人授权正式发布后，Windows T4 run 33244442385 双档全绿；`v1.8.2` immutable Latest、fixed asset、两行 SHA256SUMS、exact/latest 双 URL、隔离安装、`update --check` 与 `1.8.1 -> 1.8.2` 真实完整自更新均通过。DCP-A7 表中保持 `v1.8.1` 的描述是发布前停止门历史合同，现行公开状态由 `docs/24` §5 supersede。
