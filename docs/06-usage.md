@@ -1,9 +1,9 @@
 # 06 — 操作说明手册
 
-状态：当前公开 Latest 稳定版为 `1.8.2`（2026-08-29 发布）；仓库 `2.0.0` 候选的 DeepSeek 行为见第 22 节
+状态：当前公开 Latest 稳定版为 `2.0.0`（2026-09-10 发布）；DeepSeek V4.1 Flash 行为见第 22 节
 适用范围：Mac 与原生 Windows/WSL
 
-The current public Latest stable release is v1.8.2. The repository's unpublished v2.0.0 DeepSeek candidate is documented in section 22.
+The current public Latest stable release is v2.0.0. Its DeepSeek V4.1 Flash migration is documented in section 22.
 
 CMR 只在启动 Claude Code 前选择 Provider/Profile，并注入临时子进程环境。进入 Claude Code 后，任务用途、权限模式、会话和参数都遵循 Claude Code 原生行为。
 
@@ -15,7 +15,7 @@ CMR 只在启动 Claude Code 前选择 Provider/Profile，并注入临时子进�
 cmr version
 ```
 
-公开稳定 Release 运行 `cmr version` 应输出 `1.8.2`；本仓库未发布候选应输出 `2.0.0`。`1.3.0` 用户可运行 `cmr update`；`1.2.1` 或更旧版本先按 README 的 exact-release bootstrap 升级。然后在交互式终端执行：
+公开稳定 Release 与本仓库运行 `cmr version` 均应输出 `2.0.0`。`1.3.0` 及更新旧版用户可运行 `cmr update`；`1.2.1` 或更旧版本先按 README 的 exact-release bootstrap 升级。然后在交互式终端执行：
 
 ```bash
 cmr
@@ -397,9 +397,9 @@ DeepSeek 价格配置现覆盖 Pro、Flash、Flash Vision 三模型的工作日�
 
 该行为已包含在公开 `v1.8.2`；旧版可运行 `cmr update` 升级。
 
-## 22. DeepSeek V4.1 Flash 单入口（未发布 `2.0.0` 候选）
+## 22. DeepSeek V4.1 Flash 单入口（`v2.0.0`）
 
-仓库候选把两个旧 DeepSeek Profile 收口为一个原生多模态入口：
+`v2.0.0` 把两个旧 DeepSeek Profile 收口为一个原生多模态入口：
 
 | 规范 Profile | 兼容别名 | 主模型/Opus/Sonnet | Haiku/子 Agent | Secret |
 |---|---|---|---|---|
@@ -419,4 +419,4 @@ deepseek-flash-vision
 
 不要给模型值追加 `[text]` 或 `[image]`。Claude Code 只把 `[1m]` 定义为上下文选择后缀；`Read` 读取图片后会把视觉内容块发送给模型，而 DeepSeek 的 Anthropic 兼容 API 让 `deepseek-flash` 原生接收 `image` 内容块。`[image]` 会变成未识别模型名的一部分，DeepSeek 对未知模型名的 fallback 也不能当作能力声明。
 
-该候选尚未公开发布。公开安装用户仍按第 20、21 节使用 `v1.8.2`，直到 `2.0.0` 完成 Windows、tag、Release 与公开回读门禁。
+该版本已公开发布为 immutable Latest。现有 `v1.8.2` 用户可直接运行 `cmr update`；公开 `1.8.2 -> 2.0.0` 完整更新、exact/latest 下载、隔离安装和 `update --check` 均已验证通过。

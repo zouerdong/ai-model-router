@@ -1,6 +1,6 @@
 # 02 — 系统架构
 
-状态：公开 Latest 为 `1.8.2`；仓库未发布的 `2.0.0` DeepSeek V4.1 Flash 候选已通过本地门禁，见第 25 节与 `docs/25`
+状态：公开 Latest 为 `2.0.0`；DeepSeek V4.1 Flash 单入口架构已发布，见第 25 节与 `docs/25`
 更新时间：2026-09-10
 
 ## 1. 架构结论
@@ -736,7 +736,7 @@ deepseek-vision
 
 Pricing 仍由数据化配置承载，但 `deepseek-v4` 改为三模型 × `offPeak`/`peak` × 三类 token 价格的树。validator 同时锁定模型集合、时段集合、字段集合、精确值和 `1048576` 窗口；运行时不根据时区或请求时间计算费用。
 
-## 25. DeepSeek V4.1 Flash 单入口架构（`2.0.0` 候选）
+## 25. DeepSeek V4.1 Flash 单入口架构（已随 `2.0.0` 发布）
 
 绑定实施合同：`docs/25-v2.0-deepseek-v4.1-flash-migration.md`。本节 supersede 第 24 节的现行 DeepSeek 架构，但保留其 `v1.8.2` 历史证据。
 

@@ -1,6 +1,6 @@
 # 08 — 阶段一验收与修复兜底
 
-状态：历史验收基线 + 未发布 `2.0.0` DeepSeek V4.1 Flash 候选标准（第 21 节）
+状态：历史验收基线 + 已发布 `2.0.0` DeepSeek V4.1 Flash 验收记录（第 21 节）
 角色分离：实现者提供证据；后续审阅者独立复核，不采用执行者自评替代验收。
 
 ## 1. 判定规则
@@ -723,7 +723,7 @@ GFA-D3 判定结论（2026-08-27）：功能与凭据隔离全部通过（Coding
 
 判定结论（2026-08-29）：DCP-A1~A7 全部关闭。项目负责人授权正式发布后，Windows T4 run 33244442385 双档全绿；`v1.8.2` immutable Latest、fixed asset、两行 SHA256SUMS、exact/latest 双 URL、隔离安装、`update --check` 与 `1.8.1 -> 1.8.2` 真实完整自更新均通过。DCP-A7 表中保持 `v1.8.1` 的描述是发布前停止门历史合同，现行公开状态由 `docs/24` §5 supersede。
 
-## 21. DeepSeek V4.1 Flash `2.0.0` 候选验收矩阵
+## 21. DeepSeek V4.1 Flash `2.0.0` 验收矩阵（已发布）
 
 绑定实施合同：`docs/25-v2.0-deepseek-v4.1-flash-migration.md`。
 
@@ -736,8 +736,8 @@ GFA-D3 判定结论（2026-08-27）：功能与凭据隔离全部通过（Coding
 | DS41-A5 | Blocker | `deepseek-flash` Pricing 恰含 offPeak/peak 与三类 token 精确值，窗口为 1048576、核验日期为 2026-09-10；validator 拒绝缺时段、缺字段、额外节点、错误价格与旧记录 |
 | DS41-A6 | Blocker | DeepSeek Provider、Secret ID、Base URL、`ANTHROPIC_AUTH_TOKEN` 不变；跨 Profile 启动只含一个鉴权变量，父环境与用户 Secret Store 不被修改 |
 | DS41-A7 | Blocker | `npm test`、`npm run lint`、`git diff --check`、CLI version/list、pack dry-run 全部通过；旧入口拒绝与 `build` 等价由自动化覆盖 |
-| DS41-A8 | Blocker | 只登记仓库候选；真实图片请求、commit、push、Windows CI、tag 与 Release 未获单独授权前不得执行或标记 PASS |
+| DS41-A8 | Blocker | commit/push、Windows CI、tag 与 Release 必须先获明确授权；发布后须回读 immutable Latest、exact/latest、隔离安装、`update --check` 与旧版完整更新；未执行真实图片请求时不得标记 Provider Vision PASS |
 
-恢复边界：本轮没有 Secret schema 或数据迁移，回退到公开 `v1.8.2` 时既有 `deepseek` Key 仍在原槽位；回退只是安装版本切换，属于全局安装操作，必须按项目红线另行确认。旧脚本升级前应先扫描三个被删除选择器并改为 `deepseek`；不要通过临时复制旧 Profile 文件绕过 `2.0.0` validator。
+恢复边界：本轮没有 Secret schema 或数据迁移，回退到前一稳定版 `v1.8.2` 时既有 `deepseek` Key 仍在原槽位；回退只是安装版本切换，属于全局安装操作，必须按项目红线另行确认。旧脚本升级前应先扫描三个被删除选择器并改为 `deepseek`；不要通过临时复制旧 Profile 文件绕过 `2.0.0` validator。
 
-当前判定（2026-09-10）：DS41-A1~A7 本地候选 PASS，证据见 `docs/25` §6；项目负责人随后授权候选 commit 与仅面向验证分支的 push/Windows CI，commit `7aa8e18b3576988244468771dfc8657fc011f7ef` 的 [Windows T4 run 34455293821](https://github.com/zouerdong/ai-model-router/actions/runs/34455293821) 已在 Windows Server 2025 x64 / Node `18.20.8`、`24.20.0` 双档全绿，PowerShell、CMD、Git Bash、全量回归和 pack 均通过。发布 staging 随后发现打包 README 仍保留候选状态与旧 exact URL；本地修正后的 package payload 已通过全量门禁、可重复打包、checksum 与隔离安装，但因 README 属于 tarball，最终 release commit 必须复跑 Windows 后才可 tag。DS41-A8 继续约束该 commit/push、真实图片请求、`main` push、tag、Release 与全局安装，公开稳定版仍为 `1.8.2`。
+当前判定（2026-09-10）：**PASS — `2.0.0` RELEASED**。DS41-A1~A7 的本地实现与验证证据见 `docs/25` §6；运行时候选 `7aa8e18` 首轮 Windows T4 全绿后，staging 发现并阻断了打包 README 的旧状态/旧 exact URL。修正后的门禁 commit `2f4ce292085a76255b81e02a2b2fb6b48459c54e` 经 [Windows T4 run 34472718163](https://github.com/zouerdong/ai-model-router/actions/runs/34472718163) 在 Windows Server 2025 x64 / Node `18.20.8`、`24.20.0` 双档全绿；PowerShell、CMD、Git Bash、184 tests、lint、diff 与 pack 全部通过。项目负责人明确授权后，tag、immutable Latest Release、fixed asset、两行 SHA256SUMS、exact/latest 双 URL、公开隔离安装、`update --check` 与 `1.8.2 -> 2.0.0` 真实完整更新均完成回读，DS41-A8 已关闭。真实 DeepSeek 图片请求、用户 Secret Store 与用户全局安装未触碰，也未作为 PASS 依据。

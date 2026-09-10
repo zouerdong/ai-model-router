@@ -28,7 +28,7 @@ CMR 是零依赖 Node.js ESM CLI（Node ≥18，仅标准库），职责是 Clau
 4. **自更新** `src/updater.js` + `update-lock.js` + `command-runner.js`：只从固定 GitHub Release 资产 `releases/latest/download/claude-model-router.tgz` 更新，安装前按 `SHA256SUMS` 校验资产摘要（fail-closed），带备份/校验/回滚，对源码 checkout/junction 等拒绝；更新链子进程环境额外剥离 `NODE_OPTIONS`。
 5. **平台层** `src/platform.js`：macOS/Windows 差异（路径、claude.exe/.cmd 发现）。
 
-当前仓库候选为 5 Provider / 7 Profile：kimi（开放平台）、deepseek（V4.1 Flash 单一原生多模态入口）、glm（Coding Plan 5.3/5.3-Flash）、glm-api（标准 API 5.3/5.3-Flash）、kimi-code 会员 ×3。每条 Provider 通道是独立凭据边界——**CMR 永不检测 Key 类型、合并槽位、或跨通道 fallback**。
+当前仓库为 5 Provider / 7 Profile：kimi（开放平台）、deepseek（V4.1 Flash 单一原生多模态入口）、glm（Coding Plan 5.3/5.3-Flash）、glm-api（标准 API 5.3/5.3-Flash）、kimi-code 会员 ×3。每条 Provider 通道是独立凭据边界——**CMR 永不检测 Key 类型、合并槽位、或跨通道 fallback**。
 
 ## 关键约定（易踩坑）
 
@@ -42,9 +42,9 @@ CMR 是零依赖 Node.js ESM CLI（Node ≥18，仅标准库），职责是 Clau
 
 ## 当前状态
 
-仓库的未发布 `2.0.0` 运行时候选已通过本地与 Windows 门（`docs/25` DS41-1~5）：只保留 `deepseek` / `build` 两个等价选择器，全部槽位迁移到 `deepseek-flash`，删除 `deepseek-vision` Profile 与旧 DeepSeek 品牌别名，Pricing 收口为 V4.1 Flash 当前峰谷 USD 价格。Provider、Secret 与鉴权不变；候选 commit `7aa8e18` 已仅推送验证分支，Windows T4 run 34455293821 在 Node 18.20.8/24.20.0 双档全绿。staging 发现其打包 README 仍有候选/旧 URL 口径，本地 finalization 已修正并通过全量门禁、SHA-256 `49cd63654634c8995721df5e46bb840788bde0ac7289a121ee3fe71562921cdf` 的 fixed asset 及隔离安装；由于 README 属于 payload，仍需形成最终 commit 并复跑 Windows。远端 `main`、tag、Release 与公开 Latest 尚未改动，公开稳定版仍是 `v1.8.2`。
+`v2.0.0` 已于 2026-09-10 公开发布为 immutable Latest（`docs/25` DS41-1~5）：只保留 `deepseek` / `build` 两个等价选择器，全部槽位迁移到 `deepseek-flash`，删除 `deepseek-vision` Profile 与旧 DeepSeek 品牌别名，Pricing 收口为 V4.1 Flash 当前峰谷 USD 价格。Provider、Secret 与鉴权不变；tag 指向门禁 commit `2f4ce292085a76255b81e02a2b2fb6b48459c54e`，Windows T4 run 34472718163 在 Node 18.20.8/24.20.0 双档全绿；Mac fixed asset SHA-256 为 `49cd63654634c8995721df5e46bb840788bde0ac7289a121ee3fe71562921cdf`。exact/latest 字节一致、隔离安装、`update --check` 与公开 `1.8.2 -> 2.0.0` 真实完整更新均通过。发布后的证据提交不移动 immutable tag；真实 DeepSeek 图片请求未执行，也不得写成 Provider Vision PASS。
 
-`v1.8.2` 已于 2026-08-29 公开发布为 Latest（tag 指向门禁 commit `30cf53e`；Windows T4 run 33244442385 双档全绿）：两个 DeepSeek Profile 统一注入 `CLAUDE_CODE_MAX_CONTEXT_TOKENS=1048576`，Pricing 刷新为 Pro/Flash/Flash Vision 三模型的工作日峰谷 USD 价格；模型映射、Provider、Secret 与鉴权边界不变。完整证据见 `docs/24`。
+前一稳定版 `v1.8.2` 于 2026-08-29 发布（tag 指向门禁 commit `30cf53e`；Windows T4 run 33244442385 双档全绿）：两个 DeepSeek Profile 统一注入 `CLAUDE_CODE_MAX_CONTEXT_TOKENS=1048576`，Pricing 刷新为 Pro/Flash/Flash Vision 三模型的工作日峰谷 USD 价格；模型映射、Provider、Secret 与鉴权边界不变。完整证据见 `docs/24`。
 
 `v1.8.1` 已于 2026-08-27 发布（Latest，tag `v1.8.1` 指向门禁 commit 61cd77f；内容：`docs/23` HF-1~4 自更新完整性校验查找热修复——修复自 `v1.7.0` 起真实完整 `cmr update` 全平台必然失败的回归（查找键误用 npm 版本化文件名，改为固定资产名），SHA256SUMS 自本版起常设同摘要别名条目（npm 落盘名），存量 `1.7.0`–`1.8.0` 用户 `cmr update` 一次即自愈（隔离 prefix `1.8.0` 真实完整更新实测通过）；发布门禁新增旧版→新版真实完整 `cmr update` 回读；无 Provider/Profile/配置变更）。`v1.8.0`（同日早些时候发布，tag 指向门禁 commit 7929582）：`docs/22` GFA-1~6 GLM-5.3-Flash Auto 双通道升级——`glm` 与 `glm-api` 同步升级为同一套混合映射（Opus/Sonnet=`glm-5.3[1m]`，Haiku 与全部子 Agent=`glm-5.3-flash[1m]` 强制覆盖，真实会话验证），新增 `glm-5.3` 模型族 Pricing（稳定原价，促销价不入配置）；双通道真实验收通过；智谱积分制套餐在持有效套餐账号上跨通道抵扣两通道请求（上游机制变更），经项目负责人裁定按原合同发布并文档化（docs/07 §15.3）。
 

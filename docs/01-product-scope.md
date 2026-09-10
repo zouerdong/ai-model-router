@@ -1,6 +1,6 @@
 # 01 — 产品范围
 
-状态：公开 Latest 为 `1.8.2`；仓库未发布的 `2.0.0` DeepSeek V4.1 Flash 候选已通过本地门禁，见第 19 节与 `docs/25`
+状态：公开 Latest 为 `2.0.0`；DeepSeek V4.1 Flash 单入口迁移已发布，见第 19 节与 `docs/25`
 更新时间：2026-09-10
 
 ## 1. 一句话定义
@@ -420,7 +420,7 @@ CMR 仍不做模型能力检测与内容路由；vision 模型仅意味着该通
 
 `deepseek-v4` Pricing 同步为 Pro、Flash、Flash Vision 三模型的工作日峰谷 USD 价格树。CMR 不按时间自动选价、不估算会话费用，也不新增 Provider、Profile、Secret、自动压缩或内容路由。该实现 supersede `docs/20` §6 的 Vision `[1m]` 与旧 Pricing 待办，但不改写 `v1.6.0` 历史证据。
 
-## 19. DeepSeek V4.1 Flash 统一入口（DS41-1 至 DS41-5，`2.0.0` 候选）
+## 19. DeepSeek V4.1 Flash 统一入口（DS41-1 至 DS41-5，已随 `2.0.0` 发布）
 
 本节绑定 `docs/25-v2.0-deepseek-v4.1-flash-migration.md`，并 supersede 第 16、18 节的现行 DeepSeek 行为；这两节继续作为 `v1.6.0` / `v1.8.2` 历史证据保留。
 
@@ -430,4 +430,4 @@ CMR 仍不做模型能力检测与内容路由；vision 模型仅意味着该通
 
 `[text]`、`[image]` 不是 Claude Code 官方模型能力后缀，不写入任何环境变量。Claude Code `Read` 工具读取图片时会产生视觉内容块，DeepSeek Anthropic 兼容 API 将该 `image` 内容块交给 `deepseek-flash`；CMR 不检测输入模态、不按内容切模型、不把 Provider 的未知模型 fallback 当作能力合同。
 
-DeepSeek Pricing 收口为 `deepseek-flash` 单模型工作日峰谷 USD 记录。公开稳定版与安装 URL 在完成 commit、Windows CI、tag、Release 和公开回读门禁前仍保持 `1.8.2`。
+DeepSeek Pricing 收口为 `deepseek-flash` 单模型工作日峰谷 USD 记录。该迁移已随 immutable Latest `v2.0.0` 发布；exact/latest、隔离安装、`update --check` 与 `1.8.2 -> 2.0.0` 公开完整更新均已回读通过。

@@ -1,7 +1,7 @@
 # 07 — 官方参数与事实基线
 
 核验日期：2026-09-10（DeepSeek V4.1 Flash 增量见第 17 节；第 1–16 节各自的核验日期保留为历史记录）
-实现状态：公开 Latest 为 `1.8.2`；仓库未发布的 `2.0.0` 候选已通过本地门禁，本轮事实见第 17 节与 `docs/25`
+实现状态：公开 Latest 为 `2.0.0`；DeepSeek V4.1 Flash 迁移已发布，本轮事实与发布证据见第 17 节及 `docs/25`
 用途：实现者不得用历史对话或记忆替代本文件中的官方来源；开始实现与发布前必须重新核验。
 
 ## 1. Kimi K3 Profile
@@ -557,4 +557,4 @@ ANTHROPIC_MODEL=deepseek-flash[image] -> unrecognized_model + upstream model=dee
 
 ### 17.3 CMR 产品决策边界
 
-官方材料足以支持模型 ID、映射、窗口、视觉内容块、Base URL、鉴权和价格；以下仍是 CMR 决策：以 `2.0.0` 删除旧 Vision Profile 和旧品牌别名，只保留 `deepseek` / `build`，以及保留 max-context 补充。真实 DeepSeek 图片请求未在本轮执行，不能把配置和假 Claude 回归写成 Provider Vision PASS。
+官方材料足以支持模型 ID、映射、窗口、视觉内容块、Base URL、鉴权和价格；以下仍是 CMR 决策：以 `2.0.0` 删除旧 Vision Profile 和旧品牌别名，只保留 `deepseek` / `build`，以及保留 max-context 补充。`v2.0.0` 已在不依赖真实 Provider 请求的发布门禁下公开发布；真实 DeepSeek 图片请求未在本轮执行，不能把配置、假 Claude 回归或 Release PASS 写成 Provider Vision PASS。

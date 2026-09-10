@@ -1,7 +1,7 @@
 # 05 — 阶段三：公司 Windows 拉取与配置计划
 
-状态：公开稳定版 `1.8.2` 已通过 Windows T4；`2.0.0` 运行时候选已按第 16 节通过追加门，含发布态 README 的精确最终提交须复跑
-核心原则：先验证 DeepSeek V4.1 Flash 单入口，再验证其他 Profile；旧公开版在验证期可通过版本回退，不在 `2.0.0` 内保留旧模型别名。
+状态：公开稳定版 `2.0.0` 已通过第 16 节 Windows T4 双档追加门并完成 Release 回读
+核心原则：先验证 DeepSeek V4.1 Flash 单入口，再验证其他 Profile；升级验证可回退到前一稳定版，不在 `2.0.0` 内保留旧模型别名。
 
 > `1.0.0` 的规范入口是 `cmr deepseek` 与 `cmr kimi`；Windows 阶段同时验证 `cmr build` 与 `cmr plan` 兼容别名。Profile 只选择 Provider，不限制任务用途或 Claude Code 参数。
 
@@ -43,7 +43,7 @@
 - PowerShell Profile、用户/系统环境变量中的相关变量名。
 - Git for Windows / WSL 依赖状态。
 - 公司代理和证书是否影响 Provider 连接，只记录“configured/required”，不记录凭据。
-- 当前公开版 DeepSeek 映射与 `2.0.0` V4.1 Flash 候选的无密钥模型映射快照。
+- 前一稳定版 `v1.8.2` 与当前 `v2.0.0` V4.1 Flash 的无密钥模型映射快照。
 
 生成本机私有审计文件，默认不提交到 Git。
 
@@ -64,7 +64,7 @@
 用户确认目标目录和仓库 URL 后：
 
 1. clone Private 仓库。
-2. 基线复核 checkout 当前公开稳定的 `v1.8.2` tag；`2.0.0` 候选只在独立验证分支/目录运行。
+2. 如需复核迁移基线，checkout 前一稳定版 `v1.8.2` tag，并在独立目录与当前 `v2.0.0` 比较。
 3. 本地运行 `npm test`、`npm run lint`。
 4. 先用 `node src/cli.js` 或项目定义的本地命令运行 Doctor。
 
@@ -129,7 +129,7 @@ cmr build      # compatibility alias for deepseek
 
 ## 12. 完成定义
 
-- [ ] Windows checkout 当前公开稳定的 `v1.8.2` tag，并在独立目录验证 `2.0.0` 候选。
+- [ ] Windows 在独立目录比较前一稳定版 `v1.8.2` 与当前 `v2.0.0`。
 - [ ] `cmr deepseek` 使用 DeepSeek V4.1 Flash 精确映射，`cmr build` 快照等价。
 - [ ] `cmr kimi` 正确使用 `kimi-k3[1m]`。
 - [ ] 两个规范 Profile 及其兼容别名均继承当前项目目录并透明透传 Claude Code 参数。
@@ -185,10 +185,12 @@ Updater 已提供 Windows `.cmd`/`.bat` 的显式 `cmd.exe /d /c` argv 边界、
 - `deepseek-auto`、`deepseek-vision`、`deepseek-flash-vision` 均返回 unknown profile，且不启动 Claude Code。
 - 假 Claude 快照精确包含 `deepseek-flash[1m]` / `deepseek-flash`、compact `786432`、max-context `1048576`，不包含 `[text]` / `[image]`。
 - 现有 `%APPDATA%\ClaudeModelRouter\secrets.json` 中的 `deepseek` Key 可直接沿用；测试不得打印或移动真实 Key。
-- `1.8.2 -> 2.0.0` 实体 `cmr update` 另在发布候选门执行，并回读版本、list 与旧入口拒绝行为；失败必须能恢复 `1.8.2`。
+- `1.8.2 -> 2.0.0` 实体 `cmr update` 在发布门执行，并回读版本、list 与旧入口拒绝行为；本次已成功完成，失败场景仍必须能恢复 `1.8.2`。
 
-2026-09-10 结论：**PASS — `2.0.0` Windows 候选门已完成；正式 Release 门禁另行执行**。候选 commit `7aa8e18b3576988244468771dfc8657fc011f7ef` 在 [Windows T4 run 34455293821](https://github.com/zouerdong/ai-model-router/actions/runs/34455293821) 的 Windows Server 2025 x64 / Node `18.20.8` 与 `24.20.0` 双档全绿；两档均通过 PowerShell T4 E2E、PowerShell 全量回归、CMD 与 Git Bash 假 Key E2E、pack 和证据上传。两档 tarball 均为 41 files、48,556 bytes，SHA-256 同为 `4d66f5f3d8a896a57d7be43149cf17cfd55d6b09a4cb89d9a4f7b65ead088622`。
+2026-09-10 首轮结论：候选 commit `7aa8e18b3576988244468771dfc8657fc011f7ef` 在 [Windows T4 run 34455293821](https://github.com/zouerdong/ai-model-router/actions/runs/34455293821) 的 Windows Server 2025 x64 / Node `18.20.8` 与 `24.20.0` 双档全绿；两档均通过 PowerShell T4 E2E、PowerShell 全量回归、CMD 与 Git Bash 假 Key E2E、pack 和证据上传。两档 tarball 均为 41 files、48,556 bytes，SHA-256 同为 `4d66f5f3d8a896a57d7be43149cf17cfd55d6b09a4cb89d9a4f7b65ead088622`。
 
-该结果闭环 Windows 代码、shell 与候选包兼容性，并以隔离假 Secret 证明既有 `deepseek` 槽位合同未改变；未读取公司电脑或用户真实 `%APPDATA%`。`1.8.2 -> 2.0.0` 公开固定资产真实更新、推送 `main`、tag 与 Release 仍属于后续独立门禁。
+该结果闭环 Windows 代码、shell 与候选包兼容性，并以隔离假 Secret 证明既有 `deepseek` 槽位合同未改变；未读取公司电脑或用户真实 `%APPDATA%`。
 
-发布前 staging 随后发现 `7aa8e18` 打包的 README 仍保留候选状态与 `v1.8.2` exact 安装 URL。运行时 Windows PASS 不受影响，但 README 属于 npm payload，因此已在本地修正，并要求形成精确最终 release commit 后重跑本节双档矩阵；在该复跑完成前，`2.0.0` 的最终 Windows 发布门仍视为待关闭。
+发布前 staging 随后发现 `7aa8e18` 打包的 README 仍保留候选状态与 `v1.8.2` exact 安装 URL。运行时 Windows PASS 不受影响，但 README 属于 npm payload，因此最终 release commit `2f4ce292085a76255b81e02a2b2fb6b48459c54e` 已修正该口径，并由 [Windows T4 run 34472718163](https://github.com/zouerdong/ai-model-router/actions/runs/34472718163) 重新完成双档矩阵：全部步骤 PASS；两档 tarball 均为 41 files、48,519 bytes、196,900 unpacked bytes，SHA-256 同为 `fb78d4bfe51a56f4c2e7c8efb99a86cab8bb13c207c3957d0fb3bc1ecbcae54c`。
+
+最终结论：**PASS — `v2.0.0` WINDOWS + RELEASED**。tag 固定指向上述最终提交；公开 fixed asset SHA-256 为 `49cd63654634c8995721df5e46bb840788bde0ac7289a121ee3fe71562921cdf`。exact/latest 字节一致，公开隔离安装与 `update --check` 通过，隔离 prefix 内的 `1.8.2 -> 2.0.0` 真实完整更新成功，更新后版本、单一 DeepSeek 入口、三个旧入口拒绝及更新锁清理均回读通过。
