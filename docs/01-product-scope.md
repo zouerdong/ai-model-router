@@ -1,11 +1,11 @@
 # 01 — 产品范围
 
-状态：`1.8.2` 已于 2026-08-29 公开发布为 Latest；DeepSeek 上下文与 Pricing 刷新见第 18 节与 `docs/24`
-更新时间：2026-08-29
+状态：公开 Latest 为 `1.8.2`；仓库未发布的 `2.0.0` DeepSeek V4.1 Flash 候选已通过本地门禁，见第 19 节与 `docs/25`
+更新时间：2026-09-10
 
 ## 1. 一句话定义
 
-Claude Model Router（命令 `cmr`）是一个跨平台 Claude Code Profile 启动器：用户先选择 Kimi 或 DeepSeek，工具只为随后启动的 Claude Code 子进程注入对应第三方模型配置。
+Claude Model Router（命令 `cmr`）是一个跨平台 Claude Code Profile 启动器：用户先选择一个数据化 Profile，工具只为随后启动的 Claude Code 子进程注入对应第三方模型配置。
 
 “Router”只表示**启动前选择**，不表示任务角色限制、请求级动态路由或 Claude Code 会话管理。
 
@@ -79,7 +79,7 @@ CMR 不解析、拒绝、改写或记录这些参数。参数是否合法、如�
 | `cmr secret status` | 只显示 Provider 为 configured/missing |
 | `cmr version` | 显示版本 |
 
-Profile 规范 ID 为 `kimi`、`deepseek`。`kimi-k3`、`deepseek-auto` 继续作为数据化兼容别名；管理命令名不得被 Profile 或别名占用。
+本节记录 `1.0.0` 合同：当时 Profile 规范 ID 为 `kimi`、`deepseek`，`kimi-k3`、`deepseek-auto` 是数据化兼容别名。`2.0.0` 已按第 19 节移除 `deepseek-auto`；管理命令名仍不得被 Profile 或别名占用。
 
 `cmr help` 只说明 CMR 自己的选择器和管理命令。查看 Claude Code 帮助应执行 `cmr kimi --help` 或 `cmr deepseek --help`，其输出由 Claude Code 负责。
 
@@ -419,3 +419,15 @@ CMR 仍不做模型能力检测与内容路由；vision 模型仅意味着该通
 本节绑定 `docs/24-v1.8.2-deepseek-context-pricing-refresh.md`，描述已发布 `1.8.2` 的增量。`deepseek` 与 `deepseek-vision` 都新增 `CLAUDE_CODE_MAX_CONTEXT_TOKENS=1048576`，让 Claude Code 对裸 ID 的 `deepseek-v4-flash-vision-exp` 按官方 1M 窗口管理；Pro 槽继续使用 `deepseek-v4-pro[1m]`，所有模型 ID 与槽位分工不变。
 
 `deepseek-v4` Pricing 同步为 Pro、Flash、Flash Vision 三模型的工作日峰谷 USD 价格树。CMR 不按时间自动选价、不估算会话费用，也不新增 Provider、Profile、Secret、自动压缩或内容路由。该实现 supersede `docs/20` §6 的 Vision `[1m]` 与旧 Pricing 待办，但不改写 `v1.6.0` 历史证据。
+
+## 19. DeepSeek V4.1 Flash 统一入口（DS41-1 至 DS41-5，`2.0.0` 候选）
+
+本节绑定 `docs/25-v2.0-deepseek-v4.1-flash-migration.md`，并 supersede 第 16、18 节的现行 DeepSeek 行为；这两节继续作为 `v1.6.0` / `v1.8.2` 历史证据保留。
+
+`2.0.0` 只保留一个 DeepSeek Profile：规范入口 `cmr deepseek`，兼容别名仅为历史通用工作流入口 `cmr build`。`deepseek-auto`、`deepseek-vision`、`deepseek-flash-vision` 被删除并返回 unknown profile，不做静默转发。删除旧入口是 CMR 的主版本产品决策，不是 DeepSeek 官方要求；Provider、Secret Store 槽、Base URL 与 `ANTHROPIC_AUTH_TOKEN` 均保持不变。
+
+模型映射采用 DeepSeek 当前 Claude Code 指南：主模型/Opus/Sonnet=`deepseek-flash[1m]`，Haiku/全部子 Agent=`deepseek-flash`，effort=`max`，主动压缩窗口=`786432`。CMR 另保留 `CLAUDE_CODE_MAX_CONTEXT_TOKENS=1048576`，让 Claude Code 对裸自定义 ID 也按 DeepSeek 官方 1M 窗口管理。全槽位由同一个原生多模态模型承担，不再需要单独 Vision Profile。
+
+`[text]`、`[image]` 不是 Claude Code 官方模型能力后缀，不写入任何环境变量。Claude Code `Read` 工具读取图片时会产生视觉内容块，DeepSeek Anthropic 兼容 API 将该 `image` 内容块交给 `deepseek-flash`；CMR 不检测输入模态、不按内容切模型、不把 Provider 的未知模型 fallback 当作能力合同。
+
+DeepSeek Pricing 收口为 `deepseek-flash` 单模型工作日峰谷 USD 记录。公开稳定版与安装 URL 在完成 commit、Windows CI、tag、Release 和公开回读门禁前仍保持 `1.8.2`。

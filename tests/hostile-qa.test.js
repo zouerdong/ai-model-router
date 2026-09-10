@@ -85,16 +85,15 @@ async function runSafeFake(root, selector, secret, args, name, extraParentEnv = 
   return { code, output: output.text, snapshot: JSON.parse(await readFile(outputFile, "utf8")) };
 }
 
-test("all eight profiles isolate auth, models and managed variables sequentially and concurrently", async (t) => {
-  const root = await mkdtemp(path.join(tmpdir(), "cmr-task5-eight-profiles-中文 space-"));
+test("all seven profiles isolate auth, models and managed variables sequentially and concurrently", async (t) => {
+  const root = await mkdtemp(path.join(tmpdir(), "cmr-task5-seven-profiles-中文 space-"));
   t.after(async () => {
     const { rm } = await import("node:fs/promises");
     await rm(root, { recursive: true, force: true });
   });
   const cases = [
     ["kimi", "test-kimi-key", "kimi-k3[1m]", "ANTHROPIC_AUTH_TOKEN", null],
-    ["deepseek", "test-deepseek-key", "deepseek-v4-pro[1m]", "ANTHROPIC_AUTH_TOKEN", "1048576"],
-    ["deepseek-vision", "test-deepseek-key", "deepseek-v4-flash-vision-exp", "ANTHROPIC_AUTH_TOKEN", "1048576"],
+    ["deepseek", "test-deepseek-key", "deepseek-flash[1m]", "ANTHROPIC_AUTH_TOKEN", "1048576"],
     ["glm", "test-glm-key", null, "ANTHROPIC_AUTH_TOKEN", null],
     ["glm-api", "test-glm-api-key", null, "ANTHROPIC_API_KEY", null],
     ["kimi-code", "test-kimi-code-key", "kimi-for-coding", "ANTHROPIC_API_KEY", "262144"],
@@ -121,6 +120,12 @@ test("all eight profiles isolate auth, models and managed variables sequentially
       authVariable === "ANTHROPIC_AUTH_TOKEN" ? ["ANTHROPIC_AUTH_TOKEN"] : [],
       `${selector} auth residue`
     );
+    if (selector === "deepseek") {
+      assert.equal(result.snapshot.haiku, "deepseek-flash");
+      assert.equal(result.snapshot.subagent, "deepseek-flash");
+      assert.equal(result.snapshot.compact, "786432");
+      assert.doesNotMatch(JSON.stringify(result.snapshot), /deepseek-flash\[(?:text|image)\]/);
+    }
     assert.doesNotMatch(result.output, /test-.*-key|stale-.*-sentinel|CMR_TASK5/);
   };
 
@@ -275,7 +280,7 @@ test("Ctrl+C and SIGTERM simulations preserve the documented exit codes", async 
   }
 });
 
-test("eight formal profiles keep the same parent environment after direct construction", async () => {
+test("seven formal profiles keep the same parent environment after direct construction", async () => {
   const config = await loadConfigSet();
   const parentEnv = hostileParentEnv("/tmp/not-written.json", "/tmp/CMR_TASK5_PARENT_PATH");
   const before = { ...parentEnv };

@@ -1,7 +1,7 @@
 # 07 — 官方参数与事实基线
 
-核验日期：2026-08-29（DeepSeek 1M 上下文与峰谷 Pricing 增量见第 16 节；第 1–15 节各自的核验日期保留为历史记录）
-实现状态：`1.8.2` 已于 2026-08-29 公开发布为 Latest；本轮事实见第 16 节与 `docs/24`
+核验日期：2026-09-10（DeepSeek V4.1 Flash 增量见第 17 节；第 1–16 节各自的核验日期保留为历史记录）
+实现状态：公开 Latest 为 `1.8.2`；仓库未发布的 `2.0.0` 候选已通过本地门禁，本轮事实见第 17 节与 `docs/25`
 用途：实现者不得用历史对话或记忆替代本文件中的官方来源；开始实现与发布前必须重新核验。
 
 ## 1. Kimi K3 Profile
@@ -528,3 +528,33 @@ Kimi Code 官方会员页给出以下事实：
 官方 USD/百万 tokens 价格：Flash 与 Vision 的非峰值为 0.007/0.22/0.66、峰值为 0.014/0.44/1.32；Pro 非峰值为 0.022/0.66/1.98、峰值为 0.044/1.32/3.96（顺序均为缓存命中/未命中输入/输出）。峰值时段为 UTC 工作日 01:00–04:00、06:00–10:00。
 
 据此两个 DeepSeek Profile 都声明 `CLAUDE_CODE_MAX_CONTEXT_TOKENS=1048576`，模型映射保持不变；Pricing 改为三模型峰谷树。该变量解决 Claude Code 客户端预算，不证明已完成真实 1M 长会话验收。
+
+## 17. DeepSeek V4.1 Flash 与 Claude Code 多模态复核（2026-09-10）
+
+绑定实施合同：[docs/25-v2.0-deepseek-v4.1-flash-migration.md](25-v2.0-deepseek-v4.1-flash-migration.md)。本节 supersede 第 14、16 节的现行 DeepSeek 模型与价格事实，不改写 `v1.6.0` / `v1.8.2` 历史证据。
+
+### 17.1 官方模型、迁移与价格事实
+
+- [DeepSeek 更新日志](https://api-docs.deepseek.com/zh-cn/updates/)：V4.1 Flash 的官方 API ID 为 `deepseek-flash`，原生多模态，官方声明综合能力超过 V4 Pro；旧 `deepseek-v4-flash` 与 `deepseek-v4-flash-vision-exp` 已下线并暂时路由到新模型，`deepseek-v4-pro` 将于北京时间 2026-09-14 12:00 起路由到新模型。
+- [DeepSeek Claude Code 指南](https://api-docs.deepseek.com/zh-cn/quick_start/agent_integrations/claude_code/)：Base URL=`https://api.deepseek.com/anthropic`、鉴权=`ANTHROPIC_AUTH_TOKEN`；主模型/Opus/Sonnet=`deepseek-flash[1m]`，Haiku/子 Agent=`deepseek-flash`，effort=`max`，主动压缩窗口=`786432`。
+- [DeepSeek 图像理解](https://api-docs.deepseek.com/zh-cn/guides/vision/) 与 [Anthropic API 兼容](https://api-docs.deepseek.com/zh-cn/guides/anthropic_api/)：`deepseek-flash` 接受 Anthropic `image` 内容块；不支持的模型名会自动映射到 `deepseek-flash`。
+- [DeepSeek Models & Pricing](https://api-docs.deepseek.com/quick_start/pricing/)：`deepseek-flash` 上下文 1M、最大输出 384K，支持视觉、Anthropic API 与 Tool Calls。USD/百万 tokens 的 offPeak 为 0.003/0.15/0.60，peak 为 0.006/0.30/1.20（缓存命中/未命中输入/输出）；峰值为 UTC 工作日 01:00–04:00、06:00–10:00。
+
+CMR 直接采用官方映射，并额外延续 `CLAUDE_CODE_MAX_CONTEXT_TOKENS=1048576`。后者依据 [Claude Code model configuration](https://code.claude.com/docs/en/model-config#correct-the-window-for-a-gateway-or-custom-model-id) 的网关/自定义 ID 窗口声明机制，让 Haiku/子 Agent 的裸 `deepseek-flash` 也按真实 1M 管理；这是 CMR 补充，不是 DeepSeek 示例原文。
+
+### 17.2 `[text]` / `[image]` 核验结论
+
+[Claude Code model configuration](https://code.claude.com/docs/en/model-config) 当前定义的模型后缀是 `[1m]`，并说明该后缀会在请求上游前移除；页面没有定义 `[text]` 或 `[image]` 能力后缀。[Claude Code tools reference](https://code.claude.com/docs/en/tools-reference) 则明确 `Read` 对文本返回带行号内容、对图片返回 Claude 可见的视觉内容；[Common workflows](https://code.claude.com/docs/en/common-workflows#work-with-images) 也把图片作为路径、拖放或粘贴的内容输入，而不是模型名标签。
+
+本地无密钥捕获（Claude Code `2.1.266`，2026-09-10）：
+
+```text
+ANTHROPIC_MODEL=deepseek-flash[1m]   -> upstream model=deepseek-flash
+ANTHROPIC_MODEL=deepseek-flash[image] -> unrecognized_model + upstream model=deepseek-flash[image]
+```
+
+因此 `[text]` / `[image]` 不能写入 CMR 配置。DeepSeek 当前对未知模型名的自动映射可能掩盖错误，但这是 Provider fallback，不代表 Claude Code 已识别能力标签。正确图片链路为 `Read(image) -> visual content -> Anthropic image block -> deepseek-flash`。
+
+### 17.3 CMR 产品决策边界
+
+官方材料足以支持模型 ID、映射、窗口、视觉内容块、Base URL、鉴权和价格；以下仍是 CMR 决策：以 `2.0.0` 删除旧 Vision Profile 和旧品牌别名，只保留 `deepseek` / `build`，以及保留 max-context 补充。真实 DeepSeek 图片请求未在本轮执行，不能把配置和假 Claude 回归写成 Provider Vision PASS。

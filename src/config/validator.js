@@ -281,34 +281,21 @@ export function validatePricing(pricing, { now = new Date(), warnings } = {}) {
     }
     assertExactPriceKeys(pricing.prices, ["inputCacheHit", "inputCacheMiss", "output"], "pricing.prices");
   }
-  if (pricing.id === "deepseek-v4") {
-    if (pricing.model !== "deepseek-v4" || pricing.currency !== "USD" || pricing.unit !== "per_million_tokens"
+  if (pricing.id === "deepseek-flash") {
+    if (pricing.model !== "deepseek-flash" || pricing.currency !== "USD" || pricing.unit !== "per_million_tokens"
       || pricing.contextWindowTokens !== 1_048_576) {
-      fail("deepseek-v4 pricing metadata is invalid");
+      fail("deepseek-flash pricing metadata is invalid");
     }
     const expectedDeepseekPrices = {
-      "deepseek-v4-pro": {
-        offPeak: { inputCacheHit: 0.022, inputCacheMiss: 0.66, output: 1.98 },
-        peak: { inputCacheHit: 0.044, inputCacheMiss: 1.32, output: 3.96 }
-      },
-      "deepseek-v4-flash": {
-        offPeak: { inputCacheHit: 0.007, inputCacheMiss: 0.22, output: 0.66 },
-        peak: { inputCacheHit: 0.014, inputCacheMiss: 0.44, output: 1.32 }
-      },
-      "deepseek-v4-flash-vision-exp": {
-        offPeak: { inputCacheHit: 0.007, inputCacheMiss: 0.22, output: 0.66 },
-        peak: { inputCacheHit: 0.014, inputCacheMiss: 0.44, output: 1.32 }
-      }
+      offPeak: { inputCacheHit: 0.003, inputCacheMiss: 0.15, output: 0.6 },
+      peak: { inputCacheHit: 0.006, inputCacheMiss: 0.3, output: 1.2 }
     };
-    assertExactPriceKeys(pricing.prices, Object.keys(expectedDeepseekPrices), "pricing.prices");
-    for (const [model, expectedPeriods] of Object.entries(expectedDeepseekPrices)) {
-      assertExactPriceKeys(pricing.prices[model], ["offPeak", "peak"], `pricing.prices.${model}`);
-      for (const [period, expectedPrices] of Object.entries(expectedPeriods)) {
-        const actualPrices = pricing.prices[model][period];
-        assertExactPriceKeys(actualPrices, ["inputCacheHit", "inputCacheMiss", "output"], `pricing.prices.${model}.${period}`);
-        if (JSON.stringify(actualPrices) !== JSON.stringify(expectedPrices)) {
-          fail(`deepseek-v4 ${model} ${period} prices are invalid`);
-        }
+    assertExactPriceKeys(pricing.prices, ["offPeak", "peak"], "pricing.prices");
+    for (const [period, expectedPrices] of Object.entries(expectedDeepseekPrices)) {
+      const actualPrices = pricing.prices[period];
+      assertExactPriceKeys(actualPrices, ["inputCacheHit", "inputCacheMiss", "output"], `pricing.prices.${period}`);
+      if (JSON.stringify(actualPrices) !== JSON.stringify(expectedPrices)) {
+        fail(`deepseek-flash ${period} prices are invalid`);
       }
     }
   }
@@ -397,9 +384,9 @@ export function validateConfigSet({ providers, profiles, pricing, entitlements =
       aliases.add(alias);
     }
   }
-  const requiredProfiles = ["kimi", "deepseek", "deepseek-vision", "glm", "glm-api", "kimi-code", "kimi-code-k3-256k", "kimi-code-k3"];
+  const requiredProfiles = ["kimi", "deepseek", "glm", "glm-api", "kimi-code", "kimi-code-k3-256k", "kimi-code-k3"];
   const requiredProviders = ["kimi", "deepseek", "glm", "glm-api", "kimi-code"];
-  const requiredPricing = ["kimi-k3", "deepseek-v4", "glm-5.3", "glm-5.2"];
+  const requiredPricing = ["kimi-k3", "deepseek-flash", "glm-5.3", "glm-5.2"];
   const requiredEntitlements = ["kimi-code-membership", "glm-coding-plan-membership"];
   if (!requiredProfiles.every((id) => profileIds.has(id))) {
     fail("configuration is missing one or more formal profiles");
@@ -413,68 +400,64 @@ export function validateConfigSet({ providers, profiles, pricing, entitlements =
   if (!requiredEntitlements.every((id) => entitlementIds.has(id))) {
     fail("configuration is missing one or more formal entitlement records");
   }
+  if (pricingIds.has("deepseek-v4")) fail("retired deepseek-v4 pricing must not be loaded");
+  if (profileIds.has("deepseek-vision")) fail("retired deepseek-vision profile must not be loaded");
+  for (const alias of ["deepseek-auto", "deepseek-flash-vision"]) {
+    if (aliases.has(alias)) fail(`retired DeepSeek alias must not be loaded: ${alias}`);
+  }
   for (const alias of aliases) {
     if (profileIds.has(alias)) fail(`profile alias collides with profile id: ${alias}`);
   }
   const kimi = profiles.find((profile) => profile.id === "kimi");
   const deepseek = profiles.find((profile) => profile.id === "deepseek");
-  const deepseekVision = profiles.find((profile) => profile.id === "deepseek-vision");
   const glm = profiles.find((profile) => profile.id === "glm");
   const glmApi = profiles.find((profile) => profile.id === "glm-api");
   const kimiCode = profiles.find((profile) => profile.id === "kimi-code");
   const kimiCodeK3_256k = profiles.find((profile) => profile.id === "kimi-code-k3-256k");
   const kimiCodeK3 = profiles.find((profile) => profile.id === "kimi-code-k3");
   const kimiProvider = providers.find((provider) => provider.id === "kimi");
+  const deepseekProvider = providers.find((provider) => provider.id === "deepseek");
   const glmProvider = providers.find((provider) => provider.id === "glm");
   const glmApiProvider = providers.find((provider) => provider.id === "glm-api");
   const kimiCodeProvider = providers.find((provider) => provider.id === "kimi-code");
   const kimiCodeEntitlement = entitlements.find((item) => item.id === "kimi-code-membership");
   const glmEntitlement = entitlements.find((item) => item.id === "glm-coding-plan-membership");
+  if (profiles.filter((profile) => profile.provider === "deepseek").length !== 1) {
+    fail("deepseek must expose exactly one profile");
+  }
   if (!kimi.aliases.includes("plan") || !kimi.aliases.includes("kimi-k3")) {
     fail("kimi profile must include plan and kimi-k3 aliases");
   }
-  if (!deepseek.aliases.includes("build") || !deepseek.aliases.includes("deepseek-auto")) {
-    fail("deepseek profile must include build and deepseek-auto aliases");
+  if (deepseek.aliases.length !== 1 || deepseek.aliases[0] !== "build") {
+    fail("deepseek profile must contain exactly the build alias");
   }
   if (kimi.provider !== "kimi" || kimi.pricingRef !== "kimi-k3") {
     fail("kimi profile must reference the kimi provider and kimi-k3 pricing");
   }
-  if (deepseek.provider !== "deepseek" || deepseek.pricingRef !== "deepseek-v4") {
-    fail("deepseek profile must reference the deepseek provider and deepseek-v4 pricing");
-  }
-  if (deepseekVision.aliases.length !== 1 || deepseekVision.aliases[0] !== "deepseek-flash-vision") {
-    fail("deepseek-vision profile must contain exactly the deepseek-flash-vision alias");
-  }
-  if (deepseekVision.provider !== "deepseek"
-    || deepseekVision.pricingRef !== "deepseek-v4"
-    || deepseekVision.costNotice !== "standard") {
-    fail("deepseek-vision profile must reference the deepseek provider, deepseek-v4 pricing and standard cost notice");
+  if (deepseek.provider !== "deepseek" || deepseek.pricingRef !== "deepseek-flash" || deepseek.costNotice !== "standard") {
+    fail("deepseek profile must reference the deepseek provider, deepseek-flash pricing and standard cost notice");
   }
   const expectedDeepseekEnvironment = {
-    ANTHROPIC_MODEL: "deepseek-v4-pro[1m]",
-    ANTHROPIC_DEFAULT_OPUS_MODEL: "deepseek-v4-pro[1m]",
-    ANTHROPIC_DEFAULT_SONNET_MODEL: "deepseek-v4-pro[1m]",
-    ANTHROPIC_DEFAULT_HAIKU_MODEL: "deepseek-v4-flash-vision-exp",
-    CLAUDE_CODE_SUBAGENT_MODEL: "deepseek-v4-flash-vision-exp",
-    CLAUDE_CODE_MAX_CONTEXT_TOKENS: "1048576",
-    CLAUDE_CODE_EFFORT_LEVEL: "max"
-  };
-  const expectedDeepseekVisionEnvironment = {
-    ANTHROPIC_MODEL: "deepseek-v4-flash-vision-exp",
-    ANTHROPIC_DEFAULT_OPUS_MODEL: "deepseek-v4-flash-vision-exp",
-    ANTHROPIC_DEFAULT_SONNET_MODEL: "deepseek-v4-flash-vision-exp",
-    ANTHROPIC_DEFAULT_HAIKU_MODEL: "deepseek-v4-flash-vision-exp",
-    CLAUDE_CODE_SUBAGENT_MODEL: "deepseek-v4-flash-vision-exp",
-    CLAUDE_CODE_MAX_CONTEXT_TOKENS: "1048576",
-    CLAUDE_CODE_EFFORT_LEVEL: "max"
+    ANTHROPIC_MODEL: "deepseek-flash[1m]",
+    ANTHROPIC_DEFAULT_OPUS_MODEL: "deepseek-flash[1m]",
+    ANTHROPIC_DEFAULT_SONNET_MODEL: "deepseek-flash[1m]",
+    ANTHROPIC_DEFAULT_HAIKU_MODEL: "deepseek-flash",
+    CLAUDE_CODE_SUBAGENT_MODEL: "deepseek-flash",
+    CLAUDE_CODE_EFFORT_LEVEL: "max",
+    CLAUDE_CODE_AUTO_COMPACT_WINDOW: "786432",
+    CLAUDE_CODE_MAX_CONTEXT_TOKENS: "1048576"
   };
   if (JSON.stringify(deepseek.environment) !== JSON.stringify(expectedDeepseekEnvironment)
     || JSON.stringify(deepseek.requiredEnvironment) !== JSON.stringify(Object.keys(expectedDeepseekEnvironment))) {
     fail("deepseek profile environment mapping is invalid");
   }
-  if (JSON.stringify(deepseekVision.environment) !== JSON.stringify(expectedDeepseekVisionEnvironment)
-    || JSON.stringify(deepseekVision.requiredEnvironment) !== JSON.stringify(Object.keys(expectedDeepseekVisionEnvironment))) {
-    fail("deepseek-vision profile environment mapping is invalid");
+  if (deepseekProvider.displayName !== "DeepSeek"
+    || deepseekProvider.baseUrl !== "https://api.deepseek.com/anthropic"
+    || deepseekProvider.apiKeyUrl !== "https://platform.deepseek.com/api_keys"
+    || deepseekProvider.authVariable !== "ANTHROPIC_AUTH_TOKEN"
+    || deepseekProvider.secretId !== "deepseek"
+    || deepseekProvider.sourceUrl !== "https://api-docs.deepseek.com/zh-cn/quick_start/agent_integrations/claude_code/") {
+    fail("deepseek provider contract is invalid");
   }
   if (kimiProvider.displayName !== "Kimi"
     || kimiProvider.baseUrl !== "https://api.moonshot.cn/anthropic"

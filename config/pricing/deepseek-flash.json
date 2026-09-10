@@ -1,0 +1,22 @@
+{
+  "id": "deepseek-flash",
+  "displayName": "DeepSeek V4.1 Flash",
+  "model": "deepseek-flash",
+  "currency": "USD",
+  "unit": "per_million_tokens",
+  "prices": {
+    "offPeak": {
+      "inputCacheHit": 0.003,
+      "inputCacheMiss": 0.15,
+      "output": 0.6
+    },
+    "peak": {
+      "inputCacheHit": 0.006,
+      "inputCacheMiss": 0.3,
+      "output": 1.2
+    }
+  },
+  "contextWindowTokens": 1048576,
+  "verifiedOn": "2026-09-10",
+  "sourceUrl": "https://api-docs.deepseek.com/quick_start/pricing/"
+}

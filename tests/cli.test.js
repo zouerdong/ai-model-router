@@ -43,10 +43,11 @@ test("version and list are non-interactive and do not expose secrets", async () 
   assert.equal(await runCli(["list"], { output: list.output }), 0);
   assert.match(list.value, /kimi: Kimi K3/);
   assert.match(list.value, /aliases: plan, kimi-k3/);
-  assert.match(list.value, /deepseek: DeepSeek Auto/);
-  assert.match(list.value, /aliases: build, deepseek-auto/);
-  assert.match(list.value, /deepseek-vision: DeepSeek V4 Flash Vision/);
-  assert.match(list.value, /aliases: deepseek-flash-vision/);
+  assert.match(list.value, /deepseek: DeepSeek V4\.1 Flash/);
+  assert.match(list.value, /aliases: build/);
+  assert.match(list.value, /ANTHROPIC_MODEL=deepseek-flash\[1m\]/);
+  assert.match(list.value, /CLAUDE_CODE_AUTO_COMPACT_WINDOW=786432/);
+  assert.doesNotMatch(list.value, /deepseek-auto|deepseek-vision|deepseek-flash-vision|\[(?:text|image)\]/);
   assert.match(list.value, /glm: GLM-5\.3 Coding Plan/);
   assert.match(list.value, /aliases: glm-5\.3, glm-5\.2, glm-plan/);
   assert.match(list.value, /glm-api: GLM-5\.3 API \(Pay-as-you-go\)/);
@@ -67,6 +68,7 @@ test("help shows CMR usage without starting Claude Code", async () => {
   assert.equal(await runCli(["help"], { output: help.output }), 0);
   assert.match(help.value, /cmr kimi \[claude args\.\.\.\]/);
   assert.match(help.value, /cmr deepseek \[claude args\.\.\.\]/);
+  assert.match(help.value, /cmr build \[claude args\.\.\.\].*Alias for deepseek/);
   assert.match(help.value, /cmr glm \[claude args\.\.\.\]/);
   assert.match(help.value, /cmr glm-api \[claude args\.\.\.\].*Pay-as-you-go/);
   assert.match(help.value, /cmr glm-payg \[claude args\.\.\.\].*Alias for glm-api/);
@@ -80,6 +82,7 @@ test("help shows CMR usage without starting Claude Code", async () => {
   assert.match(help.value, /passed through unchanged/);
   assert.match(help.value, /entity npm global packages only/);
   assert.match(help.value, /never updates Claude Code, Node\.js, or Provider API Keys/);
+  assert.doesNotMatch(help.value, /deepseek-auto|deepseek-vision|deepseek-flash-vision/);
 });
 
 function fakeMenuPrompter(actions) {
@@ -181,11 +184,11 @@ test("first interactive bare cmr shows the full dashboard, marks seen, then retu
   assert.match(output.value, /glm: missing/);
   assert.match(output.value, /glm-api: missing/);
   assert.match(prompter.calls[1].choices[0].label, /kimi — Kimi K3 \[missing\]/);
-  assert.match(prompter.calls[1].choices[2].label, /deepseek-vision — DeepSeek V4 Flash Vision \[missing\]/);
-  assert.match(prompter.calls[1].choices[3].label, /glm — GLM-5\.3 Coding Plan \[missing\]/);
-  assert.match(prompter.calls[1].choices[4].label, /glm-api — GLM-5\.3 API \(Pay-as-you-go\) \[missing\]/);
-  assert.match(prompter.calls[1].choices[5].label, /kimi-code — Kimi Code Membership \[missing\]/);
-  assert.match(prompter.calls[1].choices[8].label, /setup — Configure or replace API Keys/);
+  assert.match(prompter.calls[1].choices[1].label, /deepseek — DeepSeek V4\.1 Flash \[missing\]/);
+  assert.match(prompter.calls[1].choices[2].label, /glm — GLM-5\.3 Coding Plan \[missing\]/);
+  assert.match(prompter.calls[1].choices[3].label, /glm-api — GLM-5\.3 API \(Pay-as-you-go\) \[missing\]/);
+  assert.match(prompter.calls[1].choices[4].label, /kimi-code — Kimi Code Membership \[missing\]/);
+  assert.match(prompter.calls[1].choices[7].label, /setup — Configure or replace API Keys/);
   assert.deepEqual((await new SetupStateStore({
     filePath: getSetupStatePath({ platform: process.platform, env, homedir: home })
   }).read()).seenProviderIds, ["deepseek", "glm", "glm-api", "kimi", "kimi-code"]);
@@ -253,7 +256,7 @@ test("seen state enters the daily status menu even when keys later become missin
   });
   assert.equal(code, 0);
   assert.doesNotMatch(output.value, /Claude Model Router setup/);
-  assert.match(prompter.calls[0].choices[1].label, /deepseek — DeepSeek Auto \[missing\]/);
+  assert.match(prompter.calls[0].choices[1].label, /deepseek — DeepSeek V4\.1 Flash \[missing\]/);
 });
 
 test("the daily menu opens on a secret store written by a newer CMR version", async (t) => {
@@ -295,7 +298,7 @@ test("the daily menu opens on a secret store written by a newer CMR version", as
   assert.equal(code, 0);
   assert.doesNotMatch(errorOutput.value, /unknown provider/);
   assert.match(prompter.calls[0].choices[0].label, /kimi — Kimi K3 \[configured\]/);
-  assert.match(prompter.calls[0].choices[1].label, /deepseek — DeepSeek Auto \[missing\]/);
+  assert.match(prompter.calls[0].choices[1].label, /deepseek — DeepSeek V4\.1 Flash \[missing\]/);
   assert.doesNotMatch(prompter.calls[0].choices.map((choice) => choice.label).join("\n"), /kimi-code/);
 });
 
@@ -531,8 +534,6 @@ test("CLI accepts profile IDs and aliases with opaque Claude args", async (t) =>
     ["deepseek", ["--version"], "deepseek.json", "test-deepseek-key"],
     ["plan", ["--continue"], "plan.json", "test-kimi-key"],
     ["build", ["--permission-mode", "plan"], "build.json", "test-deepseek-key"],
-    ["deepseek-vision", ["--version"], "deepseek-vision.json", "test-deepseek-key"],
-    ["deepseek-flash-vision", ["--continue"], "deepseek-flash-vision.json", "test-deepseek-key"],
     ["glm", ["--help"], "glm.json", "test-glm-key"],
     ["glm-5.2", ["--version"], "glm-5.2.json", "test-glm-key"],
     ["glm-plan", ["--model", "provider-model"], "glm-plan.json", "test-glm-key"],
@@ -560,6 +561,9 @@ test("CLI accepts profile IDs and aliases with opaque Claude args", async (t) =>
 
 test("CLI requires an explicit profile before Claude arguments", async () => {
   await assert.rejects(() => runCli(["--continue"]), /unknown profile: --continue/);
+  for (const selector of ["deepseek-auto", "deepseek-vision", "deepseek-flash-vision"]) {
+    await assert.rejects(() => runCli([selector]), new RegExp(`unknown profile: ${selector}`));
+  }
 });
 
 test("management commands reject unexpected arguments", async () => {

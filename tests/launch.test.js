@@ -101,9 +101,14 @@ test("launchProfile injects the selected profile and passes Claude args unchange
   const buildSnapshot = JSON.parse(await readFile(buildOutputFile, "utf8"));
   assert.equal(buildCode, 0);
   assert.deepEqual(buildSnapshot.args, deepseekArgs);
-  assert.equal(buildSnapshot.model, "deepseek-v4-pro[1m]");
-  assert.equal(buildSnapshot.haiku, "deepseek-v4-flash-vision-exp");
+  assert.equal(buildSnapshot.model, "deepseek-flash[1m]");
+  assert.equal(buildSnapshot.opus, "deepseek-flash[1m]");
+  assert.equal(buildSnapshot.sonnet, "deepseek-flash[1m]");
+  assert.equal(buildSnapshot.haiku, "deepseek-flash");
+  assert.equal(buildSnapshot.subagent, "deepseek-flash");
+  assert.equal(buildSnapshot.compact, "786432");
   assert.equal(buildSnapshot.maxContext, "1048576");
+  assert.equal(buildSnapshot.effort, "max");
   assert.equal(buildSnapshot.fable, null);
   assert.equal(buildSnapshot.hasAuthToken, true);
   assert.doesNotMatch(buildOutput.text, /test-deepseek-key/);

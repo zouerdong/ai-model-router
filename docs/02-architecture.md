@@ -1,7 +1,7 @@
 # 02 — 系统架构
 
-状态：`1.8.2` 已于 2026-08-29 公开发布为 Latest；DeepSeek 上下文与 Pricing 增量见第 24 节与 `docs/24`
-更新时间：2026-08-29
+状态：公开 Latest 为 `1.8.2`；仓库未发布的 `2.0.0` DeepSeek V4.1 Flash 候选已通过本地门禁，见第 25 节与 `docs/25`
+更新时间：2026-09-10
 
 ## 1. 架构结论
 
@@ -18,7 +18,7 @@
                               args / cwd / TTY / signal / exit code
 ```
 
-DeepSeek Auto 不由 CMR 自己判断任务复杂度。CMR 只注入 DeepSeek 官方映射；Claude Code 使用主模型、模型档位和子 Agent 时，自然落到 Pro 或 Flash。Kimi/DeepSeek 均不绑定规划或执行角色。
+DeepSeek V4.1 Flash 不由 CMR 自己判断输入模态或任务复杂度。CMR 只注入 DeepSeek 官方 Claude Code 映射；主模型、模型档位和子 Agent 最终都由同一个原生多模态模型承担。Kimi/DeepSeek 均不绑定规划或执行角色。
 
 Profile 选择器之后的参数是不可解释的 opaque token list。CMR 只负责保存顺序和值并传给 Claude Code；不得按已知参数白名单实现，因为 Claude Code 未来新增参数也应自动可用。
 
@@ -152,9 +152,9 @@ Pricing 只负责启动提示，不参与路由或账单：
 
 ### 5.4 Profile ID、别名与保留字
 
-- 规范 ID：`kimi`、`deepseek`、`glm`、`glm-api`、`kimi-code`、`kimi-code-k3-256k`、`kimi-code-k3`；候选追加 `deepseek-vision`（`docs/20`）。
+- 规范 ID：`kimi`、`deepseek`、`glm`、`glm-api`、`kimi-code`、`kimi-code-k3-256k`、`kimi-code-k3`。
 - Kimi 兼容别名：`plan`、`kimi-k3`；Kimi Code 别名：`kimi-membership*`。
-- DeepSeek 兼容别名：`build`、`deepseek-auto`；DeepSeek Vision 别名：`deepseek-flash-vision`。
+- DeepSeek 兼容别名仅为 `build`。`deepseek-auto`、`deepseek-vision`、`deepseek-flash-vision` 已在 `2.0.0` 按 `docs/25` 删除。
 - `help`、`version`、`list`、`doctor`、`config`、`secret` 等管理命令是保留字，Profile ID 与别名不得占用。
 - ID、别名解析必须来自数据化 Profile；CLI 不得分别写一套模型映射。
 - 两个 Profile 配置文件在 `0.2.0` 实施时从 `plan.json/build.json` 重命名为 `kimi.json/deepseek.json`。这是文件移动/删除语义，执行者必须先获得用户对精确文件的批准。
@@ -711,7 +711,7 @@ cmr glm-api / glm-payg
 
 `glm-5.3-flash[1m]` 与 `glm-5.3[1m]` 都是 Claude Code 选择层值（官方 Coding Plan 模型切换页直接使用后者加 `[1m]` 后缀的形式），上游原生模型 ID 为 `glm-5.3-flash`/`glm-5.3`，CMR 不剥离 `[1m]`。`CLAUDE_CODE_SUBAGENT_MODEL` 按 Claude Code 官方语义覆盖全部子 Agent（含 frontmatter 声明的模型），是预期行为。
 
-Pricing 采用模型族价格树（与 `deepseek-v4` 相同结构）：`config/pricing/glm-5.3.json` 同时记录 `glm-5.3`（2/8/28）与 `glm-5.3-flash`（0.23/0.8/2.8）的 CNY/百万 tokens 稳定公开原价；限时促销价不进入长期配置。旧 `glm-5.2` Pricing 文件保留于 catalog，但两个现行 GLM Profile 不再引用。payg 启动警告由 `launch.js` 从 Pricing JSON 读取并覆盖两档模型价格，不硬编码数值。
+Pricing 采用模型族价格树：`config/pricing/glm-5.3.json` 同时记录 `glm-5.3`（2/8/28）与 `glm-5.3-flash`（0.23/0.8/2.8）的 CNY/百万 tokens 稳定公开原价；限时促销价不进入长期配置。旧 `glm-5.2` Pricing 文件保留于 catalog，但两个现行 GLM Profile 不再引用。payg 启动警告由 `launch.js` 从 Pricing JSON 读取并覆盖两档模型价格，不硬编码数值。
 
 本映射不是内容路由器：主会话默认仍为文本模型，附图不自动切 Flash；CMR 不检查消息内容、不代理或重写 Anthropic 消息。
 
@@ -735,3 +735,22 @@ deepseek-vision
 `[1m]` 继续是 Pro 的 Claude Code 选择层标记；全局 max-context 变量为无法从名称识别窗口的 Vision 自定义 ID 提供同一 1M 声明。CMR 不改写模型 ID、不设置 proactive compact 阈值，也不把 Pricing 的 `contextWindowTokens` 当成运行时环境变量。
 
 Pricing 仍由数据化配置承载，但 `deepseek-v4` 改为三模型 × `offPeak`/`peak` × 三类 token 价格的树。validator 同时锁定模型集合、时段集合、字段集合、精确值和 `1048576` 窗口；运行时不根据时区或请求时间计算费用。
+
+## 25. DeepSeek V4.1 Flash 单入口架构（`2.0.0` 候选）
+
+绑定实施合同：`docs/25-v2.0-deepseek-v4.1-flash-migration.md`。本节 supersede 第 24 节的现行 DeepSeek 架构，但保留其 `v1.8.2` 历史证据。
+
+```text
+cmr deepseek / cmr build
+  └── deepseek Provider / deepseek Secret / ANTHROPIC_AUTH_TOKEN
+        ├── Main/Opus/Sonnet: deepseek-flash[1m]
+        ├── Haiku/Subagent: deepseek-flash
+        ├── proactive compact: 786432
+        └── custom-ID max context: 1048576
+```
+
+catalog 中只有一个 DeepSeek Profile，`deepseek-vision` 配置文件与旧 `deepseek-v4` Pricing 记录不再加载。新的 `deepseek-flash` Pricing 是单模型 × `offPeak`/`peak` × 三类 token 的精确价格树。validator 同时锁定七个 Profile、`deepseek` 唯一别名 `build`、完整环境变量集合和当前价格。
+
+多模态由内容块而非模型名能力标签实现：Claude Code `Read` 对图片返回 visual content，DeepSeek Anthropic API 接受 `image` block，当前 `deepseek-flash` 原生处理该输入。`[1m]` 是 Claude Code 明确定义并在上游请求前剥离的上下文后缀；`[text]` / `[image]` 未被定义，会成为模型名的一部分，因此架构层禁止注入。
+
+环境构建、大小写不敏感清理、唯一鉴权变量、cwd/TTY/信号/退出码透传均不变。删除旧 Profile/别名只改变选择面，不迁移或删除用户已保存的 `deepseek` Secret。

@@ -5,6 +5,6 @@
   "apiKeyUrl": "https://platform.deepseek.com/api_keys",
   "authVariable": "ANTHROPIC_AUTH_TOKEN",
   "secretId": "deepseek",
-  "verifiedOn": "2026-08-29",
-  "sourceUrl": "https://api-docs.deepseek.com/guides/coding_agents"
+  "verifiedOn": "2026-09-10",
+  "sourceUrl": "https://api-docs.deepseek.com/zh-cn/quick_start/agent_integrations/claude_code/"
 }

@@ -1,6 +1,6 @@
 # 08 — 阶段一验收与修复兜底
 
-状态：`0.1.x` 历史验收基线 + `0.2.0`、`1.1.0` 与 `1.2.1` 已验收标准
+状态：历史验收基线 + 未发布 `2.0.0` DeepSeek V4.1 Flash 候选标准（第 21 节）
 角色分离：实现者提供证据；后续审阅者独立复核，不采用执行者自评替代验收。
 
 ## 1. 判定规则
@@ -722,3 +722,22 @@ GFA-D3 判定结论（2026-08-27）：功能与凭据隔离全部通过（Coding
 | DCP-A7 | Blocker | 公开安装 URL 与 tag 保持 `v1.8.1`；不把假 Claude 验证写成真实 Provider 1M 长会话 PASS；commit/push/tag/Release 另行授权 |
 
 判定结论（2026-08-29）：DCP-A1~A7 全部关闭。项目负责人授权正式发布后，Windows T4 run 33244442385 双档全绿；`v1.8.2` immutable Latest、fixed asset、两行 SHA256SUMS、exact/latest 双 URL、隔离安装、`update --check` 与 `1.8.1 -> 1.8.2` 真实完整自更新均通过。DCP-A7 表中保持 `v1.8.1` 的描述是发布前停止门历史合同，现行公开状态由 `docs/24` §5 supersede。
+
+## 21. DeepSeek V4.1 Flash `2.0.0` 候选验收矩阵
+
+绑定实施合同：`docs/25-v2.0-deepseek-v4.1-flash-migration.md`。
+
+| ID | 级别 | 验收项 |
+|---|---|---|
+| DS41-A1 | Blocker | catalog 恰有七个正式 Profile；DeepSeek Provider 只关联规范 Profile `deepseek`，别名恰为 `build` |
+| DS41-A2 | Blocker | `deepseek-auto`、`deepseek-vision`、`deepseek-flash-vision` 均无法解析；旧 Profile 文件和 `deepseek-v4` Pricing 文件不再打包 |
+| DS41-A3 | Blocker | 主模型/Opus/Sonnet 精确为 `deepseek-flash[1m]`，Haiku/Subagent 精确为 `deepseek-flash`，effort=max、compact=786432、max-context=1048576，无 Fable/timeout/代理变量 |
+| DS41-A4 | Blocker | 配置和子进程环境不含 `[text]` / `[image]`；测试明确证明图片能力不由伪后缀开启，文档给出 Read visual content → Anthropic image block 链路 |
+| DS41-A5 | Blocker | `deepseek-flash` Pricing 恰含 offPeak/peak 与三类 token 精确值，窗口为 1048576、核验日期为 2026-09-10；validator 拒绝缺时段、缺字段、额外节点、错误价格与旧记录 |
+| DS41-A6 | Blocker | DeepSeek Provider、Secret ID、Base URL、`ANTHROPIC_AUTH_TOKEN` 不变；跨 Profile 启动只含一个鉴权变量，父环境与用户 Secret Store 不被修改 |
+| DS41-A7 | Blocker | `npm test`、`npm run lint`、`git diff --check`、CLI version/list、pack dry-run 全部通过；旧入口拒绝与 `build` 等价由自动化覆盖 |
+| DS41-A8 | Blocker | 只登记仓库候选；真实图片请求、commit、push、Windows CI、tag 与 Release 未获单独授权前不得执行或标记 PASS |
+
+恢复边界：本轮没有 Secret schema 或数据迁移，回退到公开 `v1.8.2` 时既有 `deepseek` Key 仍在原槽位；回退只是安装版本切换，属于全局安装操作，必须按项目红线另行确认。旧脚本升级前应先扫描三个被删除选择器并改为 `deepseek`；不要通过临时复制旧 Profile 文件绕过 `2.0.0` validator。
+
+当前判定（2026-09-10）：DS41-A1~A7 本地候选 PASS，证据见 `docs/25` §6；DS41-A8 持续作为发布停止门。Windows 三 shell、真实图片请求、commit、push、tag 与 Release 均未执行。

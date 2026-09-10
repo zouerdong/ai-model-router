@@ -9,7 +9,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## 常用命令
 
 ```bash
-npm test                                  # 全量测试（node --test；macOS 上 185 中 3 个 Windows-only 自动 skip）
+npm test                                  # 全量测试（node --test；当前 184 项，macOS 上 3 个 Windows-only 自动 skip）
 npm run lint                              # 语法检查（scripts/lint.js 对 src/tests/scripts 做 node --check，无 ESLint）
 node --test tests/launch.test.js          # 运行单个测试文件
 node src/cli.js <profile|命令>            # 直接运行本仓库候选 CLI（不经全局安装）
@@ -28,7 +28,7 @@ CMR 是零依赖 Node.js ESM CLI（Node ≥18，仅标准库），职责是 Clau
 4. **自更新** `src/updater.js` + `update-lock.js` + `command-runner.js`：只从固定 GitHub Release 资产 `releases/latest/download/claude-model-router.tgz` 更新，安装前按 `SHA256SUMS` 校验资产摘要（fail-closed），带备份/校验/回滚，对源码 checkout/junction 等拒绝；更新链子进程环境额外剥离 `NODE_OPTIONS`。
 5. **平台层** `src/platform.js`：macOS/Windows 差异（路径、claude.exe/.cmd 发现）。
 
-当前 5 Provider / 8 Profile：kimi（开放平台）、deepseek、deepseek-vision（全槽位多模态实验模型）、glm（Coding Plan 5.3/5.3-Flash）、glm-api（标准 API 5.3/5.3-Flash）、kimi-code 会员 ×3。每条通道是独立凭据边界——**CMR 永不检测 Key 类型、合并槽位、或跨通道 fallback**。
+当前仓库候选为 5 Provider / 7 Profile：kimi（开放平台）、deepseek（V4.1 Flash 单一原生多模态入口）、glm（Coding Plan 5.3/5.3-Flash）、glm-api（标准 API 5.3/5.3-Flash）、kimi-code 会员 ×3。每条 Provider 通道是独立凭据边界——**CMR 永不检测 Key 类型、合并槽位、或跨通道 fallback**。
 
 ## 关键约定（易踩坑）
 
@@ -38,8 +38,11 @@ CMR 是零依赖 Node.js ESM CLI（Node ≥18，仅标准库），职责是 Clau
 - **Windows CI**：`.github/workflows/windows-t4.yml` 只在 push 到 `codex/windows-t4-validation` 分支（或手动 dispatch）触发——做 Windows 验收时把 main 快进到该分支再推；用完的验证分支发布后可删（内容应已回收入 main，Actions 日志独立留存）。
 - **发布流程**：固定资产在仓库外 staging 构建（`claude-model-router.tgz` 固定名 + `SHA256SUMS`），发布后必须做 exact/latest 双 URL 回读 + 隔离 prefix 安装 + `cmr update --check`。完整配方见 `docs/16`（v1.4）与 `docs/17` §12/§14（v1.5）。
 - **治理模式**（2026-08-18 起）：单一执行者 + 自动化验证 + 项目负责人对 push/tag/Release 逐项授权（Luna/Sol 双角色已撤销，历史记录见 docs/17 页首）。
+- **DeepSeek 模型后缀**：`[1m]` 是 Claude Code 官方上下文选择后缀；`[text]` / `[image]` 不是能力声明，禁止写入 Profile。图片由 Claude Code visual content block 与上游 Anthropic `image` block 支持，不由模型字符串标签开启。
 
 ## 当前状态
+
+仓库的未发布 `2.0.0` 候选已通过本地门禁（`docs/25` DS41-1~4）：只保留 `deepseek` / `build` 两个等价选择器，全部槽位迁移到 `deepseek-flash`，删除 `deepseek-vision` Profile 与旧 DeepSeek 品牌别名，Pricing 收口为 V4.1 Flash 当前峰谷 USD 价格。Provider、Secret 与鉴权不变；尚未 commit、push、运行 Windows CI、tag 或发布，公开 Latest 仍是 `v1.8.2`。
 
 `v1.8.2` 已于 2026-08-29 公开发布为 Latest（tag 指向门禁 commit `30cf53e`；Windows T4 run 33244442385 双档全绿）：两个 DeepSeek Profile 统一注入 `CLAUDE_CODE_MAX_CONTEXT_TOKENS=1048576`，Pricing 刷新为 Pro/Flash/Flash Vision 三模型的工作日峰谷 USD 价格；模型映射、Provider、Secret 与鉴权边界不变。完整证据见 `docs/24`。
 

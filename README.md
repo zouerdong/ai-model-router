@@ -2,6 +2,8 @@
 
 Current public Latest stable version: **`1.8.2`** (released 2026-08-29).
 
+Repository candidate: **`2.0.0`** (local gates passed; not published). It replaces both former DeepSeek profiles with one `deepseek` entry backed by the natively multimodal DeepSeek V4.1 Flash (`deepseek-flash`), keeps only the generic `build` alias, and removes `deepseek-auto`, `deepseek-vision`, and `deepseek-flash-vision`. The existing DeepSeek Provider, key, endpoint, and authentication boundary are unchanged. Binding contract: `docs/25`.
+
 Version **`1.8.2`** declares the full 1,048,576-token window to Claude Code for both DeepSeek profiles and refreshes the DeepSeek pricing record to the current Pro/Flash/Flash Vision weekday peak/off-peak USD rates. Windows Server 2025 passed the Node 18.20.8 and Node 24 release gates. Binding contract and release evidence: `docs/24`.
 
 Version `1.8.1` is a hotfix restoring the automatic update channel: since `1.7.0`, a real full `cmr update` (not `cmr update --check`) failed on every platform with `ERROR integrity check unavailable: published SHA256SUMS has no entry for the release asset`, because the verifier looked up npm's versioned tarball copy filename instead of the fixed release asset name in `SHA256SUMS`. Installed versions were never damaged (fail-closed before install). The release also publishes a same-digest alias entry in `SHA256SUMS` under npm's copy name, so existing `1.7.0`–`1.8.0` installations self-heal with a plain `cmr update` — no manual reinstall (fallback command in `docs/23` §6). Binding contract and evidence: `docs/23`.
@@ -84,12 +86,11 @@ npm uninstall --global claude-model-router
 
 ## Quick Start
 
-Run either profile from your target project directory:
+Run a profile from your target project directory:
 
 ```bash
 cmr kimi
 cmr deepseek
-cmr deepseek-vision  # DeepSeek V4 Flash Vision (multimodal experimental model)
 cmr glm              # GLM Coding Plan
 cmr glm-5.3          # GLM-5.3 Coding Plan alias
 cmr glm-api          # GLM standard API pay-as-you-go
@@ -126,7 +127,9 @@ cmr build [claude args...]
 cmr glm-payg [claude args...]
 ```
 
-`deepseek-vision` (alias `deepseek-flash-vision`) maps every model slot — main, Opus, Sonnet, Haiku, and sub-agent — to the multimodal experimental model `deepseek-v4-flash-vision-exp` released by DeepSeek on 2026-08-21. It reuses the `deepseek` Provider, Secret Store slot, `ANTHROPIC_AUTH_TOKEN`, and the DeepSeek V4 pricing record (the vision model is priced identically to `deepseek-v4-flash` on the official pricing page). The plain `deepseek` Auto profile keeps `deepseek-v4-pro[1m]` for its main/Opus/Sonnet slots and uses `deepseek-v4-flash-vision-exp` for Haiku and sub-agents. The model is experimental; official capability or availability changes propagate through config updates only.
+In the `2.0.0` repository candidate, `deepseek` follows DeepSeek's current Claude Code mapping: main/Opus/Sonnet use `deepseek-flash[1m]`, while Haiku and every sub-agent use `deepseek-flash`. It also sets the official proactive-compaction window to `786432`; CMR retains `CLAUDE_CODE_MAX_CONTEXT_TOKENS=1048576` so Claude Code manages the untagged custom model ID with its real 1M window. The model is natively multimodal, so the separate Vision profile is no longer present. Existing `deepseek` secrets continue to work; scripts using any of the three removed selectors must migrate to `cmr deepseek` (or the retained `cmr build`).
+
+Do not append `[text]` or `[image]` to model environment values. Claude Code documents `[1m]` as a context selector, but not those capability suffixes. Its `Read` tool returns images as visual content, and DeepSeek's Anthropic-compatible API accepts the resulting `image` content block for `deepseek-flash`; multimodality is carried by the request content rather than enabled by renaming the model.
 
 `glm`, `glm-5.3`, `glm-5.2`, and `glm-plan` all resolve to the GLM Coding Plan Profile. Since `1.8.0` it uses the Auto hybrid mapping: Opus/Sonnet stay on `glm-5.3[1m]` while the Haiku slot and every sub-agent use the natively multimodal light model `glm-5.3-flash[1m]` via `CLAUDE_CODE_SUBAGENT_MODEL` (through `1.7.0` the Haiku slot was `glm-4.7`). That variable is a mandatory global override — sub-agent frontmatter model declarations are intentionally superseded. Attaching an image to the main session does not switch it to Flash; only the explicit Haiku slot hits the multimodal model. `glm-api` is the only standard API pay-as-you-go entry, and `glm-payg` is its only alias; since `1.8.0` it shares the same mapping and references the `glm-5.3` pricing family (stable list prices: GLM-5.3 2/8/28 and GLM-5.3-Flash 0.23/0.8/2.8 CNY per million tokens; limited-time promotional prices are not persisted). The hybrid combination is a CMR product decision assembled from official Zhipu capabilities, not an official preset. Billing attribution note (measured 2026-08-27, `docs/07` §15.3): on accounts with an active GLM Coding Plan, Zhipu's points-based plan currently deducts requests on both entries from plan quota first; the cash pay-as-you-go balance applies when no active plan covers the account. CMR maintains the credential, Secret, and authentication boundaries — upstream wallet attribution is Zhipu's mechanism. The two profiles share an Anthropic-compatible Base URL but use separate Secret Store slots and authentication variables. CMR never detects Key types, injects both variables, or automatically falls back between them.
 
@@ -248,5 +251,6 @@ API keys are written through hidden local TTY input to the Secret Store outside 
 22. [GLM-5.3-Flash Auto dual-channel upgrade implementation guide](docs/22-glm-5.3-flash-auto-implementation-guide.md)
 23. [Version 1.8.1 update-integrity lookup hotfix](docs/23-v1.8.1-update-integrity-lookup-hotfix.md)
 24. [Version 1.8.2 DeepSeek context and pricing refresh](docs/24-v1.8.2-deepseek-context-pricing-refresh.md)
+25. [Version 2.0.0 DeepSeek V4.1 Flash migration](docs/25-v2.0-deepseek-v4.1-flash-migration.md)
 
 The runtime has no third-party dependencies. The public repository uses `main` as its default branch; the current public stable tag is `v1.8.2`, published as an immutable Release with the fixed `claude-model-router.tgz` asset and a two-entry `SHA256SUMS` (asset name plus a same-digest alias under npm's copy name so pre-1.8.1 updaters keep verifying).

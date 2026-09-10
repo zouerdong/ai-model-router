@@ -32,7 +32,7 @@ test("builds an isolated Kimi child environment without mutating the parent", as
   assert.equal(JSON.stringify(getEnvironmentSnapshot(child)).includes("test-kimi-key"), false);
 });
 
-test("builds DeepSeek Auto without Kimi-only leftovers", async () => {
+test("builds DeepSeek V4.1 Flash without Kimi-only leftovers or pseudo capability suffixes", async () => {
   const config = await loadConfigSet();
   const provider = config.providers.find((item) => item.id === "deepseek");
   const profile = config.profiles.find((item) => item.id === "deepseek");
@@ -42,15 +42,20 @@ test("builds DeepSeek Auto without Kimi-only leftovers", async () => {
     profile,
     secret: "test-deepseek-key"
   });
-  assert.equal(child.ANTHROPIC_MODEL, "deepseek-v4-pro[1m]");
-  assert.equal(child.ANTHROPIC_DEFAULT_HAIKU_MODEL, "deepseek-v4-flash-vision-exp");
-  assert.equal(child.CLAUDE_CODE_SUBAGENT_MODEL, "deepseek-v4-flash-vision-exp");
+  assert.equal(child.ANTHROPIC_MODEL, "deepseek-flash[1m]");
+  assert.equal(child.ANTHROPIC_DEFAULT_OPUS_MODEL, "deepseek-flash[1m]");
+  assert.equal(child.ANTHROPIC_DEFAULT_SONNET_MODEL, "deepseek-flash[1m]");
+  assert.equal(child.ANTHROPIC_DEFAULT_HAIKU_MODEL, "deepseek-flash");
+  assert.equal(child.CLAUDE_CODE_SUBAGENT_MODEL, "deepseek-flash");
+  assert.equal(child.CLAUDE_CODE_EFFORT_LEVEL, "max");
+  assert.equal(child.CLAUDE_CODE_AUTO_COMPACT_WINDOW, "786432");
   assert.equal(child.CLAUDE_CODE_MAX_CONTEXT_TOKENS, "1048576");
   assert.equal(Object.hasOwn(child, "ANTHROPIC_DEFAULT_FABLE_MODEL"), false);
   assert.equal(child.ANTHROPIC_AUTH_TOKEN, "test-deepseek-key");
   assert.equal(Object.hasOwn(child, "ANTHROPIC_API_KEY"), false);
   assert.equal(Object.hasOwn(child, "API_TIMEOUT_MS"), false);
   assert.equal(Object.hasOwn(child, "CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC"), false);
+  assert.doesNotMatch(JSON.stringify(child), /deepseek-flash\[(?:text|image)\]/);
 });
 
 test("builds GLM Coding Plan with its exact public mapping and no inherited auth leftovers", async () => {
@@ -163,7 +168,7 @@ test("builds Kimi Code with API key authentication only and exact context mappin
   assert.equal(JSON.stringify(snapshot).includes("test-kimi-code-key"), false);
 });
 
-test("all eight formal profiles clear inherited max-context variants without mutating the parent", async () => {
+test("all seven formal profiles clear inherited max-context variants without mutating the parent", async () => {
   const config = await loadConfigSet();
   const providers = new Map(config.providers.map((provider) => [provider.id, provider]));
   const parent = {
@@ -227,6 +232,7 @@ test("sequential GLM, GLM API, Kimi and DeepSeek launches do not retain Router v
   assert.equal(Object.hasOwn(deepseek, "ANTHROPIC_DEFAULT_FABLE_MODEL"), false);
   assert.equal(deepseek.ANTHROPIC_AUTH_TOKEN, "test-deepseek-key");
   assert.equal(Object.hasOwn(deepseek, "ANTHROPIC_API_KEY"), false);
+  assert.equal(deepseek.CLAUDE_CODE_AUTO_COMPACT_WINDOW, "786432");
   assert.equal(deepseek.CLAUDE_CODE_MAX_CONTEXT_TOKENS, "1048576");
   assert.equal(glmApi.ANTHROPIC_API_KEY, "test-glm-api-key");
   assert.equal(Object.hasOwn(glmApi, "ANTHROPIC_AUTH_TOKEN"), false);

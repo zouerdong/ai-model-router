@@ -1,7 +1,7 @@
 # 05 — 阶段三：公司 Windows 拉取与配置计划
 
-状态：`1.3.0` self-update T4 已在 GitHub-hosted Windows Server 2025 通过；`1.2.1` 兼容性问题已修复；真实 Provider、凭据 ACL 与旧配置迁移等完整 Windows 阶段仍在进行
-核心原则：先复现现有 DeepSeek Auto，再引入 Kimi；旧工作流在验证期保持可回退。
+状态：公开稳定版 `1.8.2` 已通过 Windows T4；未发布的 `2.0.0` DeepSeek V4.1 Flash 候选须按第 15 节重新过门
+核心原则：先验证 DeepSeek V4.1 Flash 单入口，再验证其他 Profile；旧公开版在验证期可通过版本回退，不在 `2.0.0` 内保留旧模型别名。
 
 > `1.0.0` 的规范入口是 `cmr deepseek` 与 `cmr kimi`；Windows 阶段同时验证 `cmr build` 与 `cmr plan` 兼容别名。Profile 只选择 Provider，不限制任务用途或 Claude Code 参数。
 
@@ -10,8 +10,8 @@
 在公司 Windows 台式机上：
 
 1. 从 GitHub 拉取阶段一已经验收的同一份源码。
-2. 不破坏现有 DeepSeek V4 Pro/Flash 稳定工作流。
-3. 让 `cmr deepseek` 先复现现有 Auto 映射。
+2. 保留现有 DeepSeek Key、Base URL 与本机 Secret，不迁移凭据。
+3. 让 `cmr deepseek` 使用官方 V4.1 Flash 映射，并确认旧品牌入口已拒绝。
 4. 再让 `cmr kimi` 接入 Kimi K3。
 5. 本机单独保存 Key，不从 GitHub 或 Mac 复制密钥文件。
 
@@ -43,7 +43,7 @@
 - PowerShell Profile、用户/系统环境变量中的相关变量名。
 - Git for Windows / WSL 依赖状态。
 - 公司代理和证书是否影响 Provider 连接，只记录“configured/required”，不记录凭据。
-- 当前 DeepSeek Auto 的无密钥模型映射快照。
+- 当前公开版 DeepSeek 映射与 `2.0.0` V4.1 Flash 候选的无密钥模型映射快照。
 
 生成本机私有审计文件，默认不提交到 Git。
 
@@ -64,7 +64,7 @@
 用户确认目标目录和仓库 URL 后：
 
 1. clone Private 仓库。
-2. checkout 当前稳定的 `v1.2.1` tag；该补丁继承 `1.1.0` Mac 验收基线并补充 Windows 发现回归。
+2. 基线复核 checkout 当前公开稳定的 `v1.8.2` tag；`2.0.0` 候选只在独立验证分支/目录运行。
 3. 本地运行 `npm test`、`npm run lint`。
 4. 先用 `node src/cli.js` 或项目定义的本地命令运行 Doctor。
 
@@ -88,15 +88,15 @@
 1. 不清理旧配置，先运行 `cmr doctor` 识别冲突。
 2. 通过假 Claude 测试确认 Windows `.cmd`、cwd、信号、退出码。
 3. 在临时目录运行 `cmr deepseek`。
-4. `/status` 应显示 `deepseek-v4-pro[1m]` 和 DeepSeek Base URL。
-5. Profile 快照必须显示 Haiku/子 Agent 为 `deepseek-v4-flash`。
+4. `/status` 应显示 `deepseek-flash[1m]` 和 DeepSeek Base URL。
+5. Profile 快照必须显示 Opus/Sonnet=`deepseek-flash[1m]`、Haiku/子 Agent=`deepseek-flash`、compact=`786432`、max-context=`1048576`。
 6. 将行为与 Step 2 基线比较。
 
 如果永久 Settings 覆盖 CMR，停止并展示迁移预览。不能直接删旧配置。
 
 ## 9. Step 6 — 再验证 `cmr kimi`
 
-DeepSeek Auto 通过后，再在临时目录测试 Kimi：
+DeepSeek V4.1 Flash 通过后，再在临时目录测试 Kimi：
 
 - `/status` 为 Kimi Base URL 和 `kimi-k3[1m]`。
 - 最小请求与只读工具调用正常。
@@ -129,8 +129,8 @@ cmr build      # compatibility alias for deepseek
 
 ## 12. 完成定义
 
-- [ ] Windows checkout 当前稳定的 `v1.2.1` tag。
-- [ ] `cmr deepseek` 与原稳定 DeepSeek Auto 行为一致。
+- [ ] Windows checkout 当前公开稳定的 `v1.8.2` tag，并在独立目录验证 `2.0.0` 候选。
+- [ ] `cmr deepseek` 使用 DeepSeek V4.1 Flash 精确映射，`cmr build` 快照等价。
 - [ ] `cmr kimi` 正确使用 `kimi-k3[1m]`。
 - [ ] 两个规范 Profile 及其兼容别名均继承当前项目目录并透明透传 Claude Code 参数。
 - [ ] 公司 MCP、Skills、Plugins、代理与权限没有被 CMR 修改。
@@ -176,3 +176,15 @@ setup 只解决 CMR 自有 Secret Store，不自动清理公司电脑上已经�
 状态：**PASS — Windows T4 GitHub-hosted Windows VM 验收完成；正式 Release 门禁另行执行**。
 
 Updater 已提供 Windows `.cmd`/`.bat` 的显式 `cmd.exe /d /c` argv 边界、Windows global package 识别、junction/source-link fail-closed、exact prefix 与 install 后绝对入口验证。GitHub Actions [run 30094641599](https://github.com/zouerdong/ai-model-router/actions/runs/30094641599) 在 `windows-2025` x64 VM 上，以 Node `18.20.8` 与 Node `24.18.0` 分别完成 PowerShell 全量回归，并在 PowerShell、CMD、Git Bash 三种 shell 中重复通过 5/5 T4 E2E；候选包打包 hash 在两档 Node 下相同。该结果闭环 self-update 的 Windows T4，但不替代本文件中的真实 Provider、凭据 ACL、公司旧配置迁移等完整阶段三工作。
+
+## 16. `2.0.0` DeepSeek V4.1 Flash Windows 追加门
+
+绑定合同：`docs/25-v2.0-deepseek-v4.1-flash-migration.md`。在 Node 18.20.x 与当前 Node LTS 双档完成 PowerShell、CMD、Git Bash T4，并额外验证：
+
+- catalog 只展示 `deepseek` 一个 DeepSeek Profile；`build` 仍解析到它。
+- `deepseek-auto`、`deepseek-vision`、`deepseek-flash-vision` 均返回 unknown profile，且不启动 Claude Code。
+- 假 Claude 快照精确包含 `deepseek-flash[1m]` / `deepseek-flash`、compact `786432`、max-context `1048576`，不包含 `[text]` / `[image]`。
+- 现有 `%APPDATA%\ClaudeModelRouter\secrets.json` 中的 `deepseek` Key 可直接沿用；测试不得打印或移动真实 Key。
+- `1.8.2 -> 2.0.0` 实体 `cmr update` 另在发布候选门执行，并回读版本、list 与旧入口拒绝行为；失败必须能恢复 `1.8.2`。
+
+该节未完成前不得把 Mac 本地回归写成 Windows PASS，也不得 tag 或发布 `2.0.0`。

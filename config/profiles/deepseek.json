@@ -1,27 +1,29 @@
 {
   "id": "deepseek",
-  "aliases": ["build", "deepseek-auto"],
-  "displayName": "DeepSeek Auto",
+  "aliases": ["build"],
+  "displayName": "DeepSeek V4.1 Flash",
   "provider": "deepseek",
-  "purpose": "通过 DeepSeek Auto 运行 Claude Code；主会话 V4 Pro，Haiku 档与子 Agent 用 V4 Flash Vision 多模态实验模型",
+  "purpose": "通过 DeepSeek V4.1 Flash 运行 Claude Code；全部模型槽位使用原生多模态 deepseek-flash",
   "costNotice": "standard",
-  "pricingRef": "deepseek-v4",
+  "pricingRef": "deepseek-flash",
   "requiredEnvironment": [
     "ANTHROPIC_MODEL",
     "ANTHROPIC_DEFAULT_OPUS_MODEL",
     "ANTHROPIC_DEFAULT_SONNET_MODEL",
     "ANTHROPIC_DEFAULT_HAIKU_MODEL",
     "CLAUDE_CODE_SUBAGENT_MODEL",
-    "CLAUDE_CODE_MAX_CONTEXT_TOKENS",
-    "CLAUDE_CODE_EFFORT_LEVEL"
+    "CLAUDE_CODE_EFFORT_LEVEL",
+    "CLAUDE_CODE_AUTO_COMPACT_WINDOW",
+    "CLAUDE_CODE_MAX_CONTEXT_TOKENS"
   ],
   "environment": {
-    "ANTHROPIC_MODEL": "deepseek-v4-pro[1m]",
-    "ANTHROPIC_DEFAULT_OPUS_MODEL": "deepseek-v4-pro[1m]",
-    "ANTHROPIC_DEFAULT_SONNET_MODEL": "deepseek-v4-pro[1m]",
-    "ANTHROPIC_DEFAULT_HAIKU_MODEL": "deepseek-v4-flash-vision-exp",
-    "CLAUDE_CODE_SUBAGENT_MODEL": "deepseek-v4-flash-vision-exp",
-    "CLAUDE_CODE_MAX_CONTEXT_TOKENS": "1048576",
-    "CLAUDE_CODE_EFFORT_LEVEL": "max"
+    "ANTHROPIC_MODEL": "deepseek-flash[1m]",
+    "ANTHROPIC_DEFAULT_OPUS_MODEL": "deepseek-flash[1m]",
+    "ANTHROPIC_DEFAULT_SONNET_MODEL": "deepseek-flash[1m]",
+    "ANTHROPIC_DEFAULT_HAIKU_MODEL": "deepseek-flash",
+    "CLAUDE_CODE_SUBAGENT_MODEL": "deepseek-flash",
+    "CLAUDE_CODE_EFFORT_LEVEL": "max",
+    "CLAUDE_CODE_AUTO_COMPACT_WINDOW": "786432",
+    "CLAUDE_CODE_MAX_CONTEXT_TOKENS": "1048576"
   }
 }

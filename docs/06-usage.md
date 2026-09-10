@@ -1,9 +1,9 @@
 # 06 — 操作说明手册
 
-状态：当前公开 Latest 稳定版为 `1.8.2`（2026-08-29 发布）；DeepSeek 行为见第 21 节
+状态：当前公开 Latest 稳定版为 `1.8.2`（2026-08-29 发布）；仓库 `2.0.0` 候选的 DeepSeek 行为见第 22 节
 适用范围：Mac 与原生 Windows/WSL
 
-The current public Latest stable release is v1.8.2. Its DeepSeek context and pricing behavior is documented in section 21.
+The current public Latest stable release is v1.8.2. The repository's unpublished v2.0.0 DeepSeek candidate is documented in section 22.
 
 CMR 只在启动 Claude Code 前选择 Provider/Profile，并注入临时子进程环境。进入 Claude Code 后，任务用途、权限模式、会话和参数都遵循 Claude Code 原生行为。
 
@@ -15,7 +15,7 @@ CMR 只在启动 Claude Code 前选择 Provider/Profile，并注入临时子进�
 cmr version
 ```
 
-公开稳定 Release 与本仓库源代码运行时 `cmr version` 都应输出 `1.8.2`。`1.3.0` 用户可运行 `cmr update`；`1.2.1` 或更旧版本先按 README 的 exact-release bootstrap 升级。然后在交互式终端执行：
+公开稳定 Release 运行 `cmr version` 应输出 `1.8.2`；本仓库未发布候选应输出 `2.0.0`。`1.3.0` 用户可运行 `cmr update`；`1.2.1` 或更旧版本先按 README 的 exact-release bootstrap 升级。然后在交互式终端执行：
 
 ```bash
 cmr
@@ -48,7 +48,6 @@ cmr kimi
 
 ```bash
 cmr deepseek
-cmr deepseek-vision   # DeepSeek V4 Flash Vision（多模态实验模型）
 cmr glm       # GLM Coding Plan
 cmr glm-api   # GLM standard API pay-as-you-go
 ```
@@ -67,7 +66,7 @@ Kimi 启动时只显示一行高费用提示、价格摘要和核验日期，不
 
 无参数 `cmr` 的日常菜单会显示：
 
-- Kimi、DeepSeek、DeepSeek Vision、GLM Coding Plan、GLM API 与三个 Kimi Code Profile 及其实时 `configured/missing` 状态。
+- Kimi、DeepSeek V4.1 Flash、GLM Coding Plan、GLM API 与三个 Kimi Code Profile 及其实时 `configured/missing` 状态。
 - `setup`：配置或更换 Key；结束后刷新菜单状态。
 - `doctor`：执行只读诊断。
 - `exit`：不启动 Claude Code，正常退出。
@@ -397,3 +396,27 @@ cmr deepseek-vision --continue # 与其他 Profile 相同的透传语义
 DeepSeek 价格配置现覆盖 Pro、Flash、Flash Vision 三模型的工作日峰谷 USD 单价；Flash Vision 与 Flash 同价。CMR 不按当前时间替用户选择或展示某一档、不估算会话费用，也不查询余额。完整费率与 UTC 峰值时段见 `docs/24` §2.2。
 
 该行为已包含在公开 `v1.8.2`；旧版可运行 `cmr update` 升级。
+
+## 22. DeepSeek V4.1 Flash 单入口（未发布 `2.0.0` 候选）
+
+仓库候选把两个旧 DeepSeek Profile 收口为一个原生多模态入口：
+
+| 规范 Profile | 兼容别名 | 主模型/Opus/Sonnet | Haiku/子 Agent | Secret |
+|---|---|---|---|---|
+| `deepseek` | `build` | `deepseek-flash[1m]` | `deepseek-flash` | `deepseek`（沿用） |
+
+同时注入 `CLAUDE_CODE_EFFORT_LEVEL=max`、`CLAUDE_CODE_AUTO_COMPACT_WINDOW=786432` 和 `CLAUDE_CODE_MAX_CONTEXT_TOKENS=1048576`。前两项模型映射与主动压缩值来自 DeepSeek 当前 Claude Code 指南；max-context 是 CMR 对裸自定义模型 ID 的客户端窗口补充。Provider Base URL、`ANTHROPIC_AUTH_TOKEN` 和既有 Key 均不迁移。
+
+以下旧选择器在 `2.0.0` 中已删除，会返回 unknown profile：
+
+```text
+deepseek-auto
+deepseek-vision
+deepseek-flash-vision
+```
+
+现有脚本应改用 `cmr deepseek`；如果历史脚本本来使用通用别名 `cmr build`，无需修改。
+
+不要给模型值追加 `[text]` 或 `[image]`。Claude Code 只把 `[1m]` 定义为上下文选择后缀；`Read` 读取图片后会把视觉内容块发送给模型，而 DeepSeek 的 Anthropic 兼容 API 让 `deepseek-flash` 原生接收 `image` 内容块。`[image]` 会变成未识别模型名的一部分，DeepSeek 对未知模型名的 fallback 也不能当作能力声明。
+
+该候选尚未公开发布。公开安装用户仍按第 20、21 节使用 `v1.8.2`，直到 `2.0.0` 完成 Windows、tag、Release 与公开回读门禁。
