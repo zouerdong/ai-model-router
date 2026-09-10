@@ -42,7 +42,7 @@ CMR 是零依赖 Node.js ESM CLI（Node ≥18，仅标准库），职责是 Clau
 
 ## 当前状态
 
-仓库的未发布 `2.0.0` 候选已通过本地门禁（`docs/25` DS41-1~4）：只保留 `deepseek` / `build` 两个等价选择器，全部槽位迁移到 `deepseek-flash`，删除 `deepseek-vision` Profile 与旧 DeepSeek 品牌别名，Pricing 收口为 V4.1 Flash 当前峰谷 USD 价格。Provider、Secret 与鉴权不变；尚未 commit、push、运行 Windows CI、tag 或发布，公开 Latest 仍是 `v1.8.2`。
+仓库的未发布 `2.0.0` 运行时候选已通过本地与 Windows 门（`docs/25` DS41-1~5）：只保留 `deepseek` / `build` 两个等价选择器，全部槽位迁移到 `deepseek-flash`，删除 `deepseek-vision` Profile 与旧 DeepSeek 品牌别名，Pricing 收口为 V4.1 Flash 当前峰谷 USD 价格。Provider、Secret 与鉴权不变；候选 commit `7aa8e18` 已仅推送验证分支，Windows T4 run 34455293821 在 Node 18.20.8/24.20.0 双档全绿。staging 发现其打包 README 仍有候选/旧 URL 口径，本地 finalization 已修正并通过全量门禁、SHA-256 `49cd63654634c8995721df5e46bb840788bde0ac7289a121ee3fe71562921cdf` 的 fixed asset 及隔离安装；由于 README 属于 payload，仍需形成最终 commit 并复跑 Windows。远端 `main`、tag、Release 与公开 Latest 尚未改动，公开稳定版仍是 `v1.8.2`。
 
 `v1.8.2` 已于 2026-08-29 公开发布为 Latest（tag 指向门禁 commit `30cf53e`；Windows T4 run 33244442385 双档全绿）：两个 DeepSeek Profile 统一注入 `CLAUDE_CODE_MAX_CONTEXT_TOKENS=1048576`，Pricing 刷新为 Pro/Flash/Flash Vision 三模型的工作日峰谷 USD 价格；模型映射、Provider、Secret 与鉴权边界不变。完整证据见 `docs/24`。
 

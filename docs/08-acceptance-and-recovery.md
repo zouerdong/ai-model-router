@@ -740,4 +740,4 @@ GFA-D3 判定结论（2026-08-27）：功能与凭据隔离全部通过（Coding
 
 恢复边界：本轮没有 Secret schema 或数据迁移，回退到公开 `v1.8.2` 时既有 `deepseek` Key 仍在原槽位；回退只是安装版本切换，属于全局安装操作，必须按项目红线另行确认。旧脚本升级前应先扫描三个被删除选择器并改为 `deepseek`；不要通过临时复制旧 Profile 文件绕过 `2.0.0` validator。
 
-当前判定（2026-09-10）：DS41-A1~A7 本地候选 PASS，证据见 `docs/25` §6；DS41-A8 持续作为发布停止门。Windows 三 shell、真实图片请求、commit、push、tag 与 Release 均未执行。
+当前判定（2026-09-10）：DS41-A1~A7 本地候选 PASS，证据见 `docs/25` §6；项目负责人随后授权候选 commit 与仅面向验证分支的 push/Windows CI，commit `7aa8e18b3576988244468771dfc8657fc011f7ef` 的 [Windows T4 run 34455293821](https://github.com/zouerdong/ai-model-router/actions/runs/34455293821) 已在 Windows Server 2025 x64 / Node `18.20.8`、`24.20.0` 双档全绿，PowerShell、CMD、Git Bash、全量回归和 pack 均通过。发布 staging 随后发现打包 README 仍保留候选状态与旧 exact URL；本地修正后的 package payload 已通过全量门禁、可重复打包、checksum 与隔离安装，但因 README 属于 tarball，最终 release commit 必须复跑 Windows 后才可 tag。DS41-A8 继续约束该 commit/push、真实图片请求、`main` push、tag、Release 与全局安装，公开稳定版仍为 `1.8.2`。

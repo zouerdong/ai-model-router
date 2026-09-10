@@ -1,6 +1,6 @@
 # 05 — 阶段三：公司 Windows 拉取与配置计划
 
-状态：公开稳定版 `1.8.2` 已通过 Windows T4；未发布的 `2.0.0` DeepSeek V4.1 Flash 候选须按第 15 节重新过门
+状态：公开稳定版 `1.8.2` 已通过 Windows T4；`2.0.0` 运行时候选已按第 16 节通过追加门，含发布态 README 的精确最终提交须复跑
 核心原则：先验证 DeepSeek V4.1 Flash 单入口，再验证其他 Profile；旧公开版在验证期可通过版本回退，不在 `2.0.0` 内保留旧模型别名。
 
 > `1.0.0` 的规范入口是 `cmr deepseek` 与 `cmr kimi`；Windows 阶段同时验证 `cmr build` 与 `cmr plan` 兼容别名。Profile 只选择 Provider，不限制任务用途或 Claude Code 参数。
@@ -187,4 +187,8 @@ Updater 已提供 Windows `.cmd`/`.bat` 的显式 `cmd.exe /d /c` argv 边界、
 - 现有 `%APPDATA%\ClaudeModelRouter\secrets.json` 中的 `deepseek` Key 可直接沿用；测试不得打印或移动真实 Key。
 - `1.8.2 -> 2.0.0` 实体 `cmr update` 另在发布候选门执行，并回读版本、list 与旧入口拒绝行为；失败必须能恢复 `1.8.2`。
 
-该节未完成前不得把 Mac 本地回归写成 Windows PASS，也不得 tag 或发布 `2.0.0`。
+2026-09-10 结论：**PASS — `2.0.0` Windows 候选门已完成；正式 Release 门禁另行执行**。候选 commit `7aa8e18b3576988244468771dfc8657fc011f7ef` 在 [Windows T4 run 34455293821](https://github.com/zouerdong/ai-model-router/actions/runs/34455293821) 的 Windows Server 2025 x64 / Node `18.20.8` 与 `24.20.0` 双档全绿；两档均通过 PowerShell T4 E2E、PowerShell 全量回归、CMD 与 Git Bash 假 Key E2E、pack 和证据上传。两档 tarball 均为 41 files、48,556 bytes，SHA-256 同为 `4d66f5f3d8a896a57d7be43149cf17cfd55d6b09a4cb89d9a4f7b65ead088622`。
+
+该结果闭环 Windows 代码、shell 与候选包兼容性，并以隔离假 Secret 证明既有 `deepseek` 槽位合同未改变；未读取公司电脑或用户真实 `%APPDATA%`。`1.8.2 -> 2.0.0` 公开固定资产真实更新、推送 `main`、tag 与 Release 仍属于后续独立门禁。
+
+发布前 staging 随后发现 `7aa8e18` 打包的 README 仍保留候选状态与 `v1.8.2` exact 安装 URL。运行时 Windows PASS 不受影响，但 README 属于 npm payload，因此已在本地修正，并要求形成精确最终 release commit 后重跑本节双档矩阵；在该复跑完成前，`2.0.0` 的最终 Windows 发布门仍视为待关闭。

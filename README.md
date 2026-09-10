@@ -1,8 +1,8 @@
 # Claude Model Router
 
-Current public Latest stable version: **`1.8.2`** (released 2026-08-29).
+Current version: **`2.0.0`**.
 
-Repository candidate: **`2.0.0`** (local gates passed; not published). It replaces both former DeepSeek profiles with one `deepseek` entry backed by the natively multimodal DeepSeek V4.1 Flash (`deepseek-flash`), keeps only the generic `build` alias, and removes `deepseek-auto`, `deepseek-vision`, and `deepseek-flash-vision`. The existing DeepSeek Provider, key, endpoint, and authentication boundary are unchanged. Binding contract: `docs/25`.
+Version **`2.0.0`** is a breaking DeepSeek migration. It replaces both former DeepSeek profiles with one `deepseek` entry backed by the natively multimodal DeepSeek V4.1 Flash (`deepseek-flash`), keeps only the generic `build` alias, and removes `deepseek-auto`, `deepseek-vision`, and `deepseek-flash-vision`. The existing DeepSeek Provider, key, endpoint, and authentication boundary are unchanged. Binding contract and release evidence: `docs/25`.
 
 Version **`1.8.2`** declares the full 1,048,576-token window to Claude Code for both DeepSeek profiles and refreshes the DeepSeek pricing record to the current Pro/Flash/Flash Vision weekday peak/off-peak USD rates. Windows Server 2025 passed the Node 18.20.8 and Node 24 release gates. Binding contract and release evidence: `docs/24`.
 
@@ -41,10 +41,10 @@ Prerequisites:
 - For GLM, use a Coding Plan Key with `cmr glm` or a distinct standard API Key with `cmr glm-api`. CMR does not identify Key types, combine slots, or switch between them.
 - Kimi Code is intended only for the personal interactive development scenarios allowed by Kimi's official policy. Enterprise integrations, commercial services, and non-interactive batch use require a separate policy and product evaluation.
 
-Install the reproducible `v1.8.2` Release asset:
+Install the reproducible `v2.0.0` Release asset:
 
 ```bash
-npm install --global "https://github.com/zouerdong/ai-model-router/releases/download/v1.8.2/claude-model-router.tgz"
+npm install --global "https://github.com/zouerdong/ai-model-router/releases/download/v2.0.0/claude-model-router.tgz"
 cmr version
 cmr
 ```
@@ -54,7 +54,7 @@ Existing `1.3.0` and newer entity npm-global installations can run `cmr update`;
 If the existing installation uses a custom npm prefix, specify that same prefix so your terminal does not continue resolving an older copy:
 
 ```bash
-npm install --global --prefix <current-prefix> "https://github.com/zouerdong/ai-model-router/releases/download/v1.8.2/claude-model-router.tgz"
+npm install --global --prefix <current-prefix> "https://github.com/zouerdong/ai-model-router/releases/download/v2.0.0/claude-model-router.tgz"
 ```
 
 You can also install the latest stable fixed asset:
@@ -63,7 +63,7 @@ You can also install the latest stable fixed asset:
 npm install --global "https://github.com/zouerdong/ai-model-router/releases/latest/download/claude-model-router.tgz"
 ```
 
-For reproducible installation, prefer the exact `releases/download/v1.8.2/claude-model-router.tgz` URL over `latest`.
+For reproducible installation, prefer the exact `releases/download/v2.0.0/claude-model-router.tgz` URL over `latest`.
 
 To inspect and install from source:
 
@@ -127,7 +127,7 @@ cmr build [claude args...]
 cmr glm-payg [claude args...]
 ```
 
-In the `2.0.0` repository candidate, `deepseek` follows DeepSeek's current Claude Code mapping: main/Opus/Sonnet use `deepseek-flash[1m]`, while Haiku and every sub-agent use `deepseek-flash`. It also sets the official proactive-compaction window to `786432`; CMR retains `CLAUDE_CODE_MAX_CONTEXT_TOKENS=1048576` so Claude Code manages the untagged custom model ID with its real 1M window. The model is natively multimodal, so the separate Vision profile is no longer present. Existing `deepseek` secrets continue to work; scripts using any of the three removed selectors must migrate to `cmr deepseek` (or the retained `cmr build`).
+In version `2.0.0`, `deepseek` follows DeepSeek's current Claude Code mapping: main/Opus/Sonnet use `deepseek-flash[1m]`, while Haiku and every sub-agent use `deepseek-flash`. It also sets the official proactive-compaction window to `786432`; CMR retains `CLAUDE_CODE_MAX_CONTEXT_TOKENS=1048576` so Claude Code manages the untagged custom model ID with its real 1M window. The model is natively multimodal, so the separate Vision profile is no longer present. Existing `deepseek` secrets continue to work; scripts using any of the three removed selectors must migrate to `cmr deepseek` (or the retained `cmr build`).
 
 Do not append `[text]` or `[image]` to model environment values. Claude Code documents `[1m]` as a context selector, but not those capability suffixes. Its `Read` tool returns images as visual content, and DeepSeek's Anthropic-compatible API accepts the resulting `image` content block for `deepseek-flash`; multimodality is carried by the request content rather than enabled by renaming the model.
 
@@ -253,4 +253,4 @@ API keys are written through hidden local TTY input to the Secret Store outside 
 24. [Version 1.8.2 DeepSeek context and pricing refresh](docs/24-v1.8.2-deepseek-context-pricing-refresh.md)
 25. [Version 2.0.0 DeepSeek V4.1 Flash migration](docs/25-v2.0-deepseek-v4.1-flash-migration.md)
 
-The runtime has no third-party dependencies. The public repository uses `main` as its default branch; the current public stable tag is `v1.8.2`, published as an immutable Release with the fixed `claude-model-router.tgz` asset and a two-entry `SHA256SUMS` (asset name plus a same-digest alias under npm's copy name so pre-1.8.1 updaters keep verifying).
+The runtime has no third-party dependencies. The public repository uses `main` as its default branch. The version `2.0.0` distribution contract is an immutable Release with the fixed `claude-model-router.tgz` asset and a two-entry `SHA256SUMS` (asset name plus a same-digest alias under npm's copy name so pre-1.8.1 updaters keep verifying).
